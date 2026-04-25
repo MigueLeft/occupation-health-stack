@@ -1,0 +1,9 @@
+export { CatalogLayout } from './components/CatalogLayout';
+export { ExamsPanel } from './components/ExamsPanel';
+export { RisksPanel } from './components/RisksPanel';
+export { PsychometricTestsPanel } from './components/PsychometricTestsPanel';
+export { DiseasesPanel } from './components/DiseasesPanel';
+export { AllergiesPanel } from './components/AllergiesPanel';
+export { BodySystemsPanel } from './components/BodySystemsPanel';
+export { DiseaseCategoriesPanel } from './components/DiseaseCategoriesPanel';
+export type { CatalogTab } from './components/CatalogLayout';

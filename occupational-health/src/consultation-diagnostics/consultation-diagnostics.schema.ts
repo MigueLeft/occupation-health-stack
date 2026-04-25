@@ -1,0 +1,25 @@
+import { pgTable, uuid } from 'drizzle-orm/pg-core';
+import { consultations } from '../consultations/consultations.schema';
+import { diseaseCategories } from '../disease-categories/disease-categories.schema';
+import { diseases } from '../diseases/diseases.schema';
+import { bodySystems } from '../body-systems/body-systems.schema';
+
+export const consultationDiagnostics = pgTable('consultation_diagnostics', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  consultationId: uuid('consultation_id')
+    .notNull()
+    .references(() => consultations.id, { onDelete: 'cascade' }),
+  categoryId: uuid('category_id')
+    .notNull()
+    .references(() => diseaseCategories.id),
+  diseaseId: uuid('disease_id')
+    .notNull()
+    .references(() => diseases.id),
+  // Sistema corporal afectado (opcional)
+  bodySystemId: uuid('body_system_id').references(() => bodySystems.id),
+});
+
+export type ConsultationDiagnostic =
+  typeof consultationDiagnostics.$inferSelect;
+export type NewConsultationDiagnostic =
+  typeof consultationDiagnostics.$inferInsert;

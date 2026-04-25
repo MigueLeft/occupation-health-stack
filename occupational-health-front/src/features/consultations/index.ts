@@ -1,0 +1,8 @@
+export { ConsultationRow } from './components/ConsultationRow';
+export { ConsultationTypeChip } from './components/ConsultationTypeChip';
+export { ConsultationResultChip } from './components/ConsultationResultChip';
+export { ConsultationFilters } from './components/ConsultationFilters';
+export { AttendConsultationModal } from './components/AttendConsultationModal';
+export { useConsultations, useUpdateConsultation } from './hooks/useConsultations';
+export type { ConsultationWithDetails } from './types';
+export type { ConsultationFilters as ConsultationFiltersState } from './components/ConsultationFilters';
