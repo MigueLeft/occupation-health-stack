@@ -1,0 +1,45 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: occupational_health
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d occupational_health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    
+  backend:
+    build:
+      context: occupational-health
+    environment:
+      DATABASE_URL: postgresql://postgres:1234@db:5432/occupational_health
+      PORT: 3000
+      BETTER_AUTH_SECRET: ugYTchBFeD0PNJzHqZ0RpZrz3Zp01dsf
+      BETTER_AUTH_URL: http://localhost:3000
+      FRONTEND_URL: http://localhost
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: occupational-health-front
+      args:
+        VITE_API_URL: http://localhost:3000
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
