@@ -1,12 +1,16 @@
 import type { EvaluationReason, RequestStatus } from '@/features/requests/types';
 
-export const CONSULTATION_TYPES = ['Medica', 'Psicologica'] as const;
+export const CONSULTATION_TYPES = ['Medica', 'Psicologica', 'Medica/Psicologica'] as const;
 export type ConsultationType = (typeof CONSULTATION_TYPES)[number];
 
 export const CONSULTATION_TYPE_LABELS: Record<ConsultationType, string> = {
   Medica: 'Médica',
   Psicologica: 'Psicológica',
+  'Medica/Psicologica': 'Médica/Psicológica',
 };
+
+export const CONSULTATION_STATUSES = ['Pendiente', 'En Proceso', 'Finalizada'] as const;
+export type ConsultationStatus = (typeof CONSULTATION_STATUSES)[number];
 
 export const CONSULTATION_RESULTS = ['Apto', 'No Apto', 'Apto Condicionado'] as const;
 export type ConsultationResult = (typeof CONSULTATION_RESULTS)[number];
@@ -30,6 +34,7 @@ export interface Observations {
 export interface Consultation {
   id: string;
   requestId: string;
+  status: ConsultationStatus;
   type: ConsultationType;
   currentTreatment?: string | null;
   interviewConducted?: boolean | null;
@@ -66,4 +71,6 @@ export interface CreateConsultationPayload {
   psychologicalAttendedById?: string;
 }
 
-export type UpdateConsultationPayload = Omit<CreateConsultationPayload, 'requestId' | 'type'>;
+export type UpdateConsultationPayload = Omit<CreateConsultationPayload, 'requestId' | 'type'> & {
+  status?: ConsultationStatus;
+};

@@ -8,6 +8,7 @@ import {
 import { Type } from 'class-transformer';
 import {
   CONSULTATION_RESULTS,
+  CONSULTATION_STATUSES,
   PSYCHOLOGICAL_RESULTS,
 } from '../consultations.schema';
 import { RecommendationsDto } from './recommendations.dto';
@@ -50,6 +51,12 @@ export class UpdateConsultationDto {
 
   @IsOptional()
   observations?: { medica?: string; psicologica?: string };
+
+  @IsOptional()
+  @IsIn(CONSULTATION_STATUSES, {
+    message: `El estado debe ser uno de: ${CONSULTATION_STATUSES.join(', ')}.`,
+  })
+  status?: string;
 
   @IsOptional()
   @IsString()

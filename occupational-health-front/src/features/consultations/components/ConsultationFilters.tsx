@@ -1,15 +1,13 @@
 import { Stack, TextField, MenuItem, InputAdornment } from '@mui/material';
 import { SearchOutlined } from '@mui/icons-material';
-import { CONSULTATION_TYPES, CONSULTATION_TYPE_LABELS, CONSULTATION_RESULTS, PSYCHOLOGICAL_RESULTS } from '../types';
-import type { ConsultationType, ConsultationResultUnion } from '../types';
-import { REQUEST_STATUSES, REQUEST_STATUS_LABELS } from '@/features/requests/types';
-import type { RequestStatus } from '@/features/requests/types';
+import { CONSULTATION_TYPES, CONSULTATION_TYPE_LABELS, CONSULTATION_RESULTS, PSYCHOLOGICAL_RESULTS, CONSULTATION_STATUSES } from '../types';
+import type { ConsultationType, ConsultationResultUnion, ConsultationStatus } from '../types';
 
 export interface ConsultationFilters {
   search: string;
   tipo: ConsultationType | 'all';
   resultado: ConsultationResultUnion | 'all';
-  status: RequestStatus | 'all';
+  status: ConsultationStatus | 'active' | 'all';
 }
 
 interface Props {
@@ -48,10 +46,11 @@ export function ConsultationFilters({ filters, onChange }: Props) {
         {ALL_RESULTS.map((r) => <MenuItem key={r} value={r}>{r}</MenuItem>)}
       </TextField>
 
-      <TextField select size="small" value={filters.status} onChange={(e) => set('status', e.target.value as RequestStatus | 'all')} sx={{ minWidth: 160 }}>
-        <MenuItem value="all">Estatus</MenuItem>
-        {REQUEST_STATUSES.map((s) => (
-          <MenuItem key={s} value={s}>{REQUEST_STATUS_LABELS[s]}</MenuItem>
+      <TextField select size="small" value={filters.status} onChange={(e) => set('status', e.target.value as ConsultationStatus | 'active' | 'all')} sx={{ minWidth: 160 }}>
+        <MenuItem value="active">Activas</MenuItem>
+        <MenuItem value="all">Todas</MenuItem>
+        {CONSULTATION_STATUSES.map((s) => (
+          <MenuItem key={s} value={s}>{s}</MenuItem>
         ))}
       </TextField>
     </Stack>

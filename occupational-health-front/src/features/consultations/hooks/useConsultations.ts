@@ -29,7 +29,7 @@ export function useConsultations() {
             requestStatus: (req?.status ?? 'Pendiente') as RequestStatus,
             patientId: req?.patientId ?? '',
             patientName: patient ? `${patient.firstName} ${patient.lastName}` : (req?.patientId ?? ''),
-          };
+          } as ConsultationWithDetails;
         })
       : undefined;
 

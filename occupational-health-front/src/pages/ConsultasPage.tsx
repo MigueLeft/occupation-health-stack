@@ -9,7 +9,7 @@ import { ConsultationRow, ConsultationFilters, useConsultations } from '@/featur
 import type { ConsultationFiltersState } from '@/features/consultations';
 
 const TABLE_HEADERS = ['Paciente', 'Fecha', 'Motivo', 'Tipo', 'Resultado', 'Estatus', 'Acciones'];
-const DEFAULT_FILTERS: ConsultationFiltersState = { search: '', tipo: 'all', resultado: 'all', status: 'all' };
+const DEFAULT_FILTERS: ConsultationFiltersState = { search: '', tipo: 'all', resultado: 'all', status: 'active' };
 
 export function ConsultasPage() {
   const [filters, setFilters] = useState<ConsultationFiltersState>(DEFAULT_FILTERS);
@@ -19,7 +19,8 @@ export function ConsultasPage() {
     const name = c.patientName.toLowerCase();
     if (filters.search && !name.includes(filters.search.toLowerCase())) return false;
     if (filters.tipo !== 'all' && c.type !== filters.tipo) return false;
-    if (filters.status !== 'all' && c.requestStatus !== filters.status) return false;
+    if (filters.status === 'active' && c.status === 'Finalizada') return false;
+    if (filters.status !== 'active' && filters.status !== 'all' && c.status !== filters.status) return false;
     if (filters.resultado !== 'all') {
       const result = c.type === 'Medica' ? c.consultationResult : c.psychologicalResult;
       if (result !== filters.resultado) return false;

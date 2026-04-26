@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { requestsService } from '../services/requests.service';
 import { patientsService } from '@/features/patients/services/patients.service';
+import { CONSULTATIONS_KEY } from '@/features/consultations/hooks/useConsultations';
 import type { AppRequestWithPatient, CreateRequestPayload, UpdateRequestPayload } from '../types';
 
 export const REQUESTS_KEY = ['requests'] as const;
@@ -55,8 +56,11 @@ export function useUpdateRequest() {
   return useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: UpdateRequestPayload }) =>
       requestsService.update(id, payload),
-    onSuccess: () => {
+    onSuccess: (_, { payload }) => {
       queryClient.invalidateQueries({ queryKey: REQUESTS_KEY });
+      if (payload.status === 'No asistio') {
+        queryClient.invalidateQueries({ queryKey: CONSULTATIONS_KEY });
+      }
       toast.success('Solicitud actualizada.');
     },
     onError: () => {

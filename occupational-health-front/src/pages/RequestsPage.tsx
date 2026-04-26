@@ -14,7 +14,7 @@ import type { AppRequestWithPatient, RequestFilters } from '@/features/requests'
 
 const TABLE_HEADERS = ['Paciente', 'Fecha', 'Motivo', 'Consulta', 'Estatus', 'Acciones'];
 
-const DEFAULT_FILTERS: RequestFilters = { search: '', dateFilter: 'all', motivo: 'all', status: 'all' };
+const DEFAULT_FILTERS: RequestFilters = { search: '', dateFilter: 'all', motivo: 'all', status: 'Pendiente' };
 
 function isInDateRange(dateStr: string, filter: RequestFilters['dateFilter']): boolean {
   const date = new Date(dateStr + 'T00:00:00');

@@ -9,6 +9,7 @@ import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DRIZZLE } from '../database/database.module';
 import { requests, Request } from './requests.schema';
 import { patients } from '../patients/patients.schema';
+import { consultations } from '../consultations/consultations.schema';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { UpdateRequestDto } from './dto/update-request.dto';
 
@@ -57,6 +58,13 @@ export class RequestsService {
 
     const [created] = await this.db.insert(requests).values(dto).returning();
 
+    // Crear automáticamente la consulta asociada
+    await this.db.insert(consultations).values({
+      requestId: created.id,
+      type: dto.scheduledConsultationType ?? 'Medica',
+      status: 'Pendiente',
+    });
+
     return created;
   }
 
@@ -68,6 +76,13 @@ export class RequestsService {
       .set(dto)
       .where(eq(requests.id, id))
       .returning();
+
+    // Al marcar como No asistio, eliminar la consulta asociada
+    if (dto.status === 'No asistio') {
+      await this.db
+        .delete(consultations)
+        .where(eq(consultations.requestId, id));
+    }
 
     return updated;
   }

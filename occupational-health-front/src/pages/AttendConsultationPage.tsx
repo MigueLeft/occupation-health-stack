@@ -56,10 +56,14 @@ export function AttendConsultationPage() {
   const { data: allergies = [] } = useAllergies();
   const { data: users = [] } = useUsers();
 
-  // Auto-register system attended by on first open
+  // Auto-register system attended by and set En Proceso on first open
   useEffect(() => {
-    if (data && !data.systemAttendedById && currentUser?.id) {
-      consultationsService.update(id, { systemAttendedById: currentUser.id }).catch(() => {});
+    if (!data || !currentUser?.id) return;
+    const patch: Parameters<typeof consultationsService.update>[1] = {};
+    if (!data.systemAttendedById) patch.systemAttendedById = currentUser.id;
+    if (data.status === 'Pendiente') patch.status = 'En Proceso';
+    if (Object.keys(patch).length > 0) {
+      consultationsService.update(id, patch).catch(() => {});
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data?.id, currentUser?.id]);
@@ -87,6 +91,7 @@ export function AttendConsultationPage() {
         observations: { medica: medObservations || undefined, psicologica: psychObservations || undefined },
         medicalAttendedById: medicalAttendedById || undefined,
         psychologicalAttendedById: psychologicalAttendedById || undefined,
+        status: 'Finalizada',
       });
       if (data.physicalExam) {
         await physicalExamService.update(data.physicalExam.id, physExam);
@@ -94,7 +99,7 @@ export function AttendConsultationPage() {
         await physicalExamService.create({ ...physExam, consultationId: id, id: '' });
       }
       toast.success('Consulta guardada exitosamente.');
-      refetch();
+      navigate({ to: '/consultas' });
     } catch {
       toast.error('Error al guardar la consulta');
     } finally {

@@ -1,6 +1,7 @@
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, IconButton, Stack, TextField, MenuItem, Autocomplete,
+  Box, CircularProgress, Typography,
 } from '@mui/material';
 import { CloseOutlined } from '@mui/icons-material';
 import { useForm, Controller, useWatch } from 'react-hook-form';
@@ -55,13 +56,22 @@ export function RequestCreateModal({ open, onClose, isPending, onSubmit }: Props
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={isPending ? undefined : handleClose} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'primary.main', color: 'primary.contrastText', pb: 1.5 }}>
         Nueva Solicitud
-        <IconButton size="small" onClick={handleClose} sx={{ color: 'inherit' }}>
+        <IconButton size="small" onClick={handleClose} disabled={isPending} sx={{ color: 'inherit' }}>
           <CloseOutlined fontSize="small" />
         </IconButton>
       </DialogTitle>
+
+      {isPending && (
+        <Box sx={{ position: 'absolute', inset: 0, zIndex: 10, bgcolor: 'rgba(255,255,255,0.85)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, borderRadius: 'inherit' }}>
+          <CircularProgress size={48} />
+          <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+            Creando solicitud y consulta...
+          </Typography>
+        </Box>
+      )}
 
       <form onSubmit={handleSubmit(onFormSubmit)}>
         <DialogContent sx={{ pt: 3 }}>

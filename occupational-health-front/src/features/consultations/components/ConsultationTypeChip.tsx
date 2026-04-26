@@ -3,8 +3,9 @@ import type { ConsultationType } from '../types';
 import { CONSULTATION_TYPE_LABELS } from '../types';
 
 const TYPE_STYLES: Record<ConsultationType, { color: string; bgcolor: string }> = {
-  Medica:      { color: '#6D28D9', bgcolor: '#EDE9FE' },
-  Psicologica: { color: '#1D4ED8', bgcolor: '#DBEAFE' },
+  Medica:               { color: '#6D28D9', bgcolor: '#EDE9FE' },
+  Psicologica:          { color: '#1D4ED8', bgcolor: '#DBEAFE' },
+  'Medica/Psicologica': { color: '#0F766E', bgcolor: '#CCFBF1' },
 };
 
 export function ConsultationTypeChip({ type }: { type: ConsultationType }) {

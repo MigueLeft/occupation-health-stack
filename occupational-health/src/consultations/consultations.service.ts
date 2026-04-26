@@ -9,7 +9,7 @@ import { eq } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DRIZZLE } from '../database/database.module';
 import { consultations, Consultation } from './consultations.schema';
-import { requests } from '../requests/requests.schema';
+import { requests, Request } from '../requests/requests.schema';
 import { physicalExams } from '../physical-exams/physical-exams.schema';
 import { restPeriods } from '../rest-periods/rest-periods.schema';
 import { examResults } from '../exam-results/exam-results.schema';
@@ -129,6 +129,14 @@ export class ConsultationsService {
       .set(dto)
       .where(eq(consultations.id, id))
       .returning();
+
+    // Sincronizar el estado de la solicitud con el de la consulta
+    if (dto.status === 'En Proceso' || dto.status === 'Finalizada') {
+      await this.db
+        .update(requests)
+        .set({ status: dto.status === 'Finalizada' ? 'Finalizada' : 'En Proceso' })
+        .where(eq(requests.id, existing.requestId));
+    }
 
     return updated;
   }

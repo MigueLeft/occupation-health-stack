@@ -1,0 +1,1 @@
+ALTER TABLE "consultations" ADD COLUMN "status" varchar(20) DEFAULT 'Pendiente' NOT NULL;
