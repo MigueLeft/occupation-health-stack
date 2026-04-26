@@ -11,6 +11,7 @@ export function useCreatePosition() {
     mutationFn: (payload: CreatePositionPayload) => positionsService.create(payload),
     onSuccess: ({ position }) => {
       queryClient.invalidateQueries({ queryKey: COMPANIES_KEY });
+      queryClient.invalidateQueries({ queryKey: ['positions'] });
       toast.success(`Cargo "${position.name}" creado exitosamente.`);
     },
     onError: (error: { response?: { data?: { message?: string } } }) => {
@@ -27,6 +28,7 @@ export function useUpdatePosition() {
       positionsService.update(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: COMPANIES_KEY });
+      queryClient.invalidateQueries({ queryKey: ['positions'] });
       toast.success('Cargo actualizado correctamente');
     },
     onError: () => {
@@ -42,6 +44,7 @@ export function useDeletePosition() {
     mutationFn: (id: string) => positionsService.remove(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: COMPANIES_KEY });
+      queryClient.invalidateQueries({ queryKey: ['positions'] });
       toast.success('Cargo eliminado correctamente');
     },
     onError: () => {

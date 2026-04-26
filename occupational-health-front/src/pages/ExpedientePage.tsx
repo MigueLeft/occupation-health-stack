@@ -97,8 +97,13 @@ export function ExpedientePage() {
             <InfoField label="Empresa" value={patient.company?.name ?? '—'} />
             <InfoField label="Cargo" value={patient.position?.name ?? '—'} />
             <InfoField label="Fecha de Nacimiento" value={`${formatBirthDate(patient.birthDate)}  (${age} años)`} />
-            <InfoField label="Grupo Sanguíneo / Mano Dom." value={`${patient.bloodType ?? '—'} / ${HAND_LABELS[patient.dominantHand] ?? patient.dominantHand ?? '—'}`} />
-            <InfoField label="Usa lentes" value={patient.usesGlasses ? 'Sí' : 'No'} />
+            <InfoField label="Grupo Sanguíneo / Mano Dom." value={`${patient.bloodType ?? '—'} / ${HAND_LABELS[patient.dominantHand ?? ''] ?? patient.dominantHand ?? '—'}`} />
+            <InfoField label="Usa lentes" value={patient.usesGlasses == null ? '—' : patient.usesGlasses ? 'Sí' : 'No'} />
+            <InfoField label="Contacto de Emergencia" value={
+              patient.emergencyContact
+                ? `${patient.emergencyContact.name} (${patient.emergencyContact.relationship}) — ${patient.emergencyContact.phone}`
+                : '—'
+            } />
             <InfoField
               label="Alergias"
               value={

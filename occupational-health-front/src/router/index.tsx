@@ -20,6 +20,7 @@ import { AttendConsultationPage } from '@/pages/AttendConsultationPage';
 import { ExpedientePage } from '@/pages/ExpedientePage';
 import { ConsultationDetailPage } from '@/pages/ConsultationDetailPage';
 import { authClient } from '@/lib/auth-client';
+import { toast } from 'sonner';
 
 const rootRoute = createRootRoute({
   component: () => (
@@ -34,17 +35,41 @@ const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/login',
   beforeLoad: async () => {
-    const { data } = await authClient.getSession();
-    if (data?.session) throw redirect({ to: '/' });
+    let result;
+    try {
+      result = await authClient.getSession();
+    } catch {
+      toast.error('No se pudo conectar con el servidor. Verifica que el backend esté activo.');
+      return;
+    }
+    if (!result.error && result.data?.session) {
+      throw redirect({ to: '/' });
+    }
   },
   component: LoginPage,
 });
 
 // Guard compartido para rutas protegidas
 async function requireAuth() {
-  const { data } = await authClient.getSession();
-  if (!data?.session) throw redirect({ to: '/login' });
-  return { user: data.user, session: data.session };
+  let result;
+  try {
+    result = await authClient.getSession();
+  } catch {
+    toast.error('No se pudo conectar con el servidor. Verifica que el backend esté activo.');
+    return;
+  }
+
+  if (result.error) {
+    toast.error('No se pudo conectar con el servidor. Verifica que el backend esté activo.');
+    return;
+  }
+
+  // redirect fuera del try/catch para que TanStack Router lo reciba correctamente
+  if (!result.data?.session) {
+    throw redirect({ to: '/login' });
+  }
+
+  return { user: result.data.user, session: result.data.session };
 }
 
 const homeRoute = createRoute({

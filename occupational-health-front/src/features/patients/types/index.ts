@@ -25,9 +25,9 @@ export interface Patient {
   lastName: string;
   birthDate: string;
   email: string;
-  bloodType: string;
-  dominantHand: string;
-  usesGlasses: boolean;
+  bloodType: string | null;
+  dominantHand: string | null;
+  usesGlasses: boolean | null;
   companyId: string;
   positionId: string;
   emergencyContact: EmergencyContact;

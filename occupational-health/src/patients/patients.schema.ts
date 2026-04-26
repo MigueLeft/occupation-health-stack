@@ -28,9 +28,9 @@ export const patients = pgTable('patients', {
     .$type<EmergencyContact>()
     .notNull(),
   email: varchar('email', { length: 255 }).notNull().unique(),
-  bloodType: varchar('blood_type', { length: 10 }).notNull(),
-  dominantHand: varchar('dominant_hand', { length: 20 }).notNull(),
-  usesGlasses: boolean('uses_glasses').notNull().default(false),
+  bloodType: varchar('blood_type', { length: 10 }),
+  dominantHand: varchar('dominant_hand', { length: 20 }),
+  usesGlasses: boolean('uses_glasses').default(false),
   companyId: uuid('company_id')
     .notNull()
     .references(() => companies.id),

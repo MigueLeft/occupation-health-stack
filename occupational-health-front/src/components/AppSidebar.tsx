@@ -8,6 +8,8 @@ import {
   ListItemText,
   Avatar,
   Divider,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import {
   GridViewOutlined,
@@ -19,6 +21,7 @@ import {
   LibraryBooksOutlined,
   AssignmentOutlined,
   LocalHospitalOutlined,
+  LogoutOutlined,
 } from '@mui/icons-material';
 import { Link, useRouterState } from '@tanstack/react-router';
 import { useAuth } from '@/features/auth';
@@ -72,7 +75,7 @@ function NavButton({ item, isActive }: { item: NavItem; isActive: boolean }) {
 }
 
 export function SidebarContent() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { location } = useRouterState();
 
   return (
@@ -143,16 +146,21 @@ export function SidebarContent() {
         ))}
       </List>
 
-      {/* Usuario */}
-      <Box sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        <Avatar
-          sx={{ width: 34, height: 34, bgcolor: 'secondary.main', fontSize: '0.875rem' }}
-        >
+      <Divider sx={{ mx: 2, borderColor: 'rgba(255,255,255,0.12)' }} />
+
+      {/* Usuario + logout */}
+      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Avatar sx={{ width: 34, height: 34, bgcolor: 'secondary.main', fontSize: '0.875rem' }}>
           {(user?.name ?? 'A').charAt(0).toUpperCase()}
         </Avatar>
-        <Typography sx={{ color: 'white', fontSize: '0.875rem', fontWeight: 600 }}>
+        <Typography sx={{ color: 'white', fontSize: '0.875rem', fontWeight: 600, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {user?.name ?? 'Admin'}
         </Typography>
+        <Tooltip title="Cerrar sesión">
+          <IconButton size="small" onClick={signOut} sx={{ color: 'rgba(255,255,255,0.7)', '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.1)' } }}>
+            <LogoutOutlined fontSize="small" />
+          </IconButton>
+        </Tooltip>
       </Box>
     </Box>
   );

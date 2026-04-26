@@ -54,22 +54,23 @@ export class CreatePatientDto {
   @IsNotEmpty({ message: 'El correo electrónico es obligatorio.' })
   email: string;
 
+  @IsOptional()
   @IsIn(BLOOD_TYPES, {
     message: `El grupo sanguíneo debe ser uno de los siguientes: ${BLOOD_TYPES.join(', ')}.`,
   })
-  @IsNotEmpty({ message: 'El grupo sanguíneo es obligatorio.' })
-  bloodType: string;
+  bloodType?: string;
 
+  @IsOptional()
   @IsIn(DOMINANT_HANDS, {
     message: `La mano dominante debe ser una de las siguientes: ${DOMINANT_HANDS.join(', ')}.`,
   })
-  @IsNotEmpty({ message: 'La mano dominante es obligatoria.' })
-  dominantHand: string;
+  dominantHand?: string;
 
+  @IsOptional()
   @IsBoolean({
     message: 'El campo de uso de lentes debe ser verdadero o falso.',
   })
-  usesGlasses: boolean;
+  usesGlasses?: boolean;
 
   @IsUUID('4', { message: 'El ID de la empresa debe ser un UUID válido.' })
   @IsNotEmpty({ message: 'El ID de la empresa es obligatorio.' })
