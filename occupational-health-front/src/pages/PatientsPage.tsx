@@ -12,9 +12,14 @@ import {
   TableHead,
   TableRow,
   Skeleton,
+  TablePagination,
+  Checkbox,
+  Tooltip,
+  IconButton,
 } from '@mui/material';
-import { PersonAddOutlined } from '@mui/icons-material';
+import { PersonAddOutlined, DeleteOutlined, SortByAlphaOutlined } from '@mui/icons-material';
 import { AppLayout } from '@/components/AppLayout';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import {
   PatientRow,
   PatientTableFilters,
@@ -23,6 +28,7 @@ import {
   usePatients,
   useCompanies,
   usePositions,
+  useDeletePatient,
 } from '@/features/patients';
 import type { Patient } from '@/features/patients';
 import { formatCedula } from '@/utils/cedula';
@@ -32,18 +38,24 @@ const TABLE_HEADERS = ['Cédula', 'Nombre Completo', 'Empresa', 'Cargo', 'Edad',
 export function PatientsPage() {
   const { data: patients = [], isLoading } = usePatients();
   const { data: companies = [] } = useCompanies();
+  const { mutate: deletePatient, isPending: isDeleting } = useDeletePatient();
 
   const [search, setSearch] = useState('');
+  const [sortAZ, setSortAZ] = useState(false);
   const [companyFilter, setCompanyFilter] = useState('');
   const [positionFilter, setPositionFilter] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Patient | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [deleteMultiOpen, setDeleteMultiOpen] = useState(false);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const { data: allPositions = [] } = usePositions(companyFilter || undefined);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    return patients.filter((p) => {
+    let result = patients.filter((p) => {
       const fullName = `${p.firstName} ${p.lastName}`.toLowerCase();
       const cedula = formatCedula(p.cedula).toLowerCase();
       const matchesSearch = !q || fullName.includes(q) || cedula.includes(q) || p.cedula.toLowerCase().includes(q);
@@ -51,7 +63,54 @@ export function PatientsPage() {
       const matchesPosition = !positionFilter || p.positionId === positionFilter;
       return matchesSearch && matchesCompany && matchesPosition;
     });
-  }, [patients, search, companyFilter, positionFilter]);
+    if (sortAZ) {
+      result = [...result].sort((a, b) =>
+        `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`, 'es'),
+      );
+    }
+    return result;
+  }, [patients, search, companyFilter, positionFilter, sortAZ]);
+
+  const paginated = filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+
+  const allSelected = paginated.length > 0 && paginated.every((p) => selected.has(p.cedula));
+  const someSelected = selected.size > 0;
+
+  const handleToggleAll = () => {
+    if (allSelected) {
+      setSelected((prev) => {
+        const next = new Set(prev);
+        paginated.forEach((p) => next.delete(p.cedula));
+        return next;
+      });
+    } else {
+      setSelected((prev) => {
+        const next = new Set(prev);
+        paginated.forEach((p) => next.add(p.cedula));
+        return next;
+      });
+    }
+  };
+
+  const handleToggleOne = (cedula: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(cedula)) next.delete(cedula);
+      else next.add(cedula);
+      return next;
+    });
+  };
+
+  const handleConfirmDeleteMulti = async () => {
+    const cédulas = Array.from(selected);
+    for (const cedula of cédulas) {
+      await new Promise<void>((resolve) => {
+        deletePatient(cedula, { onSuccess: () => resolve(), onError: () => resolve() });
+      });
+    }
+    setSelected(new Set());
+    setDeleteMultiOpen(false);
+  };
 
   const navigate = useNavigate();
   const handleView = (p: Patient) => navigate({ to: '/expedientes/$cedula', params: { cedula: p.cedula } });
@@ -71,23 +130,40 @@ export function PatientsPage() {
           }}
         >
           <Typography variant="h2">Pacientes</Typography>
-          <Button
-            variant="contained"
-            startIcon={<PersonAddOutlined />}
-            onClick={() => setCreateOpen(true)}
-          >
-            Nuevo Paciente
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {someSelected && (
+              <Button
+                variant="outlined"
+                color="error"
+                startIcon={<DeleteOutlined />}
+                onClick={() => setDeleteMultiOpen(true)}
+              >
+                Eliminar ({selected.size})
+              </Button>
+            )}
+            <Tooltip title={sortAZ ? 'Orden original' : 'Ordenar A-Z'}>
+              <IconButton onClick={() => setSortAZ((v) => !v)} color={sortAZ ? 'primary' : 'default'}>
+                <SortByAlphaOutlined />
+              </IconButton>
+            </Tooltip>
+            <Button
+              variant="contained"
+              startIcon={<PersonAddOutlined />}
+              onClick={() => setCreateOpen(true)}
+            >
+              Nuevo Paciente
+            </Button>
+          </Box>
         </Box>
 
         <Box sx={{ px: 4, pb: 2.5 }}>
           <PatientTableFilters
             search={search}
-            onSearch={setSearch}
+            onSearch={(v) => { setSearch(v); setPage(0); }}
             companyFilter={companyFilter}
-            onCompanyFilter={setCompanyFilter}
+            onCompanyFilter={(v) => { setCompanyFilter(v); setPage(0); }}
             positionFilter={positionFilter}
-            onPositionFilter={setPositionFilter}
+            onPositionFilter={(v) => { setPositionFilter(v); setPage(0); }}
             companies={companies}
             positions={allPositions}
           />
@@ -99,6 +175,14 @@ export function PatientsPage() {
               <Table>
                 <TableHead>
                   <TableRow sx={{ bgcolor: 'primary.main' }}>
+                    <TableCell padding="checkbox" sx={{ bgcolor: 'primary.main' }}>
+                      <Checkbox
+                        checked={allSelected}
+                        indeterminate={!allSelected && paginated.some((p) => selected.has(p.cedula))}
+                        onChange={handleToggleAll}
+                        sx={{ color: 'primary.contrastText', '&.Mui-checked': { color: 'primary.contrastText' }, '&.MuiCheckbox-indeterminate': { color: 'primary.contrastText' } }}
+                      />
+                    </TableCell>
                     {TABLE_HEADERS.map((h) => (
                       <TableCell
                         key={h}
@@ -113,6 +197,7 @@ export function PatientsPage() {
                   {isLoading
                     ? Array.from({ length: 5 }).map((_, i) => (
                         <TableRow key={i}>
+                          <TableCell padding="checkbox"><Skeleton variant="rectangular" width={20} height={20} /></TableCell>
                           {TABLE_HEADERS.map((h) => (
                             <TableCell key={h}>
                               <Skeleton />
@@ -120,17 +205,19 @@ export function PatientsPage() {
                           ))}
                         </TableRow>
                       ))
-                    : filtered.map((p) => (
+                    : paginated.map((p) => (
                         <PatientRow
                           key={p.cedula}
                           patient={p}
+                          selected={selected.has(p.cedula)}
+                          onToggleSelect={handleToggleOne}
                           onView={handleView}
                           onEdit={handleEdit}
                         />
                       ))}
                   {!isLoading && filtered.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={6} align="center" sx={{ py: 6, color: 'text.disabled' }}>
+                      <TableCell colSpan={7} align="center" sx={{ py: 6, color: 'text.disabled' }}>
                         No se encontraron pacientes
                       </TableCell>
                     </TableRow>
@@ -138,12 +225,34 @@ export function PatientsPage() {
                 </TableBody>
               </Table>
             </TableContainer>
+            <TablePagination
+              component="div"
+              count={filtered.length}
+              page={page}
+              onPageChange={(_, p) => setPage(p)}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
+              rowsPerPageOptions={[5, 10, 25, 50]}
+              labelRowsPerPage="Filas por página:"
+              labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count}`}
+            />
           </Paper>
         </Box>
       </Box>
 
       <CreatePatientModal open={createOpen} onClose={() => setCreateOpen(false)} />
       <EditPatientModal open={!!editTarget} patient={editTarget} onClose={() => setEditTarget(null)} />
+
+      <ConfirmDialog
+        open={deleteMultiOpen}
+        title="Eliminar pacientes seleccionados"
+        message={`¿Estás seguro de que deseas eliminar ${selected.size} paciente(s)? Esta acción es irreversible.`}
+        confirmLabel="Eliminar"
+        confirmColor="error"
+        loading={isDeleting}
+        onConfirm={handleConfirmDeleteMulti}
+        onClose={() => setDeleteMultiOpen(false)}
+      />
     </AppLayout>
   );
 }

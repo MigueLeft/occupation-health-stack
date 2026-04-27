@@ -74,18 +74,19 @@ export function CompanyDetailModal({ open, onClose, company }: CompanyDetailModa
 
             {/* Right panel - positions */}
             <Box sx={{ flex: 1, p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Typography variant="h3">Cargos</Typography>
-              <Box sx={{ flex: 1 }}>
-                <PositionsTable positions={company.positions} companyId={company.id} />
-              </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="h3">Cargos</Typography>
                 <Button
                   variant="contained"
+                  size="small"
                   startIcon={<AddOutlined />}
                   onClick={() => setCreatePositionOpen(true)}
                 >
                   Nuevo Cargo
                 </Button>
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <PositionsTable positions={company.positions} companyId={company.id} />
               </Box>
             </Box>
           </Box>

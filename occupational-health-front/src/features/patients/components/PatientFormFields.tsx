@@ -1,13 +1,10 @@
 import {
   Stack,
   TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  FormHelperText,
   Typography,
   Divider,
+  Autocomplete,
+  Box,
 } from '@mui/material';
 import { Controller, type Control, type FieldErrors } from 'react-hook-form';
 import { autoFormatCedula } from '@/utils/cedula';
@@ -23,6 +20,10 @@ interface PatientFormFieldsProps {
   selectedCompanyId: string;
   onCompanyChange: (id: string) => void;
 }
+
+const LISTBOX_SLOT_PROPS = {
+  listbox: { style: { maxHeight: 220 } },
+} as const;
 
 export function PatientFormFields({
   control,
@@ -46,6 +47,11 @@ export function PatientFormFields({
               error={!!errors.cedula}
               helperText={errors.cedula?.message}
               fullWidth
+              onChange={(e) => {
+                // Allow only digits and V/E prefix chars
+                const val = e.target.value.replace(/[^0-9VEve-]/g, '');
+                field.onChange(val);
+              }}
               onBlur={(e) => {
                 const formatted = autoFormatCedula(e.target.value);
                 field.onChange(formatted);
@@ -120,41 +126,60 @@ export function PatientFormFields({
           name="companyId"
           control={control}
           render={({ field }) => (
-            <FormControl fullWidth error={!!errors.companyId}>
-              <InputLabel>Empresa empleadora</InputLabel>
-              <Select
-                {...field}
-                label="Empresa empleadora"
-                onChange={(e) => {
-                  field.onChange(e);
-                  onCompanyChange(e.target.value);
+            <Box sx={{ flex: 1 }}>
+              <Autocomplete
+                options={companies}
+                getOptionLabel={(c) => c.name}
+                value={companies.find((c) => c.id === field.value) ?? null}
+                onChange={(_, company) => {
+                  field.onChange(company?.id ?? '');
+                  onCompanyChange(company?.id ?? '');
                 }}
-              >
-                {companies.map((c) => (
-                  <MenuItem key={c.id} value={c.id}>
-                    {c.name}
-                  </MenuItem>
-                ))}
-              </Select>
-              {errors.companyId && <FormHelperText>{errors.companyId.message}</FormHelperText>}
-            </FormControl>
+                slotProps={LISTBOX_SLOT_PROPS}
+                renderOption={(props, option) => (
+                  <Box component="li" {...props} sx={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                    {option.name}
+                  </Box>
+                )}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Empresa empleadora"
+                    error={!!errors.companyId}
+                    helperText={errors.companyId?.message}
+                  />
+                )}
+              />
+            </Box>
           )}
         />
         <Controller
           name="positionId"
           control={control}
           render={({ field }) => (
-            <FormControl fullWidth error={!!errors.positionId} disabled={!selectedCompanyId}>
-              <InputLabel>Cargo del paciente</InputLabel>
-              <Select {...field} label="Cargo del paciente">
-                {positions.map((p) => (
-                  <MenuItem key={p.id} value={p.id}>
-                    {p.name}
-                  </MenuItem>
-                ))}
-              </Select>
-              {errors.positionId && <FormHelperText>{errors.positionId.message}</FormHelperText>}
-            </FormControl>
+            <Box sx={{ flex: 1 }}>
+              <Autocomplete
+                options={positions}
+                getOptionLabel={(p) => p.name}
+                value={positions.find((p) => p.id === field.value) ?? null}
+                onChange={(_, position) => field.onChange(position?.id ?? '')}
+                disabled={!selectedCompanyId}
+                slotProps={LISTBOX_SLOT_PROPS}
+                renderOption={(props, option) => (
+                  <Box component="li" {...props} sx={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                    {option.name}
+                  </Box>
+                )}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Cargo del paciente"
+                    error={!!errors.positionId}
+                    helperText={errors.positionId?.message}
+                  />
+                )}
+              />
+            </Box>
           )}
         />
       </Stack>

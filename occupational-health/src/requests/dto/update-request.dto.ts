@@ -1,4 +1,4 @@
-import { IsDateString, IsOptional, IsIn } from 'class-validator';
+import { IsDateString, IsOptional, IsIn, IsString } from 'class-validator';
 import {
   EVALUATION_REASONS,
   REQUEST_STATUSES,
@@ -36,4 +36,8 @@ export class UpdateRequestDto {
     message: `El tipo de consulta realizada debe ser uno de: ${CONSULTATION_TYPES.join(', ')}.`,
   })
   performedConsultationType?: string;
+
+  @IsOptional()
+  @IsString({ message: 'El ID del paciente debe ser una cadena de texto.' })
+  patientId?: string;
 }

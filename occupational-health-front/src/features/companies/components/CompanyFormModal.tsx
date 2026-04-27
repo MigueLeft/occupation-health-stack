@@ -13,13 +13,10 @@ import { autoFormatPhone } from '@/utils/phone';
 import type { CompanyWithPositions } from '../types';
 
 const schema = z.object({
-  name: z.string().min(1, 'El nombre es obligatorio').max(255),
-  rif: z
-    .string()
-    .min(1, 'El RIF es obligatorio'),
-    // .regex(/^[A-Za-z]-\d+-\d$/, 'RIF inválido. Ingresa los números y sal del campo para formatear'),
+  name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres').max(255),
+  rif: z.string().min(10, 'El RIF debe tener al menos 10 caracteres'),
   address: z.string().min(1, 'La dirección es obligatoria').max(500),
-  contact: z.string().min(1, 'El contacto es obligatorio').max(255),
+  contact: z.string().regex(/^\d{4}-?\d{7}$/, 'El teléfono debe tener 11 dígitos (ej: 04145652189)'),
 });
 
 type FormData = z.infer<typeof schema>;

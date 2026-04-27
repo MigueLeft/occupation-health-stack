@@ -75,4 +75,5 @@ export type UpdateRequestPayload = {
   status?: string;
   scheduledConsultationType?: string;
   performedConsultationType?: string;
+  patientId?: string;
 };

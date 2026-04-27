@@ -5,7 +5,10 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
-const schema = z.object({ name: z.string().min(1, 'El nombre es obligatorio').max(255) });
+const schema = z.object({
+  name: z.string().min(1, 'El nombre es obligatorio').max(255)
+    .refine((v) => v.trim().length > 0, { message: 'El nombre no puede contener solo espacios' }),
+});
 type FormData = z.infer<typeof schema>;
 
 interface SimpleNameModalProps {

@@ -16,6 +16,7 @@ import {
   Box,
 } from '@mui/material';
 import { CloseOutlined } from '@mui/icons-material';
+import { useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -24,7 +25,7 @@ import { useRoles } from '@/features/roles-permissions';
 import type { AppUser } from '../types';
 
 const schema = z.object({
-  roleId: z.string().uuid().optional().or(z.literal('')),
+  roleId: z.string().uuid('El rol es obligatorio'),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -46,8 +47,12 @@ export function EditUserModal({ open, user, onClose }: EditUserModalProps) {
 
   const { control, handleSubmit, reset } = useForm<FormData>({
     resolver: zodResolver(schema),
-    values: { roleId: user?.roleId ?? '' },
+    defaultValues: { roleId: '' },
   });
+
+  useEffect(() => {
+    if (user && open) reset({ roleId: user.roleId ?? '' });
+  }, [user, open, reset]);
 
   const handleClose = () => {
     reset();
@@ -57,10 +62,7 @@ export function EditUserModal({ open, user, onClose }: EditUserModalProps) {
   const onSubmit = (data: FormData) => {
     if (!user) return;
     updateUser(
-      {
-        id: user.id,
-        payload: { roleId: data.roleId || undefined },
-      },
+      { id: user.id, payload: { roleId: data.roleId } },
       { onSuccess: () => handleClose() },
     );
   };
@@ -99,9 +101,6 @@ export function EditUserModal({ open, user, onClose }: EditUserModalProps) {
                 <FormControl fullWidth error={!!error}>
                   <InputLabel>Rol</InputLabel>
                   <Select {...field} label="Rol" value={field.value ?? ''}>
-                    <MenuItem value="">
-                      <em>Sin rol asignado</em>
-                    </MenuItem>
                     {roles.map((role) => (
                       <MenuItem key={role.id} value={role.id}>
                         {role.name}

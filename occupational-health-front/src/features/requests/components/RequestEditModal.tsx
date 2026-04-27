@@ -1,11 +1,12 @@
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
-  Button, IconButton, Stack, TextField, MenuItem,
+  Button, IconButton, Stack, TextField, MenuItem, Autocomplete,
 } from '@mui/material';
 import { CloseOutlined } from '@mui/icons-material';
 import { useForm, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { usePatients } from '@/features/patients';
 import {
   EVALUATION_REASONS, EVALUATION_REASON_LABELS,
   REQUEST_STATUSES, REQUEST_STATUS_LABELS,
@@ -19,6 +20,7 @@ const schema = z.object({
   status: z.enum(REQUEST_STATUSES).optional(),
   scheduledConsultationType: z.enum(CONSULTATION_TYPES).optional(),
   performedConsultationType: z.enum(CONSULTATION_TYPES).optional(),
+  patientId: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -32,6 +34,7 @@ interface Props {
 }
 
 function EditForm({ request, isPending, onSubmit, onClose }: Omit<Props, 'open'>) {
+  const { data: patients = [] } = usePatients();
   const { control, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -40,6 +43,7 @@ function EditForm({ request, isPending, onSubmit, onClose }: Omit<Props, 'open'>
       status: request.status,
       scheduledConsultationType: request.scheduledConsultationType ?? undefined,
       performedConsultationType: request.performedConsultationType ?? undefined,
+      patientId: request.patientId,
     },
   });
 
@@ -52,6 +56,21 @@ function EditForm({ request, isPending, onSubmit, onClose }: Omit<Props, 'open'>
     <form onSubmit={handleSubmit(onFormSubmit)}>
       <DialogContent sx={{ pt: 3 }}>
         <Stack spacing={2.5}>
+          <Controller name="patientId" control={control}
+            render={({ field: { onChange, value } }) => (
+              <Autocomplete
+                options={patients}
+                getOptionLabel={(p) => `${p.firstName} ${p.lastName} — ${p.cedula}`}
+                value={patients.find((p) => p.cedula === value) ?? null}
+                onChange={(_, patient) => onChange(patient?.cedula ?? '')}
+                renderInput={(params) => (
+                  <TextField {...params} label="Paciente" placeholder="Buscar paciente..."
+                    error={!!errors.patientId} helperText={errors.patientId?.message}
+                  />
+                )}
+              />
+            )} />
+
           <Controller name="requestDate" control={control}
             render={({ field }) => (
               <TextField {...field} label="Fecha de la Solicitud" type="date" fullWidth

@@ -13,16 +13,21 @@ import { usePositions } from '../hooks/usePositions';
 import { PatientFormFields } from './PatientFormFields';
 
 const schema = z.object({
-  cedula: z.string().min(1, 'La cédula es obligatoria').max(20),
+  cedula: z.string()
+    .regex(/^[VEve]-?\d{7,}$/, 'La cédula debe tener al menos 7 dígitos y comenzar con V o E'),
   firstName: z.string().min(1, 'El nombre es obligatorio').max(255),
   lastName: z.string().min(1, 'El apellido es obligatorio').max(255),
-  birthDate: z.string().min(1, 'La fecha de nacimiento es obligatoria'),
+  birthDate: z.string().min(1, 'La fecha de nacimiento es obligatoria')
+    .refine((v) => {
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      return new Date(v) < today;
+    }, { message: 'La fecha de nacimiento no puede ser hoy ni una fecha futura' }),
   email: z.email('Correo electrónico inválido'),
   companyId: z.string().uuid('Selecciona una empresa'),
   positionId: z.string().uuid('Selecciona un cargo'),
   emergencyContact: z.object({
     name: z.string().min(1, 'El nombre del contacto es obligatorio').max(255),
-    phone: z.string().min(1, 'El teléfono es obligatorio').max(50),
+    phone: z.string().regex(/^\d{4}-?\d{7}$/, 'El teléfono debe tener 11 dígitos'),
     relationship: z.string().min(1, 'El parentesco es obligatorio').max(100),
   }),
 });

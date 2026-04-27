@@ -2,9 +2,9 @@ import { useState, useMemo } from 'react';
 import {
   Box, Typography, Button, Paper,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  TextField, InputAdornment, Skeleton,
+  TextField, InputAdornment, Skeleton, Tooltip, IconButton,
 } from '@mui/material';
-import { AddOutlined, SearchOutlined } from '@mui/icons-material';
+import { AddOutlined, SearchOutlined, SortByAlphaOutlined } from '@mui/icons-material';
 import { AppLayout } from '@/components/AppLayout';
 import {
   CompanyRow, CompanyFormModal, CompanyDetailModal, useCompanies,
@@ -17,6 +17,7 @@ export function CompaniesPage() {
   const { data: companies = [], isLoading } = useCompanies();
 
   const [search, setSearch] = useState('');
+  const [sortAZ, setSortAZ] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
 
@@ -25,15 +26,19 @@ export function CompaniesPage() {
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
-    if (!q) return companies;
     const qDigits = normalizeRifSearch(q);
-    return companies.filter((c) => {
+    let result = companies.filter((c) => {
+      if (!q) return true;
       const nameMatch = c.name.toLowerCase().includes(q);
       const rifDigits = normalizeRifSearch(c.rif);
       const rifMatch = qDigits ? rifDigits.includes(qDigits) : c.rif.toLowerCase().includes(q);
       return nameMatch || rifMatch;
     });
-  }, [companies, search]);
+    if (sortAZ) {
+      result = [...result].sort((a, b) => a.name.localeCompare(b.name, 'es'));
+    }
+    return result;
+  }, [companies, search, sortAZ]);
 
   return (
     <AppLayout>
@@ -45,9 +50,16 @@ export function CompaniesPage() {
           }}
         >
           <Typography variant="h2">Empresas</Typography>
-          <Button variant="contained" startIcon={<AddOutlined />} onClick={() => setCreateOpen(true)}>
-            Nueva Empresa
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Tooltip title={sortAZ ? 'Orden original' : 'Ordenar A-Z'}>
+              <IconButton onClick={() => setSortAZ((v) => !v)} color={sortAZ ? 'primary' : 'default'}>
+                <SortByAlphaOutlined />
+              </IconButton>
+            </Tooltip>
+            <Button variant="contained" startIcon={<AddOutlined />} onClick={() => setCreateOpen(true)}>
+              Nueva Empresa
+            </Button>
+          </Box>
         </Box>
 
         <Box sx={{ px: 4, pb: 2.5 }}>

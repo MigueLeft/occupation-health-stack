@@ -1,4 +1,4 @@
-import { TableRow, TableCell, Avatar, Typography, Box, IconButton, Tooltip } from '@mui/material';
+import { TableRow, TableCell, Avatar, Typography, Box, IconButton, Tooltip, Checkbox } from '@mui/material';
 import { ArticleOutlined, ManageAccountsOutlined } from '@mui/icons-material';
 import { formatCedula, calculateAge } from '@/utils/cedula';
 import type { Patient } from '../types';
@@ -11,16 +11,21 @@ function getAvatarColor(name: string): string {
 
 interface PatientRowProps {
   patient: Patient;
+  selected: boolean;
+  onToggleSelect: (cedula: string) => void;
   onView: (patient: Patient) => void;
   onEdit: (patient: Patient) => void;
 }
 
-export function PatientRow({ patient, onView, onEdit }: PatientRowProps) {
+export function PatientRow({ patient, selected, onToggleSelect, onView, onEdit }: PatientRowProps) {
   const fullName = `${patient.firstName} ${patient.lastName}`;
   const age = calculateAge(patient.birthDate);
 
   return (
-    <TableRow sx={{ '&:last-child td': { border: 0 }, '&:hover': { bgcolor: 'action.hover' } }}>
+    <TableRow sx={{ '&:last-child td': { border: 0 }, '&:hover': { bgcolor: 'action.hover' } }} selected={selected}>
+      <TableCell padding="checkbox">
+        <Checkbox checked={selected} onChange={() => onToggleSelect(patient.cedula)} />
+      </TableCell>
       <TableCell sx={{ fontWeight: 500, fontSize: '0.9rem' }}>
         {formatCedula(patient.cedula)}
       </TableCell>

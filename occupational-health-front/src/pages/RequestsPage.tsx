@@ -101,7 +101,6 @@ export function RequestsPage() {
                     <RequestRow key={r.id} request={r}
                       onEdit={setEditTarget}
                       onNoAsistio={setNoAsistioTarget}
-                      onView={() => {}}
                     />
                   ))
                 )}

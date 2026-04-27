@@ -22,9 +22,11 @@ import {
 } from '@mui/icons-material';
 import { loginSchema, type LoginSchema } from '../services/auth.schemas';
 import { useAuth } from '../hooks/useAuth';
+import { ForgotPasswordModal } from './ForgotPasswordModal';
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
   const { signIn } = useAuth();
 
   const { control, handleSubmit, formState: { isSubmitting } } = useForm<LoginSchema>({
@@ -37,6 +39,7 @@ export function LoginForm() {
   };
 
   return (
+    <>
     <Box
       component="form"
       onSubmit={handleSubmit(onSubmit)}
@@ -109,7 +112,7 @@ export function LoginForm() {
           control={<Checkbox size="small" />}
           label={<Typography variant="body2">Recordarme</Typography>}
         />
-        <Link href="#" underline="hover" variant="body2" sx={{ color: 'text.secondary' }}>
+        <Link component="button" type="button" underline="hover" variant="body2" sx={{ color: 'text.secondary' }} onClick={() => setForgotOpen(true)}>
           ¿Olvidaste tu contraseña?
         </Link>
       </Box>
@@ -127,10 +130,13 @@ export function LoginForm() {
       </Button>
 
       <Typography variant="body2" align="center" sx={{ display: { xs: 'block', md: 'none' } }}>
-        <Link href="#" underline="hover" sx={{ color: 'text.secondary' }}>
+        <Link component="button" type="button" underline="hover" sx={{ color: 'text.secondary' }} onClick={() => setForgotOpen(true)}>
           ¿Olvidaste tu contraseña?
         </Link>
       </Typography>
     </Box>
+
+    <ForgotPasswordModal open={forgotOpen} onClose={() => setForgotOpen(false)} />
+    </>
   );
 }

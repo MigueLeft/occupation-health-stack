@@ -17,6 +17,11 @@ import {
   IconButton,
   useMediaQuery,
   useTheme,
+  TablePagination,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import { AddOutlined, SearchOutlined, PersonAddOutlined } from '@mui/icons-material';
 import { AppLayout } from '@/components/AppLayout';
@@ -30,6 +35,7 @@ import {
   useUpdateUser,
   useDeleteUser,
 } from '@/features/users';
+import { useRoles } from '@/features/roles-permissions';
 import type { AppUser } from '@/features/users';
 
 const TABLE_HEADERS = ['Nombre', 'Correo electrónico', 'Rol', 'Estado', 'Acciones'];
@@ -38,20 +44,36 @@ function DesktopView({
   users,
   search,
   onSearch,
+  roleFilter,
+  onRoleFilter,
+  roles,
   onCreateOpen,
   onEdit,
   onDeleteRequest,
   onToggleStatus,
   isLoading,
+  page,
+  rowsPerPage,
+  total,
+  onPageChange,
+  onRowsPerPageChange,
 }: {
   users: AppUser[];
   search: string;
   onSearch: (v: string) => void;
+  roleFilter: string;
+  onRoleFilter: (v: string) => void;
+  roles: { id: string; name: string }[];
   onCreateOpen: () => void;
   onEdit: (user: AppUser) => void;
   onDeleteRequest: (user: AppUser) => void;
   onToggleStatus: (user: AppUser) => void;
   isLoading: boolean;
+  page: number;
+  rowsPerPage: number;
+  total: number;
+  onPageChange: (p: number) => void;
+  onRowsPerPageChange: (rpp: number) => void;
 }) {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -78,12 +100,12 @@ function DesktopView({
         </Button>
       </Box>
 
-      <Box sx={{ px: 4, py: 2.5 }}>
+      <Box sx={{ px: 4, py: 2.5, display: 'flex', gap: 2, alignItems: 'center' }}>
         <TextField
           placeholder="Buscar por nombre o correo..."
           value={search}
           onChange={(e) => onSearch(e.target.value)}
-          sx={{ width: 360 }}
+          sx={{ width: 320 }}
           slotProps={{
             input: {
               startAdornment: (
@@ -94,6 +116,20 @@ function DesktopView({
             },
           }}
         />
+        <FormControl sx={{ minWidth: 180 }}>
+          <InputLabel>Rol</InputLabel>
+          <Select
+            value={roleFilter}
+            label="Rol"
+            onChange={(e) => onRoleFilter(e.target.value)}
+            displayEmpty
+          >
+            <MenuItem value="">Todos los roles</MenuItem>
+            {roles.map((r) => (
+              <MenuItem key={r.id} value={r.id}>{r.name}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
       </Box>
 
       <Box sx={{ px: 4, pb: 4, flex: 1, overflow: 'auto' }}>
@@ -139,6 +175,17 @@ function DesktopView({
               </TableBody>
             </Table>
           </TableContainer>
+          <TablePagination
+            component="div"
+            count={total}
+            page={page}
+            onPageChange={(_, p) => onPageChange(p)}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(e) => onRowsPerPageChange(parseInt(e.target.value, 10))}
+            rowsPerPageOptions={[5, 10, 25, 50]}
+            labelRowsPerPage="Filas por página:"
+            labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count}`}
+          />
         </Paper>
       </Box>
     </Box>
@@ -244,20 +291,28 @@ export function UsersPage() {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const { data: users = [], isLoading } = useUsers();
+  const { data: roles = [] } = useRoles();
   const { mutate: updateUser } = useUpdateUser();
   const { mutate: deleteUser, isPending: isDeleting } = useDeleteUser();
 
   const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<AppUser | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AppUser | null>(null);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return users.filter(
-      (u) => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q),
+      (u) =>
+        (u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)) &&
+        (!roleFilter || u.roleId === roleFilter),
     );
-  }, [users, search]);
+  }, [users, search, roleFilter]);
+
+  const paginated = filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   const handleToggleStatus = (user: AppUser) =>
     updateUser({ id: user.id, payload: { banned: !user.banned } });
@@ -281,21 +336,29 @@ export function UsersPage() {
           <MobileView
             users={filtered}
             search={search}
-            onSearch={setSearch}
+            onSearch={(v) => { setSearch(v); setPage(0); }}
             onCreateOpen={() => setCreateOpen(true)}
             onEdit={setEditTarget}
             isLoading={isLoading}
           />
         ) : (
           <DesktopView
-            users={filtered}
+            users={paginated}
             search={search}
-            onSearch={setSearch}
+            onSearch={(v) => { setSearch(v); setPage(0); }}
+            roleFilter={roleFilter}
+            onRoleFilter={(v) => { setRoleFilter(v); setPage(0); }}
+            roles={roles}
             onCreateOpen={() => setCreateOpen(true)}
             onEdit={setEditTarget}
             onDeleteRequest={setDeleteTarget}
             onToggleStatus={handleToggleStatus}
             isLoading={isLoading}
+            page={page}
+            rowsPerPage={rowsPerPage}
+            total={filtered.length}
+            onPageChange={setPage}
+            onRowsPerPageChange={(rpp) => { setRowsPerPage(rpp); setPage(0); }}
           />
         )}
       </Box>

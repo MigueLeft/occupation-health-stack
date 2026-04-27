@@ -71,6 +71,20 @@ export class RequestsService {
   async update(id: string, dto: UpdateRequestDto): Promise<Request> {
     await this.findOne(id);
 
+    // Si se cambia el paciente, verificar que el nuevo paciente exista
+    if (dto.patientId) {
+      const [patient] = await this.db
+        .select()
+        .from(patients)
+        .where(eq(patients.cedula, dto.patientId));
+
+      if (!patient) {
+        throw new BadRequestException(
+          `No existe ningún paciente con la cédula "${dto.patientId}".`,
+        );
+      }
+    }
+
     const [updated] = await this.db
       .update(requests)
       .set(dto)

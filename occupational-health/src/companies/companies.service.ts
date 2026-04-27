@@ -4,11 +4,12 @@ import {
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { eq, count } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DRIZZLE } from '../database/database.module';
 import { companies, Company } from './companies.schema';
 import { positions } from '../positions/positions.schema';
+import { patients } from '../patients/patients.schema';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 
@@ -17,10 +18,18 @@ export class CompaniesService {
   constructor(@Inject(DRIZZLE) private readonly db: NodePgDatabase) {}
 
   async findAll() {
-    // Retorna las empresas junto con sus cargos asociados
     const result = await this.db.select().from(companies);
 
-    // Obtiene los cargos para cada empresa
+    // Cuenta empleados por cargo para calcular employeeCount
+    const employeeCounts = await this.db
+      .select({ positionId: patients.positionId, total: count() })
+      .from(patients)
+      .groupBy(patients.positionId);
+
+    const countMap = new Map(
+      employeeCounts.map((r) => [r.positionId, Number(r.total)]),
+    );
+
     const companiesWithPositions = await Promise.all(
       result.map(async (company) => {
         const companyPositions = await this.db
@@ -28,7 +37,13 @@ export class CompaniesService {
           .from(positions)
           .where(eq(positions.companyId, company.id));
 
-        return { ...company, positions: companyPositions };
+        return {
+          ...company,
+          positions: companyPositions.map((p) => ({
+            ...p,
+            employeeCount: countMap.get(p.id) ?? 0,
+          })),
+        };
       }),
     );
 

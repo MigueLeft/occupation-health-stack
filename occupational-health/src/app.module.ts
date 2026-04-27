@@ -21,6 +21,7 @@ import { PsychometricTestsModule } from './psychometric-tests/psychometric-tests
 import { ConsultationDiagnosticsModule } from './consultation-diagnostics/consultation-diagnostics.module';
 import { RolesModule } from './roles/roles.module';
 import { UsersModule } from './users/users.module';
+import { AuthUtilsModule } from './auth-utils/auth-utils.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { UsersModule } from './users/users.module';
     ConsultationDiagnosticsModule,
     RolesModule,
     UsersModule,
+    AuthUtilsModule,
   ],
 })
 export class AppModule {}

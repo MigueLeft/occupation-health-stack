@@ -15,7 +15,7 @@ import {
 import type { CreateRequestPayload } from '../types';
 
 const schema = z.object({
-  requestDate: z.string().optional(),
+  requestDate: z.string().min(1, 'La fecha es obligatoria'),
   evaluationReason: z.enum(EVALUATION_REASONS, { error: 'El motivo es obligatorio' }),
   patientId: z.string().min(1, 'El paciente es obligatorio'),
   scheduledConsultationType: z.enum(CONSULTATION_TYPES).optional(),
@@ -35,7 +35,7 @@ export function RequestCreateModal({ open, onClose, isPending, onSubmit }: Props
 
   const { control, handleSubmit, formState: { errors }, reset } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { requestDate: '', evaluationReason: undefined, patientId: '', scheduledConsultationType: undefined },
+    defaultValues: { requestDate: undefined, evaluationReason: undefined, patientId: '', scheduledConsultationType: undefined },
   });
 
   const evaluationReason = useWatch({ control, name: 'evaluationReason' });
@@ -47,8 +47,8 @@ export function RequestCreateModal({ open, onClose, isPending, onSubmit }: Props
     const payload: CreateRequestPayload = {
       evaluationReason: data.evaluationReason,
       patientId: data.patientId,
+      requestDate: data.requestDate,
     };
-    if (data.requestDate) payload.requestDate = data.requestDate;
     if (isConsulta && data.scheduledConsultationType) {
       payload.scheduledConsultationType = data.scheduledConsultationType;
     }

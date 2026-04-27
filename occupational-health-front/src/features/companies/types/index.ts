@@ -3,6 +3,7 @@ export interface Position {
   name: string;
   description: string | null;
   companyId: string;
+  employeeCount?: number;
 }
 
 export interface Company {

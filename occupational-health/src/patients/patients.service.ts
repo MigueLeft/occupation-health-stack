@@ -189,6 +189,18 @@ export class PatientsService {
       );
     }
 
+    // Verificar que el correo no esté ya registrado
+    const [existingEmail] = await this.db
+      .select()
+      .from(patients)
+      .where(eq(patients.email, dto.email));
+
+    if (existingEmail) {
+      throw new ConflictException(
+        `Ya existe un paciente registrado con el correo "${dto.email}". Cada paciente debe tener un correo único.`,
+      );
+    }
+
     // Verificar empresa, cargo y que el cargo pertenezca a la empresa
     await this.validateCompanyAndPosition(dto.companyId, dto.positionId);
 

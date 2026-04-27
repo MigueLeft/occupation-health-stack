@@ -1,5 +1,5 @@
 import { TableRow, TableCell, Avatar, Box, Typography, IconButton, Tooltip } from '@mui/material';
-import { VisibilityOutlined, EditOutlined, PersonRemoveOutlined } from '@mui/icons-material';
+import { EditOutlined, PersonRemoveOutlined } from '@mui/icons-material';
 import type { AppRequestWithPatient } from '../types';
 import { EVALUATION_REASON_LABELS, CONSULTATION_TYPE_LABELS } from '../types';
 import { RequestStatusChip } from './RequestStatusChip';
@@ -8,7 +8,6 @@ interface Props {
   request: AppRequestWithPatient;
   onEdit: (request: AppRequestWithPatient) => void;
   onNoAsistio: (request: AppRequestWithPatient) => void;
-  onView: (request: AppRequestWithPatient) => void;
 }
 
 function formatDate(dateStr: string): string {
@@ -20,7 +19,7 @@ function getInitials(name: string): string {
   return name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
 }
 
-export function RequestRow({ request, onEdit, onNoAsistio, onView }: Props) {
+export function RequestRow({ request, onEdit, onNoAsistio }: Props) {
   const isConsulta = request.evaluationReason === 'Consulta';
 
   return (
@@ -54,11 +53,6 @@ export function RequestRow({ request, onEdit, onNoAsistio, onView }: Props) {
         <RequestStatusChip status={request.status} />
       </TableCell>
       <TableCell align="right">
-        <Tooltip title="Ver detalles">
-          <IconButton size="small" onClick={() => onView(request)} sx={{ color: 'text.secondary' }}>
-            <VisibilityOutlined fontSize="small" />
-          </IconButton>
-        </Tooltip>
         <Tooltip title="Editar">
           <IconButton size="small" onClick={() => onEdit(request)} sx={{ color: 'text.secondary' }}>
             <EditOutlined fontSize="small" />

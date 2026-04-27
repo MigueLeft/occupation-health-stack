@@ -24,7 +24,7 @@ const schema = z.object({
   firstName: z.string().min(2, 'Mínimo 2 caracteres'),
   lastName: z.string().min(2, 'Mínimo 2 caracteres'),
   email: z.email('Correo inválido'),
-  roleId: z.string().uuid('Selecciona un rol').optional(),
+  roleId: z.string().uuid('El rol es obligatorio'),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -107,9 +107,6 @@ export function CreateUserModal({ open, onClose }: CreateUserModalProps) {
                 <FormControl fullWidth error={!!errors.roleId}>
                   <InputLabel>Rol</InputLabel>
                   <Select {...field} label="Rol" value={field.value ?? ''}>
-                    <MenuItem value="">
-                      <em>Sin rol asignado</em>
-                    </MenuItem>
                     {roles.map((role) => (
                       <MenuItem key={role.id} value={role.id}>
                         {role.name}

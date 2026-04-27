@@ -25,7 +25,7 @@ export function PositionsTable({ positions, companyId }: PositionsTableProps) {
         <Table size="small">
           <TableHead>
             <TableRow sx={{ bgcolor: 'primary.main' }}>
-              {['Nombre del Cargo', 'Descripción', 'Acciones'].map((h) => (
+              {['Nombre del Cargo', 'Descripción', 'Empleados', 'Acciones'].map((h) => (
                 <TableCell key={h} sx={{ color: 'primary.contrastText', fontWeight: 700, py: 1.5 }}>
                   {h}
                 </TableCell>
@@ -42,6 +42,9 @@ export function PositionsTable({ positions, companyId }: PositionsTableProps) {
                       Sin descripción
                     </Typography>
                   )}
+                </TableCell>
+                <TableCell sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>
+                  {pos.employeeCount ?? 0}
                 </TableCell>
                 <TableCell>
                   <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -61,7 +64,7 @@ export function PositionsTable({ positions, companyId }: PositionsTableProps) {
             ))}
             {positions.length === 0 && (
               <TableRow>
-                <TableCell colSpan={3} align="center" sx={{ py: 4, color: 'text.disabled' }}>
+                <TableCell colSpan={4} align="center" sx={{ py: 4, color: 'text.disabled' }}>
                   No hay cargos registrados
                 </TableCell>
               </TableRow>

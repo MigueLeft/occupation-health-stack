@@ -25,6 +25,8 @@ export const auth = betterAuth({
   trustedOrigins: [process.env.FRONTEND_URL ?? 'http://localhost:5173'],
   emailAndPassword: {
     enabled: true,
+    // No-op: la recuperación se gestiona vía clave maestra en /auth-utils/reset-password
+    sendResetPassword: async () => {},
   },
   plugins: [
     // Plugin admin para RBAC: permite gestionar roles (admin, user)
