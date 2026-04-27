@@ -10,7 +10,7 @@ export interface PhysicalExam {
 export type PhysicalExamPayload = Omit<PhysicalExam, 'id' | 'consultationId'>;
 
 export const physicalExamService = {
-  create: (p: PhysicalExam) => apiClient.post<{ physicalExam: PhysicalExam }>('/physical-exams', p).then((r) => r.data),
+  create: (p: PhysicalExamPayload & { consultationId: string }) => apiClient.post<{ physicalExam: PhysicalExam }>('/physical-exams', p).then((r) => r.data),
   update: (id: string, p: PhysicalExamPayload) => apiClient.patch<{ physicalExam: PhysicalExam }>(`/physical-exams/${id}`, p).then((r) => r.data),
 };
 

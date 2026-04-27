@@ -96,7 +96,7 @@ export function AttendConsultationPage() {
       if (data.physicalExam) {
         await physicalExamService.update(data.physicalExam.id, physExam);
       } else if (Object.values(physExam).some(Boolean)) {
-        await physicalExamService.create({ ...physExam, consultationId: id, id: '' });
+        await physicalExamService.create({ ...physExam, consultationId: id });
       }
       toast.success('Consulta guardada exitosamente.');
       navigate({ to: '/consultas' });
