@@ -92,8 +92,8 @@ export function CompanyFormModal({ open, onClose, company }: CompanyFormModalPro
                     label="RIF"
                     placeholder="Ej: 3009871230"
                     error={!!errors.rif}
-                    // helperText={errors.rif?.message ?? 'Ingresa los números y sal del campo'}
                     fullWidth
+                    onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ''))}
                     onBlur={(e) => {
                       const formatted = autoFormatRif(e.target.value);
                       field.onChange(formatted);

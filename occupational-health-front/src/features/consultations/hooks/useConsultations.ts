@@ -11,9 +11,9 @@ const REQUESTS_KEY = ['requests'] as const;
 const PATIENTS_KEY = ['patients'] as const;
 
 export function useConsultations() {
-  const consultationsQ = useQuery({ queryKey: CONSULTATIONS_KEY, queryFn: () => consultationsService.getAll() });
-  const requestsQ = useQuery({ queryKey: REQUESTS_KEY, queryFn: () => requestsService.getAll() });
-  const patientsQ = useQuery({ queryKey: PATIENTS_KEY, queryFn: () => patientsService.getAll() });
+  const consultationsQ = useQuery({ queryKey: CONSULTATIONS_KEY, queryFn: () => consultationsService.getAll(), refetchInterval: 30_000, refetchOnWindowFocus: true });
+  const requestsQ = useQuery({ queryKey: REQUESTS_KEY, queryFn: () => requestsService.getAll(), refetchInterval: 30_000, refetchOnWindowFocus: true });
+  const patientsQ = useQuery({ queryKey: PATIENTS_KEY, queryFn: () => patientsService.getAll(), refetchInterval: 30_000, refetchOnWindowFocus: true });
 
   const isLoading = consultationsQ.isLoading || requestsQ.isLoading || patientsQ.isLoading;
 

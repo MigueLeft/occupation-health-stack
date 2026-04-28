@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Table, TableHead, TableBody, TableRow, TableCell,
-  TableContainer, IconButton, Tooltip, Box, Typography,
+  TableContainer, IconButton, Tooltip, Box, Typography, Stack,
 } from '@mui/material';
 import { EditOutlined, DeleteOutlined } from '@mui/icons-material';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -35,9 +35,21 @@ export function PositionsTable({ positions, companyId }: PositionsTableProps) {
           <TableBody>
             {positions.map((pos) => (
               <TableRow key={pos.id} sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
-                <TableCell sx={{ fontWeight: 500, fontSize: '0.9rem' }}>{pos.name}</TableCell>
-                <TableCell sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>
-                  {pos.description ?? (
+                <TableCell sx={{ maxWidth: 200 }}>
+                  <Tooltip title={pos.name.length > 28 ? pos.name : ''} placement="top-start">
+                    <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {pos.name}
+                    </Typography>
+                  </Tooltip>
+                </TableCell>
+                <TableCell sx={{ maxWidth: 240 }}>
+                  {pos.description ? (
+                    <Tooltip title={pos.description.length > 40 ? pos.description : ''} placement="top-start">
+                      <Stack component="span" sx={{ color: 'text.secondary', fontSize: '0.875rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
+                        {pos.description}
+                      </Stack>
+                    </Tooltip>
+                  ) : (
                     <Typography component="span" sx={{ color: 'text.disabled', fontSize: '0.85rem' }}>
                       Sin descripción
                     </Typography>

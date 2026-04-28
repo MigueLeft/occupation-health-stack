@@ -63,5 +63,5 @@ export function useAttendConsultation(consultationId: string) {
     };
   })();
 
-  return { data, isLoading, refetch: consultationQ.refetch };
+  return { data, isLoading, refetchPatient: patientsQ.refetch };
 }

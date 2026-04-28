@@ -1,5 +1,5 @@
-import { TableRow, TableCell, Avatar, Box, Typography, IconButton, Tooltip, Button } from '@mui/material';
-import { VisibilityOutlined, MedicalServicesOutlined } from '@mui/icons-material';
+import { TableRow, TableCell, Avatar, Box, Typography, Button } from '@mui/material';
+import { MedicalServicesOutlined } from '@mui/icons-material';
 import { useNavigate } from '@tanstack/react-router';
 import { RequestStatusChip } from '@/features/requests/components/RequestStatusChip';
 import { EVALUATION_REASON_LABELS } from '@/features/requests/types';
@@ -9,7 +9,6 @@ import { ConsultationResultChip } from './ConsultationResultChip';
 
 interface Props {
   consultation: ConsultationWithDetails;
-  onView: (c: ConsultationWithDetails) => void;
 }
 
 function formatDate(dateStr: string): string {
@@ -22,7 +21,7 @@ function getInitials(name: string) {
   return name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
 }
 
-export function ConsultationRow({ consultation, onView }: Props) {
+export function ConsultationRow({ consultation }: Props) {
   const navigate = useNavigate();
   const result = consultation.type === 'Medica'
     ? consultation.consultationResult
@@ -50,11 +49,6 @@ export function ConsultationRow({ consultation, onView }: Props) {
       <TableCell><ConsultationResultChip result={result} /></TableCell>
       <TableCell><RequestStatusChip status={consultation.requestStatus} /></TableCell>
       <TableCell align="right">
-        <Tooltip title="Ver detalles">
-          <IconButton size="small" onClick={() => onView(consultation)} sx={{ color: 'text.secondary', mr: 1 }}>
-            <VisibilityOutlined fontSize="small" />
-          </IconButton>
-        </Tooltip>
         {canAttend && (
           <Button variant="contained" size="small"
             startIcon={<MedicalServicesOutlined fontSize="small" />}

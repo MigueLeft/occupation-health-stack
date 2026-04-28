@@ -79,7 +79,7 @@ export function RequestCreateModal({ open, onClose, isPending, onSubmit }: Props
             <Controller name="requestDate" control={control}
               render={({ field }) => (
                 <TextField {...field} label="Fecha de la Solicitud" type="date" fullWidth
-                  slotProps={{ inputLabel: { shrink: true } }}
+                  slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: new Date().toISOString().split('T')[0] } }}
                   error={!!errors.requestDate} helperText={errors.requestDate?.message}
                 />
               )} />

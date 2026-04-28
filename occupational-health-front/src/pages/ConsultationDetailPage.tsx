@@ -1,4 +1,4 @@
-import { Box, Typography, Button, CircularProgress, Grid, Paper, Chip, Stack, Divider } from '@mui/material';
+import { Box, Typography, Button, CircularProgress, Grid, Paper, Chip, Stack, Divider, Tooltip } from '@mui/material';
 import { EditOutlined } from '@mui/icons-material';
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { AppLayout } from '@/components/AppLayout';
@@ -19,10 +19,16 @@ function formatDate(d: string) {
 }
 
 function ReadField({ label, value }: { label: string; value?: string | null }) {
+  const display = value || '—';
+  const isLong = (value?.length ?? 0) > 120;
   return (
     <Box>
       <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em', fontSize: '0.68rem' }}>{label}</Typography>
-      <Typography variant="body2" sx={{ mt: 0.25 }}>{value || '—'}</Typography>
+      <Tooltip title={isLong ? value! : ''} placement="top-start">
+        <Typography variant="body2" sx={{ mt: 0.25, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', wordBreak: 'break-word' }}>
+          {display}
+        </Typography>
+      </Tooltip>
     </Box>
   );
 }
@@ -189,6 +195,7 @@ export function ConsultationDetailPage() {
                     <Stack spacing={1.5} divider={<Divider />}>
                       <ReadField label="Registrado en sistema por" value={getUserName(data.systemAttendedById)} />
                       <ReadField label="Atendido presencialmente (Médica)" value={getUserName(data.medicalAttendedById)} />
+                      <ReadField label="Atendido presencialmente (Psicológica)" value={getUserName(data.psychologicalAttendedById)} />
                     </Stack>
                   </SectionCard>
                 </Stack>
@@ -226,6 +233,7 @@ export function ConsultationDetailPage() {
                 <SectionCard title="Atendido por">
                   <Stack spacing={1.5} divider={<Divider />}>
                     <ReadField label="Registrado en sistema por" value={getUserName(data.systemAttendedById)} />
+                    <ReadField label="Atendido presencialmente (Médica)" value={getUserName(data.medicalAttendedById)} />
                     <ReadField label="Atendido presencialmente (Psicológica)" value={getUserName(data.psychologicalAttendedById)} />
                   </Stack>
                 </SectionCard>

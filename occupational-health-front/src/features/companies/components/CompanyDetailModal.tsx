@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Dialog, DialogContent, Box, Typography,
-  Button, IconButton, Divider, Stack,
+  Button, IconButton, Divider, Stack, Tooltip,
 } from '@mui/material';
 import { CloseOutlined, EditOutlined, AddOutlined } from '@mui/icons-material';
 import { formatRif } from '@/utils/rif';
@@ -17,12 +17,27 @@ interface CompanyDetailModalProps {
 }
 
 function InfoItem({ label, value }: { label: string; value: string }) {
+  const isTruncated = value.length > 25;
   return (
     <Box>
       <Typography variant="caption" sx={{ color: 'text.disabled', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
         {label}
       </Typography>
-      <Typography variant="body1" sx={{ fontWeight: 600, mt: 0.25 }}>{value}</Typography>
+      <Tooltip title={isTruncated ? value : ''} placement="top-start">
+        <Typography
+          variant="body1"
+          sx={{
+            fontWeight: 600,
+            mt: 0.25,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            fontSize: value.length > 30 ? '0.85rem' : undefined,
+          }}
+        >
+          {value}
+        </Typography>
+      </Tooltip>
     </Box>
   );
 }

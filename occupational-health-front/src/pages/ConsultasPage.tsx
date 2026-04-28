@@ -59,7 +59,7 @@ export function ConsultasPage() {
                   <TableRow><TableCell colSpan={7} align="center" sx={{ py: 6, color: 'text.secondary' }}>No hay consultas registradas</TableCell></TableRow>
                 ) : (
                   filtered.map((c) => (
-                    <ConsultationRow key={c.id} consultation={c} onView={() => {}} />
+                    <ConsultationRow key={c.id} consultation={c} />
                   ))
                 )}
               </TableBody>
