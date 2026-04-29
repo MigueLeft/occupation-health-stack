@@ -9,11 +9,18 @@ import { Type } from 'class-transformer';
 import {
   CONSULTATION_RESULTS,
   CONSULTATION_STATUSES,
+  CONSULTATION_TYPES,
   PSYCHOLOGICAL_RESULTS,
 } from '../consultations.schema';
 import { RecommendationsDto } from './recommendations.dto';
 
 export class UpdateConsultationDto {
+  @IsOptional()
+  @IsIn(CONSULTATION_TYPES, {
+    message: `El tipo de consulta debe ser uno de: ${CONSULTATION_TYPES.join(', ')}.`,
+  })
+  type?: string;
+
   @IsOptional()
   @IsString({ message: 'El tratamiento actual debe ser una cadena de texto.' })
   currentTreatment?: string;

@@ -9,7 +9,9 @@ export class CreateExamDto {
   @MaxLength(255, { message: 'El nombre no puede exceder los 255 caracteres.' })
   name: string;
 
-  @IsIn(EXAM_CATEGORIES, { message: `La categoría debe ser una de: ${EXAM_CATEGORIES.join(', ')}.` })
+  @IsIn(EXAM_CATEGORIES, {
+    message: `La categoría debe ser una de: ${EXAM_CATEGORIES.join(', ')}.`,
+  })
   @IsNotEmpty({ message: 'La categoría del examen es obligatoria.' })
   category: string;
 }

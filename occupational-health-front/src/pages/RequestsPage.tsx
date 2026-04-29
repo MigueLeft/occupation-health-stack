@@ -5,12 +5,14 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { AddOutlined } from '@mui/icons-material';
+import { Navigate } from '@tanstack/react-router';
 import { AppLayout } from '@/components/AppLayout';
 import {
   RequestRow, RequestsFilters, RequestCreateModal, RequestEditModal, ConfirmNoAsistioModal,
   useRequests, useCreateRequest, useUpdateRequest,
 } from '@/features/requests';
 import type { AppRequestWithPatient, RequestFilters } from '@/features/requests';
+import { usePermissions } from '@/features/auth';
 
 const TABLE_HEADERS = ['Paciente', 'Fecha', 'Motivo', 'Consulta', 'Estatus', 'Acciones'];
 
@@ -30,6 +32,7 @@ function isInDateRange(dateStr: string, filter: RequestFilters['dateFilter']): b
 }
 
 export function RequestsPage() {
+  const { can } = usePermissions();
   const [filters, setFilters] = useState<RequestFilters>(DEFAULT_FILTERS);
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<AppRequestWithPatient | null>(null);
@@ -38,6 +41,8 @@ export function RequestsPage() {
   const { data: requests = [], isLoading } = useRequests();
   const createMutation = useCreateRequest();
   const updateMutation = useUpdateRequest();
+
+  if (!can('requests', 'view')) return <Navigate to="/" />;
 
   const filtered = requests.filter((r) => {
     const name = r.patientName.toLowerCase();

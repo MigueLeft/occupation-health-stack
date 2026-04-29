@@ -24,6 +24,7 @@ import {
   MenuItem,
 } from '@mui/material';
 import { AddOutlined, SearchOutlined, PersonAddOutlined } from '@mui/icons-material';
+import { Navigate } from '@tanstack/react-router';
 import { AppLayout } from '@/components/AppLayout';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import {
@@ -36,6 +37,7 @@ import {
   useDeleteUser,
 } from '@/features/users';
 import { useRoles } from '@/features/roles-permissions';
+import { usePermissions } from '@/features/auth';
 import type { AppUser } from '@/features/users';
 
 const TABLE_HEADERS = ['Nombre', 'Correo electrónico', 'Rol', 'Estado', 'Acciones'];
@@ -287,6 +289,7 @@ function MobileView({
 }
 
 export function UsersPage() {
+  const { can } = usePermissions();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -302,6 +305,8 @@ export function UsersPage() {
   const [deleteTarget, setDeleteTarget] = useState<AppUser | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  if (!can('users', 'view')) return <Navigate to="/" />;
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();

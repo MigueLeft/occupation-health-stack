@@ -11,6 +11,7 @@ import {
 import { PsychometricTestCatalogService } from './psychometric-test-catalog.service';
 import { CreatePsychometricTestCatalogDto } from './dto/create-psychometric-test-catalog.dto';
 import { UpdatePsychometricTestCatalogDto } from './dto/update-psychometric-test-catalog.dto';
+import { RequirePermission } from '../auth/require-permission.decorator';
 
 @Controller('psychometric-test-catalog')
 export class PsychometricTestCatalogController {
@@ -33,6 +34,7 @@ export class PsychometricTestCatalogController {
   }
 
   @Post()
+  @RequirePermission('catalogs', 'create')
   async create(@Body() dto: CreatePsychometricTestCatalogDto) {
     const psychometricTest =
       await this.psychometricTestCatalogService.create(dto);
@@ -40,6 +42,7 @@ export class PsychometricTestCatalogController {
   }
 
   @Patch(':id')
+  @RequirePermission('catalogs', 'edit')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdatePsychometricTestCatalogDto,
@@ -52,6 +55,7 @@ export class PsychometricTestCatalogController {
   }
 
   @Delete(':id')
+  @RequirePermission('catalogs', 'delete')
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     const psychometricTest =
       await this.psychometricTestCatalogService.remove(id);

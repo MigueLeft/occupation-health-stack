@@ -99,6 +99,10 @@ export function AttendConsultationPage() {
       medicalAdequacyMeasures: data.recommendations?.medicalAdequacyMeasures ?? '',
       psychologicalAdequacyMeasures: data.recommendations?.psychologicalAdequacyMeasures ?? '',
     });
+    if (data.physicalExam) {
+      const { id: _id, consultationId: _cid, ...physExamFields } = data.physicalExam;
+      setPhysExam(physExamFields);
+    }
     setLocalDiagnostics(data.consultationDiagnostics);
     setLocalExamResults(data.examResults);
     setLocalPsychTests(data.psychometricTests);
@@ -187,7 +191,18 @@ export function AttendConsultationPage() {
         await physicalExamService.create({ ...physExam, consultationId: id });
       }
 
+      // Auto-detect consultation type based on which results were filled in
+      let detectedType = data.type;
+      if (consultResult && psychResult) {
+        detectedType = 'Medica/Psicologica';
+      } else if (consultResult) {
+        detectedType = 'Medica';
+      } else if (psychResult) {
+        detectedType = 'Psicologica';
+      }
+
       await consultationsService.update(id, {
+        type: detectedType,
         currentTreatment: treatment || undefined,
         consultationResult: consultResult || undefined,
         psychologicalResult: psychResult || undefined,

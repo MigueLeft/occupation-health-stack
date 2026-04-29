@@ -9,7 +9,9 @@ export class CreateRiskDto {
   @MaxLength(255, { message: 'El nombre no puede exceder los 255 caracteres.' })
   name: string;
 
-  @IsIn(RISK_TYPES, { message: `El tipo de riesgo debe ser uno de: ${RISK_TYPES.join(', ')}.` })
+  @IsIn(RISK_TYPES, {
+    message: `El tipo de riesgo debe ser uno de: ${RISK_TYPES.join(', ')}.`,
+  })
   @IsNotEmpty({ message: 'El tipo de riesgo es obligatorio.' })
   type: string;
 }

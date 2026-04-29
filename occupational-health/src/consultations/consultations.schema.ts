@@ -11,11 +11,19 @@ import { requests } from '../requests/requests.schema';
 import { user } from '../auth/auth.schema';
 
 // Tipos de consulta
-export const CONSULTATION_TYPES = ['Medica', 'Psicologica', 'Medica/Psicologica'] as const;
+export const CONSULTATION_TYPES = [
+  'Medica',
+  'Psicologica',
+  'Medica/Psicologica',
+] as const;
 export type ConsultationType = (typeof CONSULTATION_TYPES)[number];
 
 // Estados de la consulta
-export const CONSULTATION_STATUSES = ['Pendiente', 'En Proceso', 'Finalizada'] as const;
+export const CONSULTATION_STATUSES = [
+  'Pendiente',
+  'En Proceso',
+  'Finalizada',
+] as const;
 export type ConsultationStatus = (typeof CONSULTATION_STATUSES)[number];
 
 // Resultados posibles de la consulta médica

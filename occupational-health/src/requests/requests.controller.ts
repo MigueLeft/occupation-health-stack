@@ -12,6 +12,7 @@ import {
 import { RequestsService } from './requests.service';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { UpdateRequestDto } from './dto/update-request.dto';
+import { RequirePermission } from '../auth/require-permission.decorator';
 
 @Controller('requests')
 export class RequestsController {
@@ -19,24 +20,28 @@ export class RequestsController {
 
   // Permite filtrar por paciente: GET /requests?patientId=<cedula>
   @Get()
+  @RequirePermission('requests', 'view')
   async findAll(@Query('patientId') patientId?: string) {
     const requests = await this.requestsService.findAll(patientId);
     return { requests };
   }
 
   @Get(':id')
+  @RequirePermission('requests', 'view')
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
     const request = await this.requestsService.findOne(id);
     return { request };
   }
 
   @Post()
+  @RequirePermission('requests', 'create')
   async create(@Body() dto: CreateRequestDto) {
     const request = await this.requestsService.create(dto);
     return { request };
   }
 
   @Patch(':id')
+  @RequirePermission('requests', 'edit')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateRequestDto,
@@ -46,6 +51,7 @@ export class RequestsController {
   }
 
   @Delete(':id')
+  @RequirePermission('requests', 'delete')
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     const request = await this.requestsService.remove(id);
     return { request };

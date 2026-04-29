@@ -1,4 +1,10 @@
-import { IsString, IsNotEmpty, MaxLength, MinLength, Matches } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  MaxLength,
+  MinLength,
+  Matches,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class CreateCompanyDto {
@@ -12,7 +18,9 @@ export class CreateCompanyDto {
   @Transform(({ value }) => value?.trim())
   @IsString({ message: 'La dirección debe ser una cadena de texto.' })
   @IsNotEmpty({ message: 'La dirección de la empresa es obligatoria.' })
-  @MaxLength(500, { message: 'La dirección no puede exceder los 500 caracteres.' })
+  @MaxLength(500, {
+    message: 'La dirección no puede exceder los 500 caracteres.',
+  })
   address: string;
 
   @Transform(({ value }) => value?.trim())
@@ -25,7 +33,11 @@ export class CreateCompanyDto {
   @Transform(({ value }) => value?.trim())
   @IsString({ message: 'El contacto debe ser una cadena de texto.' })
   @IsNotEmpty({ message: 'El contacto de la empresa es obligatorio.' })
-  @Matches(/^\d{4}-?\d{7}$/, { message: 'El teléfono de contacto debe tener exactamente 11 dígitos.' })
-  @MaxLength(255, { message: 'El contacto no puede exceder los 255 caracteres.' })
+  @Matches(/^\d{4}-?\d{7}$/, {
+    message: 'El teléfono de contacto debe tener exactamente 11 dígitos.',
+  })
+  @MaxLength(255, {
+    message: 'El contacto no puede exceder los 255 caracteres.',
+  })
   contact: string;
 }

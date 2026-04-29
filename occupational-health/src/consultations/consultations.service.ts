@@ -124,9 +124,34 @@ export class ConsultationsService {
       );
     }
 
+    // Spread to a plain object to avoid Drizzle issues with class instances
+    const updatePayload: Record<string, unknown> = {};
+    if (dto.type !== undefined) updatePayload.type = dto.type;
+    if (dto.currentTreatment !== undefined)
+      updatePayload.currentTreatment = dto.currentTreatment;
+    if (dto.interviewConducted !== undefined)
+      updatePayload.interviewConducted = dto.interviewConducted;
+    if (dto.consultationResult !== undefined)
+      updatePayload.consultationResult = dto.consultationResult;
+    if (dto.psychologicalResult !== undefined)
+      updatePayload.psychologicalResult = dto.psychologicalResult;
+    if (dto.diagnosisDescription !== undefined)
+      updatePayload.diagnosisDescription = dto.diagnosisDescription;
+    if (dto.recommendations !== undefined)
+      updatePayload.recommendations = { ...dto.recommendations };
+    if (dto.observations !== undefined)
+      updatePayload.observations = { ...dto.observations };
+    if (dto.status !== undefined) updatePayload.status = dto.status;
+    if (dto.systemAttendedById !== undefined)
+      updatePayload.systemAttendedById = dto.systemAttendedById;
+    if (dto.medicalAttendedById !== undefined)
+      updatePayload.medicalAttendedById = dto.medicalAttendedById;
+    if (dto.psychologicalAttendedById !== undefined)
+      updatePayload.psychologicalAttendedById = dto.psychologicalAttendedById;
+
     const [updated] = await this.db
       .update(consultations)
-      .set(dto)
+      .set(updatePayload)
       .where(eq(consultations.id, id))
       .returning();
 
@@ -134,7 +159,9 @@ export class ConsultationsService {
     if (dto.status === 'En Proceso' || dto.status === 'Finalizada') {
       await this.db
         .update(requests)
-        .set({ status: dto.status === 'Finalizada' ? 'Finalizada' : 'En Proceso' })
+        .set({
+          status: dto.status === 'Finalizada' ? 'Finalizada' : 'En Proceso',
+        })
         .where(eq(requests.id, existing.requestId));
     }
 

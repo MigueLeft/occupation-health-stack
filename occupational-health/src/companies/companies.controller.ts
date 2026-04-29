@@ -11,30 +11,35 @@ import {
 import { CompaniesService } from './companies.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
+import { RequirePermission } from '../auth/require-permission.decorator';
 
 @Controller('companies')
 export class CompaniesController {
   constructor(private readonly companiesService: CompaniesService) {}
 
   @Get()
+  @RequirePermission('companies', 'view')
   async findAll() {
     const companies = await this.companiesService.findAll();
     return { companies };
   }
 
   @Get(':id')
+  @RequirePermission('companies', 'view')
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
     const company = await this.companiesService.findOne(id);
     return { company };
   }
 
   @Post()
+  @RequirePermission('companies', 'create')
   async create(@Body() dto: CreateCompanyDto) {
     const company = await this.companiesService.create(dto);
     return { company };
   }
 
   @Patch(':id')
+  @RequirePermission('companies', 'edit')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateCompanyDto,
@@ -44,6 +49,7 @@ export class CompaniesController {
   }
 
   @Delete(':id')
+  @RequirePermission('companies', 'delete')
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     const company = await this.companiesService.remove(id);
     return { company };

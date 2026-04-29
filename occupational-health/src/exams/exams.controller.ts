@@ -12,6 +12,7 @@ import {
 import { ExamsService } from './exams.service';
 import { CreateExamDto } from './dto/create-exam.dto';
 import { UpdateExamDto } from './dto/update-exam.dto';
+import { RequirePermission } from '../auth/require-permission.decorator';
 
 @Controller('exams')
 export class ExamsController {
@@ -31,12 +32,14 @@ export class ExamsController {
   }
 
   @Post()
+  @RequirePermission('catalogs', 'create')
   async create(@Body() dto: CreateExamDto) {
     const exam = await this.examsService.create(dto);
     return { exam };
   }
 
   @Patch(':id')
+  @RequirePermission('catalogs', 'edit')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateExamDto,
@@ -46,6 +49,7 @@ export class ExamsController {
   }
 
   @Delete(':id')
+  @RequirePermission('catalogs', 'delete')
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     const exam = await this.examsService.remove(id);
     return { exam };

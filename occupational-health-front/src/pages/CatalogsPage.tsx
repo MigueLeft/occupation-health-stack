@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Box, Typography } from '@mui/material';
+import { Navigate } from '@tanstack/react-router';
 import { AppLayout } from '@/components/AppLayout';
 import {
   CatalogLayout, ExamsPanel, RisksPanel, PsychometricTestsPanel,
   DiseasesPanel, AllergiesPanel, BodySystemsPanel, DiseaseCategoriesPanel,
 } from '@/features/catalogs';
 import type { CatalogTab } from '@/features/catalogs';
+import { usePermissions } from '@/features/auth';
 
 const PANEL_MAP: Record<CatalogTab, React.ReactNode> = {
   exams: <ExamsPanel />,
@@ -18,7 +20,10 @@ const PANEL_MAP: Record<CatalogTab, React.ReactNode> = {
 };
 
 export function CatalogsPage() {
+  const { can } = usePermissions();
   const [activeTab, setActiveTab] = useState<CatalogTab>('exams');
+
+  if (!can('catalogs', 'view')) return <Navigate to="/" />;
 
   return (
     <AppLayout>

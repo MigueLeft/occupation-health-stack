@@ -134,7 +134,9 @@ export class PsychometricTestsService {
         ...(dto.selectedInterpretation !== undefined && {
           selectedInterpretation: dto.selectedInterpretation,
         }),
-        ...(dto.observations !== undefined && { observations: dto.observations }),
+        ...(dto.observations !== undefined && {
+          observations: dto.observations,
+        }),
       })
       .where(eq(psychometricTests.id, id))
       .returning();

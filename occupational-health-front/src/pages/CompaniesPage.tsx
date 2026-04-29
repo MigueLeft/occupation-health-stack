@@ -5,15 +5,18 @@ import {
   TextField, InputAdornment, Skeleton, Tooltip, IconButton,
 } from '@mui/material';
 import { AddOutlined, SearchOutlined, SortByAlphaOutlined } from '@mui/icons-material';
+import { Navigate } from '@tanstack/react-router';
 import { AppLayout } from '@/components/AppLayout';
 import {
   CompanyRow, CompanyFormModal, CompanyDetailModal, useCompanies,
 } from '@/features/companies';
 import { normalizeRifSearch } from '@/utils/rif';
+import { usePermissions } from '@/features/auth';
 
 const TABLE_HEADERS = ['Nombre', 'Dirección', 'RIF', 'Contacto', 'Cargos', 'Acciones'];
 
 export function CompaniesPage() {
+  const { can } = usePermissions();
   const { data: companies = [], isLoading } = useCompanies();
 
   const [search, setSearch] = useState('');
@@ -39,6 +42,8 @@ export function CompaniesPage() {
     }
     return result;
   }, [companies, search, sortAZ]);
+
+  if (!can('companies', 'view')) return <Navigate to="/" />;
 
   return (
     <AppLayout>

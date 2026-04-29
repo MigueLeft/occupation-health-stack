@@ -8,24 +8,31 @@ import {
   Inject,
 } from '@nestjs/common';
 import { IsString, IsEmail, MinLength } from 'class-validator';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DRIZZLE } from '../database/database.module';
-import { user as userTable, verification as verificationTable } from '../auth/auth.schema';
+import {
+  user as userTable,
+  verification as verificationTable,
+} from '../auth/auth.schema';
 import { auth } from '../auth/auth';
+import { Public } from '../auth/public.decorator';
 
 export class ResetPasswordMasterDto {
   @IsEmail({}, { message: 'Correo electrónico inválido.' })
   email: string;
 
   @IsString()
-  @MinLength(8, { message: 'La nueva contraseña debe tener al menos 8 caracteres.' })
+  @MinLength(8, {
+    message: 'La nueva contraseña debe tener al menos 8 caracteres.',
+  })
   newPassword: string;
 
   @IsString()
   masterKey: string;
 }
 
+@Public()
 @Controller('auth-utils')
 export class AuthUtilsController {
   constructor(@Inject(DRIZZLE) private readonly db: NodePgDatabase) {}

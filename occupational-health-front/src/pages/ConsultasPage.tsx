@@ -4,16 +4,21 @@ import {
   Table, TableHead, TableBody, TableRow, TableCell,
   CircularProgress,
 } from '@mui/material';
+import { Navigate } from '@tanstack/react-router';
 import { AppLayout } from '@/components/AppLayout';
 import { ConsultationRow, ConsultationFilters, useConsultations } from '@/features/consultations';
 import type { ConsultationFiltersState } from '@/features/consultations';
+import { usePermissions } from '@/features/auth';
 
 const TABLE_HEADERS = ['Paciente', 'Fecha', 'Motivo', 'Tipo', 'Resultado', 'Estatus', 'Acciones'];
 const DEFAULT_FILTERS: ConsultationFiltersState = { search: '', tipo: 'all', resultado: 'all', status: 'active' };
 
 export function ConsultasPage() {
+  const { can } = usePermissions();
   const [filters, setFilters] = useState<ConsultationFiltersState>(DEFAULT_FILTERS);
   const { data: consultations = [], isLoading } = useConsultations();
+
+  if (!can('consultations', 'view')) return <Navigate to="/" />;
 
   const filtered = consultations.filter((c) => {
     const name = c.patientName.toLowerCase();

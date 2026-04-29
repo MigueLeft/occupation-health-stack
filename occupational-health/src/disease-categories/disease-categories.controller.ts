@@ -11,6 +11,7 @@ import {
 import { DiseaseCategoriesService } from './disease-categories.service';
 import { CreateDiseaseCategoryDto } from './dto/create-disease-category.dto';
 import { UpdateDiseaseCategoryDto } from './dto/update-disease-category.dto';
+import { RequirePermission } from '../auth/require-permission.decorator';
 
 @Controller('disease-categories')
 export class DiseaseCategoriesController {
@@ -31,12 +32,14 @@ export class DiseaseCategoriesController {
   }
 
   @Post()
+  @RequirePermission('catalogs', 'create')
   async create(@Body() dto: CreateDiseaseCategoryDto) {
     const diseaseCategory = await this.diseaseCategoriesService.create(dto);
     return { diseaseCategory };
   }
 
   @Patch(':id')
+  @RequirePermission('catalogs', 'edit')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateDiseaseCategoryDto,
@@ -46,6 +49,7 @@ export class DiseaseCategoriesController {
   }
 
   @Delete(':id')
+  @RequirePermission('catalogs', 'delete')
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     const diseaseCategory = await this.diseaseCategoriesService.remove(id);
     return { diseaseCategory };

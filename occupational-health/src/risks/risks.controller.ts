@@ -12,6 +12,7 @@ import {
 import { RisksService } from './risks.service';
 import { CreateRiskDto } from './dto/create-risk.dto';
 import { UpdateRiskDto } from './dto/update-risk.dto';
+import { RequirePermission } from '../auth/require-permission.decorator';
 
 @Controller('risks')
 export class RisksController {
@@ -31,12 +32,14 @@ export class RisksController {
   }
 
   @Post()
+  @RequirePermission('catalogs', 'create')
   async create(@Body() dto: CreateRiskDto) {
     const risk = await this.risksService.create(dto);
     return { risk };
   }
 
   @Patch(':id')
+  @RequirePermission('catalogs', 'edit')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateRiskDto,
@@ -46,6 +49,7 @@ export class RisksController {
   }
 
   @Delete(':id')
+  @RequirePermission('catalogs', 'delete')
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     const risk = await this.risksService.remove(id);
     return { risk };

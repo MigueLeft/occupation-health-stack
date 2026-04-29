@@ -73,4 +73,5 @@ export interface CreateConsultationPayload {
 
 export type UpdateConsultationPayload = Omit<CreateConsultationPayload, 'requestId' | 'type'> & {
   status?: ConsultationStatus;
+  type?: ConsultationType;
 };

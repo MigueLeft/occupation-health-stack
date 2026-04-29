@@ -11,6 +11,7 @@ import {
 import { BodySystemsService } from './body-systems.service';
 import { CreateBodySystemDto } from './dto/create-body-system.dto';
 import { UpdateBodySystemDto } from './dto/update-body-system.dto';
+import { RequirePermission } from '../auth/require-permission.decorator';
 
 @Controller('body-systems')
 export class BodySystemsController {
@@ -29,12 +30,14 @@ export class BodySystemsController {
   }
 
   @Post()
+  @RequirePermission('catalogs', 'create')
   async create(@Body() dto: CreateBodySystemDto) {
     const bodySystem = await this.bodySystemsService.create(dto);
     return { bodySystem };
   }
 
   @Patch(':id')
+  @RequirePermission('catalogs', 'edit')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateBodySystemDto,
@@ -44,6 +47,7 @@ export class BodySystemsController {
   }
 
   @Delete(':id')
+  @RequirePermission('catalogs', 'delete')
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     const bodySystem = await this.bodySystemsService.remove(id);
     return { bodySystem };

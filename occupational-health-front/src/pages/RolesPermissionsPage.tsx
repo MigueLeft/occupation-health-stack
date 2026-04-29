@@ -12,6 +12,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { AddOutlined } from '@mui/icons-material';
+import { Navigate } from '@tanstack/react-router';
 import { AppLayout } from '@/components/AppLayout';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import {
@@ -21,6 +22,7 @@ import {
   useRoles,
   useDeleteRole,
 } from '@/features/roles-permissions';
+import { usePermissions } from '@/features/auth';
 import type { Role } from '@/features/roles-permissions';
 
 function RolesListPanel({
@@ -223,6 +225,7 @@ function MobileLayout({
 }
 
 export function RolesPermissionsPage() {
+  const { can } = usePermissions();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -232,6 +235,8 @@ export function RolesPermissionsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Role | null>(null);
+
+  if (!can('roles', 'view')) return <Navigate to="/" />;
 
   const selectedRole = roles.find((r) => r.id === selectedId) ?? null;
 
