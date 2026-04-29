@@ -6,7 +6,7 @@ export function usePermissions() {
   const { user } = useAuth();
   const { data: roles = [] } = useRoles();
 
-  const userRoleId = (user as { roleId?: string } | null)?.roleId;
+  const userRoleId = (user as unknown as { roleId?: string } | null)?.roleId ?? null;
   const currentRole = roles.find((r) => r.id === userRoleId);
 
   const can = (module: string, action: string): boolean => {

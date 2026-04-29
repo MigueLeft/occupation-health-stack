@@ -40,6 +40,12 @@ export const auth = betterAuth({
         required: false,
         input: true,
       },
+      roleId: {
+        type: 'string',
+        required: false,
+        input: false, // no se puede setear en signup, solo internamente
+        returned: true,
+      },
     },
   },
 });
