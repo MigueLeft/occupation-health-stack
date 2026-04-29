@@ -25,29 +25,27 @@ import {
 } from '@mui/icons-material';
 import { Link, useRouterState } from '@tanstack/react-router';
 import { useAuth } from '@/features/auth';
+import { usePermissions } from '@/features/auth';
 
 interface NavItem {
   label: string;
   icon: ReactNode;
   to: string;
+  module?: string;
 }
 
 const MAIN_ITEMS: NavItem[] = [
   { label: 'Dashboard', icon: <GridViewOutlined fontSize="small" />, to: '/' },
-  { label: 'Pacientes', icon: <PersonOutlined fontSize="small" />, to: '/pacientes' },
-  { label: 'Empresas', icon: <BusinessOutlined fontSize="small" />, to: '/empresas' },
-  { label: 'Solicitudes', icon: <AssignmentOutlined fontSize="small" />, to: '/solicitudes' },
-  { label: 'Consultas', icon: <LocalHospitalOutlined fontSize="small" />, to: '/consultas' },
-  { label: 'Catálogos', icon: <LibraryBooksOutlined fontSize="small" />, to: '/catalogos' },
+  { label: 'Pacientes', icon: <PersonOutlined fontSize="small" />, to: '/pacientes', module: 'patients' },
+  { label: 'Empresas', icon: <BusinessOutlined fontSize="small" />, to: '/empresas', module: 'companies' },
+  { label: 'Solicitudes', icon: <AssignmentOutlined fontSize="small" />, to: '/solicitudes', module: 'requests' },
+  { label: 'Consultas', icon: <LocalHospitalOutlined fontSize="small" />, to: '/consultas', module: 'consultations' },
+  { label: 'Catálogos', icon: <LibraryBooksOutlined fontSize="small" />, to: '/catalogos', module: 'catalogs' },
 ];
 
 const CONFIG_ITEMS: NavItem[] = [
-  { label: 'Usuarios', icon: <PeopleAltOutlined fontSize="small" />, to: '/usuarios' },
-  {
-    label: 'Roles y Permisos',
-    icon: <AdminPanelSettingsOutlined fontSize="small" />,
-    to: '/config/roles',
-  },
+  { label: 'Usuarios', icon: <PeopleAltOutlined fontSize="small" />, to: '/usuarios', module: 'users' },
+  { label: 'Roles y Permisos', icon: <AdminPanelSettingsOutlined fontSize="small" />, to: '/config/roles', module: 'roles' },
 ];
 
 function NavButton({ item, isActive }: { item: NavItem; isActive: boolean }) {
@@ -76,7 +74,16 @@ function NavButton({ item, isActive }: { item: NavItem; isActive: boolean }) {
 
 export function SidebarContent() {
   const { user, signOut } = useAuth();
+  const { can, isLoading } = usePermissions();
   const { location } = useRouterState();
+
+  const visibleMain = isLoading
+    ? MAIN_ITEMS
+    : MAIN_ITEMS.filter((item) => !item.module || can(item.module, 'view'));
+
+  const visibleConfig = isLoading
+    ? CONFIG_ITEMS
+    : CONFIG_ITEMS.filter((item) => !item.module || can(item.module, 'view'));
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -109,42 +116,39 @@ export function SidebarContent() {
 
       {/* Navegación principal */}
       <List sx={{ px: 1.5, mt: 1 }} disablePadding>
-        {MAIN_ITEMS.map((item) => (
-          <NavButton
-            key={item.label}
-            item={item}
-            isActive={location.pathname === item.to}
-          />
+        {visibleMain.map((item) => (
+          <NavButton key={item.label} item={item} isActive={location.pathname === item.to} />
         ))}
       </List>
 
-      <Divider sx={{ mx: 2, my: 1.5, borderColor: 'rgba(255,255,255,0.12)' }} />
+      {visibleConfig.length > 0 && (
+        <>
+          <Divider sx={{ mx: 2, my: 1.5, borderColor: 'rgba(255,255,255,0.12)' }} />
 
-      {/* Sección configuración */}
-      <Box sx={{ px: 2.5, mb: 1 }}>
-        <Typography
-          sx={{
-            color: 'rgba(255,255,255,0.4)',
-            fontSize: '0.7rem',
-            fontWeight: 700,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            fontFamily: 'Montserrat, sans-serif',
-          }}
-        >
-          Configuración
-        </Typography>
-      </Box>
+          <Box sx={{ px: 2.5, mb: 1 }}>
+            <Typography
+              sx={{
+                color: 'rgba(255,255,255,0.4)',
+                fontSize: '0.7rem',
+                fontWeight: 700,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                fontFamily: 'Montserrat, sans-serif',
+              }}
+            >
+              Configuración
+            </Typography>
+          </Box>
 
-      <List sx={{ px: 1.5, flex: 1 }} disablePadding>
-        {CONFIG_ITEMS.map((item) => (
-          <NavButton
-            key={item.label}
-            item={item}
-            isActive={location.pathname.startsWith(item.to)}
-          />
-        ))}
-      </List>
+          <List sx={{ px: 1.5, flex: 1 }} disablePadding>
+            {visibleConfig.map((item) => (
+              <NavButton key={item.label} item={item} isActive={location.pathname.startsWith(item.to)} />
+            ))}
+          </List>
+        </>
+      )}
+
+      {visibleConfig.length === 0 && <Box sx={{ flex: 1 }} />}
 
       <Divider sx={{ mx: 2, borderColor: 'rgba(255,255,255,0.12)' }} />
 

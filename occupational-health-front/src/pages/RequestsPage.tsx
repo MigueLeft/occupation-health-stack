@@ -32,7 +32,7 @@ function isInDateRange(dateStr: string, filter: RequestFilters['dateFilter']): b
 }
 
 export function RequestsPage() {
-  const { can } = usePermissions();
+  const { can, isLoading: isPermLoading } = usePermissions();
   const [filters, setFilters] = useState<RequestFilters>(DEFAULT_FILTERS);
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<AppRequestWithPatient | null>(null);
@@ -42,6 +42,7 @@ export function RequestsPage() {
   const createMutation = useCreateRequest();
   const updateMutation = useUpdateRequest();
 
+  if (isPermLoading) return null;
   if (!can('requests', 'view')) return <Navigate to="/" />;
 
   const filtered = requests.filter((r) => {

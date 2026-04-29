@@ -289,7 +289,7 @@ function MobileView({
 }
 
 export function UsersPage() {
-  const { can } = usePermissions();
+  const { can, isLoading: isPermLoading } = usePermissions();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -306,6 +306,7 @@ export function UsersPage() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
+  if (isPermLoading) return null;
   if (!can('users', 'view')) return <Navigate to="/" />;
 
   const filtered = useMemo(() => {

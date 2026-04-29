@@ -14,10 +14,11 @@ const TABLE_HEADERS = ['Paciente', 'Fecha', 'Motivo', 'Tipo', 'Resultado', 'Esta
 const DEFAULT_FILTERS: ConsultationFiltersState = { search: '', tipo: 'all', resultado: 'all', status: 'active' };
 
 export function ConsultasPage() {
-  const { can } = usePermissions();
+  const { can, isLoading: isPermLoading } = usePermissions();
   const [filters, setFilters] = useState<ConsultationFiltersState>(DEFAULT_FILTERS);
   const { data: consultations = [], isLoading } = useConsultations();
 
+  if (isPermLoading) return null;
   if (!can('consultations', 'view')) return <Navigate to="/" />;
 
   const filtered = consultations.filter((c) => {

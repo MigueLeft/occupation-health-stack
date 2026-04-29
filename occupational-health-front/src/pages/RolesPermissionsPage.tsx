@@ -225,7 +225,7 @@ function MobileLayout({
 }
 
 export function RolesPermissionsPage() {
-  const { can } = usePermissions();
+  const { can, isLoading: isPermLoading } = usePermissions();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -236,6 +236,7 @@ export function RolesPermissionsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Role | null>(null);
 
+  if (isPermLoading) return null;
   if (!can('roles', 'view')) return <Navigate to="/" />;
 
   const selectedRole = roles.find((r) => r.id === selectedId) ?? null;

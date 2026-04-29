@@ -37,7 +37,7 @@ import { usePermissions } from '@/features/auth';
 const TABLE_HEADERS = ['Cédula', 'Nombre Completo', 'Empresa', 'Cargo', 'Edad', 'Acciones'];
 
 export function PatientsPage() {
-  const { can } = usePermissions();
+  const { can, isLoading: isPermLoading } = usePermissions();
   const { data: patients = [], isLoading } = usePatients();
   const { data: companies = [] } = useCompanies();
   const { mutate: deletePatient, isPending: isDeleting } = useDeletePatient();
@@ -73,6 +73,7 @@ export function PatientsPage() {
     return result;
   }, [patients, search, companyFilter, positionFilter, sortAZ]);
 
+  if (isPermLoading) return null;
   if (!can('patients', 'view')) return <Navigate to="/" />;
 
   const paginated = filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);

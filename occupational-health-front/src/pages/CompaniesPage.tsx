@@ -16,7 +16,7 @@ import { usePermissions } from '@/features/auth';
 const TABLE_HEADERS = ['Nombre', 'Dirección', 'RIF', 'Contacto', 'Cargos', 'Acciones'];
 
 export function CompaniesPage() {
-  const { can } = usePermissions();
+  const { can, isLoading: isPermLoading } = usePermissions();
   const { data: companies = [], isLoading } = useCompanies();
 
   const [search, setSearch] = useState('');
@@ -43,6 +43,7 @@ export function CompaniesPage() {
     return result;
   }, [companies, search, sortAZ]);
 
+  if (isPermLoading) return null;
   if (!can('companies', 'view')) return <Navigate to="/" />;
 
   return (

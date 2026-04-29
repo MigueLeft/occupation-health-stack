@@ -20,9 +20,10 @@ const PANEL_MAP: Record<CatalogTab, React.ReactNode> = {
 };
 
 export function CatalogsPage() {
-  const { can } = usePermissions();
+  const { can, isLoading } = usePermissions();
   const [activeTab, setActiveTab] = useState<CatalogTab>('exams');
 
+  if (isLoading) return null;
   if (!can('catalogs', 'view')) return <Navigate to="/" />;
 
   return (

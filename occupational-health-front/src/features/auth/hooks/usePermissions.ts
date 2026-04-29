@@ -1,13 +1,13 @@
 import { useAuth } from './useAuth';
-import { useRoles } from '@/features/roles-permissions/hooks/useRoles';
+import { useMyRole } from '@/features/roles-permissions/hooks/useMyRole';
 import type { Action } from '@/features/roles-permissions/types';
 
 export function usePermissions() {
-  const { user } = useAuth();
-  const { data: roles = [] } = useRoles();
-
+  const { user, isPending: isAuthPending } = useAuth();
   const userRoleId = (user as unknown as { roleId?: string } | null)?.roleId ?? null;
-  const currentRole = roles.find((r) => r.id === userRoleId);
+  const { data: currentRole, isLoading: isRoleLoading } = useMyRole(userRoleId);
+
+  const isLoading = isAuthPending || isRoleLoading;
 
   const can = (module: string, action: string): boolean => {
     if (!currentRole?.permissions) return false;
@@ -16,5 +16,5 @@ export function usePermissions() {
     return modulePerms[action as Action] === true;
   };
 
-  return { can, permissions: currentRole?.permissions ?? {}, hasRole: !!currentRole };
+  return { can, isLoading, permissions: currentRole?.permissions ?? {}, hasRole: !!currentRole };
 }
