@@ -141,7 +141,7 @@ function DesktopView({
               <TableHead>
                 <TableRow sx={{ bgcolor: 'background.default' }}>
                   {TABLE_HEADERS.map((h) => (
-                    <TableCell key={h} sx={{ fontWeight: 700, py: 1.75 }}>
+                    <TableCell key={h} sx={{ fontWeight: 700, py: 1.75, whiteSpace: 'nowrap' }}>
                       {h}
                     </TableCell>
                   ))}

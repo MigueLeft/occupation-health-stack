@@ -1,4 +1,4 @@
-import { TableRow, TableCell, Avatar, Box, Typography, Button } from '@mui/material';
+import { TableRow, TableCell, Avatar, Box, Typography, Button, Tooltip } from '@mui/material';
 import { MedicalServicesOutlined } from '@mui/icons-material';
 import { useNavigate } from '@tanstack/react-router';
 import { RequestStatusChip } from '@/features/requests/components/RequestStatusChip';
@@ -10,6 +10,8 @@ import { ConsultationResultChip } from './ConsultationResultChip';
 interface Props {
   consultation: ConsultationWithDetails;
 }
+
+const TRUNCATE = { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } as const;
 
 function formatDate(dateStr: string): string {
   if (!dateStr) return '—';
@@ -28,27 +30,36 @@ export function ConsultationRow({ consultation }: Props) {
     : consultation.psychologicalResult;
 
   const canAttend = consultation.requestStatus !== 'Finalizada' && consultation.requestStatus !== 'No asistio';
+  const reasonLabel = EVALUATION_REASON_LABELS[consultation.evaluationReason] ?? consultation.evaluationReason;
 
   return (
     <TableRow sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
-      <TableCell>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.light', color: 'primary.main', fontSize: '0.8rem' }}>
+      <TableCell sx={{ maxWidth: 200 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
+          <Avatar sx={{ width: 36, height: 36, flexShrink: 0, bgcolor: 'primary.light', color: 'primary.main', fontSize: '0.8rem' }}>
             {getInitials(consultation.patientName)}
           </Avatar>
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>{consultation.patientName}</Typography>
+          <Tooltip title={consultation.patientName} placement="top-start">
+            <Typography variant="body2" sx={{ fontWeight: 600, ...TRUNCATE }}>
+              {consultation.patientName}
+            </Typography>
+          </Tooltip>
         </Box>
       </TableCell>
-      <TableCell><Typography variant="body2" color="text.secondary">{formatDate(consultation.requestDate)}</Typography></TableCell>
-      <TableCell>
-        <Typography variant="body2" color="text.secondary">
-          {EVALUATION_REASON_LABELS[consultation.evaluationReason] ?? consultation.evaluationReason}
-        </Typography>
+      <TableCell sx={{ whiteSpace: 'nowrap' }}>
+        <Typography variant="body2" color="text.secondary">{formatDate(consultation.requestDate)}</Typography>
       </TableCell>
-      <TableCell><ConsultationTypeChip type={consultation.type} /></TableCell>
-      <TableCell><ConsultationResultChip result={result} /></TableCell>
-      <TableCell><RequestStatusChip status={consultation.requestStatus} /></TableCell>
-      <TableCell align="right">
+      <TableCell sx={{ maxWidth: 160 }}>
+        <Tooltip title={reasonLabel} placement="top-start">
+          <Typography variant="body2" color="text.secondary" sx={TRUNCATE}>
+            {reasonLabel}
+          </Typography>
+        </Tooltip>
+      </TableCell>
+      <TableCell sx={{ whiteSpace: 'nowrap' }}><ConsultationTypeChip type={consultation.type} /></TableCell>
+      <TableCell sx={{ whiteSpace: 'nowrap' }}><ConsultationResultChip result={result} /></TableCell>
+      <TableCell sx={{ whiteSpace: 'nowrap' }}><RequestStatusChip status={consultation.requestStatus} /></TableCell>
+      <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
         {canAttend && (
           <Button variant="contained" size="small"
             startIcon={<MedicalServicesOutlined fontSize="small" />}

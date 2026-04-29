@@ -51,7 +51,7 @@ export function ConsultasPage() {
                 <TableRow sx={{ bgcolor: 'primary.main' }}>
                   {TABLE_HEADERS.map((h) => (
                     <TableCell key={h} align={h === 'Acciones' ? 'right' : 'left'}
-                      sx={{ color: 'white', fontWeight: 600, py: 1.5, borderBottom: 'none' }}>
+                      sx={{ color: 'white', fontWeight: 600, py: 1.5, borderBottom: 'none', whiteSpace: 'nowrap' }}>
                       {h}
                     </TableCell>
                   ))}

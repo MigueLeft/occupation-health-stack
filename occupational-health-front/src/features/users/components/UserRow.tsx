@@ -11,6 +11,8 @@ import {
 import { EditOutlined, DeleteOutlined } from '@mui/icons-material';
 import type { AppUser } from '../types';
 
+const TRUNCATE = { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } as const;
+
 function getAvatarColor(name: string): string {
   const colors = ['#7B68EE', '#6495ED', '#9370DB', '#8FBC8F', '#F4A460'];
   return colors[name.charCodeAt(0) % colors.length];
@@ -28,28 +30,36 @@ export function UserRow({ user, onToggleStatus, onEdit, onDelete }: UserRowProps
 
   return (
     <TableRow sx={{ '&:last-child td': { border: 0 }, '&:hover': { bgcolor: 'action.hover' } }}>
-      <TableCell>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Avatar
-            sx={{ width: 34, height: 34, fontSize: '0.875rem', bgcolor: getAvatarColor(user.name) }}
-          >
+      <TableCell sx={{ maxWidth: 220 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
+          <Avatar sx={{ width: 34, height: 34, flexShrink: 0, fontSize: '0.875rem', bgcolor: getAvatarColor(user.name) }}>
             {user.name.charAt(0).toUpperCase()}
           </Avatar>
-          <Typography sx={{ fontWeight: 500, fontSize: '0.9rem' }}>{user.name}</Typography>
+          <Tooltip title={user.name} placement="top-start">
+            <Typography sx={{ fontWeight: 500, fontSize: '0.9rem', ...TRUNCATE }}>{user.name}</Typography>
+          </Tooltip>
         </Box>
       </TableCell>
 
-      <TableCell sx={{ color: 'text.secondary', fontSize: '0.9rem' }}>{user.email}</TableCell>
+      <TableCell sx={{ maxWidth: 220 }}>
+        <Tooltip title={user.email} placement="top-start">
+          <Typography sx={{ color: 'text.secondary', fontSize: '0.9rem', ...TRUNCATE }}>{user.email}</Typography>
+        </Tooltip>
+      </TableCell>
 
-      <TableCell sx={{ fontSize: '0.9rem' }}>
-        {user.roleName ?? (
+      <TableCell sx={{ maxWidth: 160 }}>
+        {user.roleName ? (
+          <Tooltip title={user.roleName} placement="top-start">
+            <Typography sx={{ fontSize: '0.9rem', ...TRUNCATE }}>{user.roleName}</Typography>
+          </Tooltip>
+        ) : (
           <Typography component="span" sx={{ color: 'text.disabled', fontSize: '0.85rem' }}>
             Sin rol
           </Typography>
         )}
       </TableCell>
 
-      <TableCell>
+      <TableCell sx={{ whiteSpace: 'nowrap' }}>
         <Chip
           label={isActive ? 'Activo' : 'Inactivo'}
           size="small"
@@ -65,7 +75,7 @@ export function UserRow({ user, onToggleStatus, onEdit, onDelete }: UserRowProps
         />
       </TableCell>
 
-      <TableCell>
+      <TableCell sx={{ whiteSpace: 'nowrap' }}>
         <Box sx={{ display: 'flex', gap: 0.5 }}>
           <Tooltip title="Editar rol">
             <IconButton size="small" onClick={() => onEdit(user)}>

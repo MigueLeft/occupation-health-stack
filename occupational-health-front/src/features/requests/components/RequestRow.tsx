@@ -10,6 +10,8 @@ interface Props {
   onNoAsistio: (request: AppRequestWithPatient) => void;
 }
 
+const TRUNCATE = { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } as const;
+
 function formatDate(dateStr: string): string {
   const [year, month, day] = dateStr.split('-').map(Number);
   return new Date(year, month - 1, day).toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -21,38 +23,47 @@ function getInitials(name: string): string {
 
 export function RequestRow({ request, onEdit, onNoAsistio }: Props) {
   const isConsulta = request.evaluationReason === 'Consulta';
+  const reasonLabel = EVALUATION_REASON_LABELS[request.evaluationReason] ?? request.evaluationReason;
 
   return (
     <TableRow sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
-      <TableCell>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.light', color: 'primary.main', fontSize: '0.8rem' }}>
+      <TableCell sx={{ maxWidth: 200 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
+          <Avatar sx={{ width: 36, height: 36, flexShrink: 0, bgcolor: 'primary.light', color: 'primary.main', fontSize: '0.8rem' }}>
             {getInitials(request.patientName)}
           </Avatar>
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>{request.patientName}</Typography>
+          <Tooltip title={request.patientName} placement="top-start">
+            <Typography variant="body2" sx={{ fontWeight: 600, ...TRUNCATE }}>
+              {request.patientName}
+            </Typography>
+          </Tooltip>
         </Box>
       </TableCell>
-      <TableCell>
+      <TableCell sx={{ whiteSpace: 'nowrap' }}>
         <Typography variant="body2" color="text.secondary">{formatDate(request.requestDate)}</Typography>
       </TableCell>
-      <TableCell>
-        <Typography variant="body2" color="text.secondary">
-          {EVALUATION_REASON_LABELS[request.evaluationReason] ?? request.evaluationReason}
-        </Typography>
-      </TableCell>
-      <TableCell>
-        {isConsulta && request.scheduledConsultationType ? (
-          <Typography variant="body2" color="text.secondary">
-            {CONSULTATION_TYPE_LABELS[request.scheduledConsultationType]}
+      <TableCell sx={{ maxWidth: 160 }}>
+        <Tooltip title={reasonLabel} placement="top-start">
+          <Typography variant="body2" color="text.secondary" sx={TRUNCATE}>
+            {reasonLabel}
           </Typography>
+        </Tooltip>
+      </TableCell>
+      <TableCell sx={{ maxWidth: 160 }}>
+        {isConsulta && request.scheduledConsultationType ? (
+          <Tooltip title={CONSULTATION_TYPE_LABELS[request.scheduledConsultationType]} placement="top-start">
+            <Typography variant="body2" color="text.secondary" sx={TRUNCATE}>
+              {CONSULTATION_TYPE_LABELS[request.scheduledConsultationType]}
+            </Typography>
+          </Tooltip>
         ) : (
           <Typography variant="body2" color="text.disabled">—</Typography>
         )}
       </TableCell>
-      <TableCell>
+      <TableCell sx={{ whiteSpace: 'nowrap' }}>
         <RequestStatusChip status={request.status} />
       </TableCell>
-      <TableCell align="right">
+      <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
         <Tooltip title="Editar">
           <IconButton size="small" onClick={() => onEdit(request)} sx={{ color: 'text.secondary' }}>
             <EditOutlined fontSize="small" />

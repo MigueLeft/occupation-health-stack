@@ -4,6 +4,7 @@ import { formatCedula, calculateAge } from '@/utils/cedula';
 import type { Patient } from '../types';
 
 const AVATAR_COLORS = ['#7B68EE', '#6495ED', '#9370DB', '#8FBC8F', '#F4A460'];
+const TRUNCATE = { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } as const;
 
 function getAvatarColor(name: string): string {
   return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
@@ -26,43 +27,50 @@ export function PatientRow({ patient, selected, onToggleSelect, onView, onEdit }
       <TableCell padding="checkbox">
         <Checkbox checked={selected} onChange={() => onToggleSelect(patient.cedula)} />
       </TableCell>
-      <TableCell sx={{ fontWeight: 500, fontSize: '0.9rem' }}>
+      <TableCell sx={{ fontWeight: 500, fontSize: '0.9rem', whiteSpace: 'nowrap' }}>
         {formatCedula(patient.cedula)}
       </TableCell>
 
-      <TableCell>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Avatar
-            sx={{
-              width: 34,
-              height: 34,
-              fontSize: '0.875rem',
-              bgcolor: getAvatarColor(patient.firstName),
-            }}
-          >
+      <TableCell sx={{ maxWidth: 220 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
+          <Avatar sx={{ width: 34, height: 34, flexShrink: 0, fontSize: '0.875rem', bgcolor: getAvatarColor(patient.firstName) }}>
             {patient.firstName.charAt(0).toUpperCase()}
           </Avatar>
-          <Typography sx={{ fontWeight: 500, fontSize: '0.9rem' }}>{fullName}</Typography>
+          <Tooltip title={fullName} placement="top-start">
+            <Typography sx={{ fontWeight: 500, fontSize: '0.9rem', ...TRUNCATE }}>{fullName}</Typography>
+          </Tooltip>
         </Box>
       </TableCell>
 
-      <TableCell sx={{ color: 'text.secondary', fontSize: '0.9rem' }}>
-        {patient.company?.name ?? (
+      <TableCell sx={{ maxWidth: 180 }}>
+        {patient.company?.name ? (
+          <Tooltip title={patient.company.name} placement="top-start">
+            <Typography sx={{ color: 'text.secondary', fontSize: '0.9rem', ...TRUNCATE }}>
+              {patient.company.name}
+            </Typography>
+          </Tooltip>
+        ) : (
           <Typography component="span" sx={{ color: 'text.disabled', fontSize: '0.85rem' }}>
             Sin empresa
           </Typography>
         )}
       </TableCell>
 
-      <TableCell sx={{ color: 'text.secondary', fontSize: '0.9rem' }}>
-        {patient.position?.name ?? (
+      <TableCell sx={{ maxWidth: 160 }}>
+        {patient.position?.name ? (
+          <Tooltip title={patient.position.name} placement="top-start">
+            <Typography sx={{ color: 'text.secondary', fontSize: '0.9rem', ...TRUNCATE }}>
+              {patient.position.name}
+            </Typography>
+          </Tooltip>
+        ) : (
           <Typography component="span" sx={{ color: 'text.disabled', fontSize: '0.85rem' }}>
             Sin cargo
           </Typography>
         )}
       </TableCell>
 
-      <TableCell sx={{ fontSize: '0.9rem' }}>{age}</TableCell>
+      <TableCell sx={{ fontSize: '0.9rem', whiteSpace: 'nowrap' }}>{age}</TableCell>
 
       <TableCell>
         <Box sx={{ display: 'flex', gap: 0.5 }}>

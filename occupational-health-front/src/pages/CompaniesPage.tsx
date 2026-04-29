@@ -92,7 +92,7 @@ export function CompaniesPage() {
                 <TableHead>
                   <TableRow sx={{ bgcolor: 'primary.main' }}>
                     {TABLE_HEADERS.map((h) => (
-                      <TableCell key={h} sx={{ fontWeight: 700, py: 1.75, color: 'primary.contrastText' }}>
+                      <TableCell key={h} sx={{ fontWeight: 700, py: 1.75, color: 'primary.contrastText', whiteSpace: 'nowrap' }}>
                         {h}
                       </TableCell>
                     ))}

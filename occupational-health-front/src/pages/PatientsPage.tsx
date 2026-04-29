@@ -190,7 +190,7 @@ export function PatientsPage() {
                     {TABLE_HEADERS.map((h) => (
                       <TableCell
                         key={h}
-                        sx={{ fontWeight: 700, py: 1.75, color: 'primary.contrastText' }}
+                        sx={{ fontWeight: 700, py: 1.75, color: 'primary.contrastText', whiteSpace: 'nowrap' }}
                       >
                         {h}
                       </TableCell>

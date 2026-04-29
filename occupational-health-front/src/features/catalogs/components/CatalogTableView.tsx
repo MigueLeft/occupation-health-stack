@@ -34,9 +34,9 @@ export function CatalogTableView({
             <TableHead>
               <TableRow sx={{ bgcolor: 'primary.main' }}>
                 {headers.map((h) => (
-                  <TableCell key={h} sx={{ fontWeight: 600, py: 1.5, color: 'white', borderBottom: 'none' }}>{h}</TableCell>
+                  <TableCell key={h} sx={{ fontWeight: 600, py: 1.5, color: 'white', borderBottom: 'none', whiteSpace: 'nowrap' }}>{h}</TableCell>
                 ))}
-                <TableCell sx={{ fontWeight: 600, py: 1.5, color: 'white', borderBottom: 'none' }}>Acciones</TableCell>
+                <TableCell sx={{ fontWeight: 600, py: 1.5, color: 'white', borderBottom: 'none', whiteSpace: 'nowrap' }}>Acciones</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>

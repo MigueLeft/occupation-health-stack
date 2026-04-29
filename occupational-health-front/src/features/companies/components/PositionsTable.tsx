@@ -26,7 +26,7 @@ export function PositionsTable({ positions, companyId }: PositionsTableProps) {
           <TableHead>
             <TableRow sx={{ bgcolor: 'primary.main' }}>
               {['Nombre del Cargo', 'Descripción', 'Empleados', 'Acciones'].map((h) => (
-                <TableCell key={h} sx={{ color: 'primary.contrastText', fontWeight: 700, py: 1.5 }}>
+                <TableCell key={h} sx={{ color: 'primary.contrastText', fontWeight: 700, py: 1.5, whiteSpace: 'nowrap' }}>
                   {h}
                 </TableCell>
               ))}
