@@ -66,7 +66,7 @@ export function ExpedientePage() {
   }
 
   const initials = `${patient.firstName[0]}${patient.lastName[0]}`.toUpperCase();
-  const age = calcAge(patient.birthDate);
+  const age = patient.birthDate ? calcAge(patient.birthDate) : null;
 
   return (
     <AppLayout>
@@ -96,7 +96,7 @@ export function ExpedientePage() {
           <Box sx={{ bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', borderTop: 'none', borderRadius: '0 0 12px 12px', overflow: 'hidden' }}>
             <InfoField label="Empresa" value={patient.company?.name ?? '—'} />
             <InfoField label="Cargo" value={patient.position?.name ?? '—'} />
-            <InfoField label="Fecha de Nacimiento" value={`${formatBirthDate(patient.birthDate)}  (${age} años)`} />
+            <InfoField label="Fecha de Nacimiento" value={patient.birthDate ? `${formatBirthDate(patient.birthDate)}${age !== null ? `  (${age} años)` : ''}` : '—'} />
             <InfoField label="Grupo Sanguíneo / Mano Dom." value={`${patient.bloodType ?? '—'} / ${HAND_LABELS[patient.dominantHand ?? ''] ?? patient.dominantHand ?? '—'}`} />
             <InfoField label="Usa lentes" value={patient.usesGlasses == null ? '—' : patient.usesGlasses ? 'Sí' : 'No'} />
             <InfoField label="Contacto de Emergencia" value={

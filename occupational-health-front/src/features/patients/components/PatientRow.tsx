@@ -20,7 +20,7 @@ interface PatientRowProps {
 
 export function PatientRow({ patient, selected, onToggleSelect, onView, onEdit }: PatientRowProps) {
   const fullName = `${patient.firstName} ${patient.lastName}`;
-  const age = calculateAge(patient.birthDate);
+  const age = patient.birthDate ? calculateAge(patient.birthDate) : '—';
 
   return (
     <TableRow sx={{ '&:last-child td': { border: 0 }, '&:hover': { bgcolor: 'action.hover' } }} selected={selected}>

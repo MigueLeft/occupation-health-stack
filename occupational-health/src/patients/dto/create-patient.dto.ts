@@ -47,12 +47,12 @@ export class CreatePatientDto {
   @IsNotEmpty({ message: 'La fecha de nacimiento es obligatoria.' })
   birthDate: string;
 
+  @IsOptional()
   @ValidateNested({
     message: 'El contacto de emergencia tiene campos inválidos.',
   })
   @Type(() => EmergencyContactDto)
-  @IsNotEmpty({ message: 'El contacto de emergencia es obligatorio.' })
-  emergencyContact: EmergencyContactDto;
+  emergencyContact?: EmergencyContactDto;
 
   @IsEmail({}, { message: 'El correo electrónico no tiene un formato válido.' })
   @IsNotEmpty({ message: 'El correo electrónico es obligatorio.' })

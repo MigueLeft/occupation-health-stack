@@ -23,20 +23,14 @@ export const patients = pgTable('patients', {
   cedula: varchar('cedula', { length: 20 }).primaryKey(),
   firstName: varchar('first_name', { length: 255 }).notNull(),
   lastName: varchar('last_name', { length: 255 }).notNull(),
-  birthDate: date('birth_date').notNull(),
-  emergencyContact: jsonb('emergency_contact')
-    .$type<EmergencyContact>()
-    .notNull(),
-  email: varchar('email', { length: 255 }).notNull().unique(),
+  birthDate: date('birth_date'),
+  emergencyContact: jsonb('emergency_contact').$type<EmergencyContact>(),
+  email: varchar('email', { length: 255 }).unique(),
   bloodType: varchar('blood_type', { length: 10 }),
   dominantHand: varchar('dominant_hand', { length: 20 }),
   usesGlasses: boolean('uses_glasses').default(false),
-  companyId: uuid('company_id')
-    .notNull()
-    .references(() => companies.id),
-  positionId: uuid('position_id')
-    .notNull()
-    .references(() => positions.id),
+  companyId: uuid('company_id').references(() => companies.id),
+  positionId: uuid('position_id').references(() => positions.id),
 });
 
 // Tabla intermedia: paciente ↔ alergias (many-to-many)

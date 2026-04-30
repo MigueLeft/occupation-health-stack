@@ -70,15 +70,15 @@ export function EditPatientModal({ open, patient, onClose }: EditPatientModalPro
       reset({
         firstName: patient.firstName,
         lastName: patient.lastName,
-        birthDate: patient.birthDate,
-        email: patient.email,
-        companyId: patient.companyId,
-        positionId: patient.positionId,
+        birthDate: patient.birthDate ?? '',
+        email: patient.email ?? '',
+        companyId: patient.companyId ?? '',
+        positionId: patient.positionId ?? '',
         bloodType: patient.bloodType ?? '',
         dominantHand: patient.dominantHand ?? '',
         usesGlasses: patient.usesGlasses ?? false,
         allergyIds: patient.allergies?.map((a) => a.id) ?? [],
-        emergencyContact: patient.emergencyContact,
+        emergencyContact: patient.emergencyContact ?? { name: '', phone: '', relationship: '' },
       });
     }
   }, [patient, open, reset]);

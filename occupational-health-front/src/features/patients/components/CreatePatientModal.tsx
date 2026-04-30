@@ -22,14 +22,14 @@ const schema = z.object({
       const today = new Date(); today.setHours(0, 0, 0, 0);
       return new Date(v) < today;
     }, { message: 'La fecha de nacimiento no puede ser hoy ni una fecha futura' }),
-  email: z.email('Correo electrónico inválido'),
+  email: z.string().email('Correo electrónico inválido'),
   companyId: z.string().uuid('Selecciona una empresa'),
   positionId: z.string().uuid('Selecciona un cargo'),
   emergencyContact: z.object({
-    name: z.string().min(1, 'El nombre del contacto es obligatorio').max(255),
-    phone: z.string().regex(/^\d{4}-?\d{7}$/, 'El teléfono debe tener 11 dígitos'),
-    relationship: z.string().min(1, 'El parentesco es obligatorio').max(100),
-  }),
+    name: z.string().max(255).optional().or(z.literal('')),
+    phone: z.string().optional().or(z.literal('')),
+    relationship: z.string().max(100).optional().or(z.literal('')),
+  }).optional(),
 });
 
 export type PatientFormData = z.infer<typeof schema>;
@@ -61,7 +61,12 @@ export function CreatePatientModal({ open, onClose }: CreatePatientModalProps) {
   };
 
   const onSubmit = (data: PatientFormData) => {
-    createPatient(data, { onSuccess: handleClose });
+    const hasEmergency = !!(data.emergencyContact?.name || data.emergencyContact?.phone || data.emergencyContact?.relationship);
+    const payload = {
+      ...data,
+      emergencyContact: hasEmergency ? data.emergencyContact : undefined,
+    };
+    createPatient(payload, { onSuccess: handleClose });
   };
 
   return (

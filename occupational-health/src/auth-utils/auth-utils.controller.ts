@@ -8,14 +8,11 @@ import {
   Inject,
 } from '@nestjs/common';
 import { IsString, IsEmail, MinLength } from 'class-validator';
-import { eq, desc } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DRIZZLE } from '../database/database.module';
-import {
-  user as userTable,
-  verification as verificationTable,
-} from '../auth/auth.schema';
-import { auth } from '../auth/auth';
+import { user as userTable } from '../auth/auth.schema';
+import { auth, resetTokenStore } from '../auth/auth';
 import { Public } from '../auth/public.decorator';
 
 export class ResetPasswordMasterDto {
@@ -58,7 +55,7 @@ export class AuthUtilsController {
 
     const baseURL = process.env.BETTER_AUTH_URL ?? 'http://localhost:3000';
 
-    // Genera token de restablecimiento vía better-auth
+    // Solicita token de restablecimiento — sendResetPassword lo captura en resetTokenStore
     await auth.handler(
       new Request(`${baseURL}/api/auth/forget-password`, {
         method: 'POST',
@@ -67,33 +64,30 @@ export class AuthUtilsController {
       }),
     );
 
-    // Lee el token más reciente de la tabla de verificaciones
-    const [verification] = await this.db
-      .select()
-      .from(verificationTable)
-      .orderBy(desc(verificationTable.createdAt))
-      .limit(1);
+    // Lee el token crudo capturado por sendResetPassword
+    const rawToken = resetTokenStore.get(dto.email);
+    resetTokenStore.delete(dto.email);
 
-    if (!verification) {
+    if (!rawToken) {
       throw new BadRequestException(
         'No se pudo generar el token de restablecimiento. Intente de nuevo.',
       );
     }
 
-    // Aplica el nuevo password con el token generado
+    // Aplica el nuevo password con el token crudo
     const resetResponse = await auth.handler(
       new Request(`${baseURL}/api/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          token: verification.value,
-          newPassword: dto.newPassword,
-        }),
+        body: JSON.stringify({ token: rawToken, newPassword: dto.newPassword }),
       }),
     );
 
     if (!resetResponse.ok) {
-      throw new BadRequestException('No se pudo restablecer la contraseña.');
+      const body = await resetResponse.json().catch(() => ({}));
+      throw new BadRequestException(
+        (body as { message?: string })?.message ?? 'No se pudo restablecer la contraseña.',
+      );
     }
 
     return { message: 'Contraseña restablecida correctamente.' };

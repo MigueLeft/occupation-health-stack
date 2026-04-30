@@ -10,6 +10,9 @@ import * as authSchema from './auth.schema';
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const db = drizzle(pool, { schema: authSchema });
 
+// Almacén temporal de tokens de restablecimiento (keyed by email)
+export const resetTokenStore = new Map<string, string>();
+
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: 'pg',
@@ -25,8 +28,13 @@ export const auth = betterAuth({
   trustedOrigins: [process.env.FRONTEND_URL ?? 'http://localhost:5173'],
   emailAndPassword: {
     enabled: true,
-    // No-op: la recuperación se gestiona vía clave maestra en /auth-utils/reset-password
-    sendResetPassword: async () => {},
+    // Captura el token crudo para uso interno vía clave maestra
+    sendResetPassword: async ({ user, url }: { user: { email: string }; url: string }) => {
+      try {
+        const rawToken = new URL(url).searchParams.get('token');
+        if (rawToken) resetTokenStore.set(user.email, rawToken);
+      } catch { /* ignorar URLs malformadas */ }
+    },
   },
   plugins: [
     // Plugin admin para RBAC: permite gestionar roles (admin, user)

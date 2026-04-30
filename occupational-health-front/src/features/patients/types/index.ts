@@ -23,14 +23,14 @@ export interface Patient {
   cedula: string;
   firstName: string;
   lastName: string;
-  birthDate: string;
-  email: string;
+  birthDate: string | null;
+  email: string | null;
   bloodType: string | null;
   dominantHand: string | null;
   usesGlasses: boolean | null;
-  companyId: string;
-  positionId: string;
-  emergencyContact: EmergencyContact;
+  companyId: string | null;
+  positionId: string | null;
+  emergencyContact: EmergencyContact | null;
   company: Company | null;
   position: Position | null;
   allergies: { id: string; name: string }[];
@@ -45,8 +45,7 @@ export interface CreatePatientPayload {
   email: string;
   companyId: string;
   positionId: string;
-  emergencyContact: EmergencyContact;
-  // bloodType, dominantHand, usesGlasses se cargan desde la historia clínica
+  emergencyContact?: Partial<EmergencyContact>;
   bloodType?: string;
   dominantHand?: string;
   usesGlasses?: boolean;

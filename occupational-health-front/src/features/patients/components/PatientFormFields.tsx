@@ -186,7 +186,7 @@ export function PatientFormFields({
 
       <Divider />
       <Typography variant="subtitle2" color="text.secondary">
-        Contacto de Emergencia
+        Contacto de Emergencia (opcional)
       </Typography>
 
       <Stack direction="row" spacing={2}>
@@ -196,7 +196,7 @@ export function PatientFormFields({
           render={({ field }) => (
             <TextField
               {...field}
-              label="Nombre del contacto"
+              label="Nombre del contacto (opcional)"
               error={!!errors.emergencyContact?.name}
               helperText={errors.emergencyContact?.name?.message}
               fullWidth
@@ -230,7 +230,7 @@ export function PatientFormFields({
         render={({ field }) => (
           <TextField
             {...field}
-            label="Parentesco"
+            label="Parentesco (opcional)"
             placeholder="Ej: Madre, Cónyuge, Hermano"
             error={!!errors.emergencyContact?.relationship}
             helperText={errors.emergencyContact?.relationship?.message}
