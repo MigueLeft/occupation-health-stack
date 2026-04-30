@@ -32,12 +32,21 @@ function formatBirthDate(dateStr: string): string {
 const HAND_LABELS: Record<string, string> = { right: 'Derecha', left: 'Izquierda', both: 'Ambas' };
 
 function InfoField({ label, value }: { label: string; value: React.ReactNode }) {
+  const isString = typeof value === 'string';
   return (
-    <Box sx={{ px: 2.5, py: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+    <Box sx={{ px: 2.5, py: 2, borderBottom: '1px solid', borderColor: 'divider', minWidth: 0 }}>
       <Typography variant="caption" sx={{ color: 'text.secondary', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.06em', fontSize: '0.68rem' }}>
         {label}
       </Typography>
-      <Typography variant="body2" sx={{ fontWeight: 500, mt: 0.25 }}>{value}</Typography>
+      {isString ? (
+        <Tooltip title={value.length > 48 ? value : ''} placement="top-start" disableHoverListener={value.length <= 48}>
+          <Typography variant="body2" sx={{ fontWeight: 500, mt: 0.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {value}
+          </Typography>
+        </Tooltip>
+      ) : (
+        <Box sx={{ mt: 0.25 }}>{value}</Box>
+      )}
     </Box>
   );
 }
@@ -86,7 +95,7 @@ export function ExpedientePage() {
             <Avatar sx={{ width: 72, height: 72, bgcolor: 'rgba(255,255,255,0.2)', color: 'white', fontSize: '1.5rem', mb: 1.5 }}>
               {initials}
             </Avatar>
-            <Typography sx={{ color: 'white', fontWeight: 700, fontSize: '1.1rem' }}>
+            <Typography sx={{ color: 'white', fontWeight: 700, fontSize: '1.1rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%', textAlign: 'center' }}>
               {patient.firstName} {patient.lastName}
             </Typography>
             <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>{patient.cedula}</Typography>
