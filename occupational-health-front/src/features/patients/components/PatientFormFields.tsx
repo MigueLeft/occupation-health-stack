@@ -38,45 +38,45 @@ export function PatientFormFields({
 }: PatientFormFieldsProps) {
   return (
     <Stack spacing={2.5}>
+      <Controller
+        name="cedula"
+        control={control}
+        render={({ field }) => {
+          const match = (field.value ?? '').match(/^([VEve])-?(\d*)$/);
+          const prefix = match ? match[1].toUpperCase() : 'V';
+          const digits = match ? match[2] : (field.value ?? '').replace(/\D/g, '');
+          return (
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <FormControl size="medium" error={!!errors.cedula} sx={{ width: 110, flexShrink: 0 }}>
+                <InputLabel>Tipo</InputLabel>
+                <Select
+                  label="Tipo"
+                  value={prefix}
+                  onChange={(e) => field.onChange(`${e.target.value}-${digits}`)}
+                >
+                  <MenuItem value="V">V</MenuItem>
+                  <MenuItem value="E">E</MenuItem>
+                </Select>
+              </FormControl>
+              <TextField
+                label="Número de Cédula"
+                placeholder="Ej: 27736710"
+                value={digits}
+                error={!!errors.cedula}
+                helperText={errors.cedula?.message}
+                fullWidth
+                slotProps={{ htmlInput: { inputMode: 'numeric' } }}
+                onChange={(e) => {
+                  const onlyDigits = e.target.value.replace(/\D/g, '');
+                  field.onChange(`${prefix}-${onlyDigits}`);
+                }}
+                onBlur={() => field.onBlur()}
+              />
+            </Box>
+          );
+        }}
+      />
       <Stack direction="row" spacing={2}>
-        <Controller
-          name="cedula"
-          control={control}
-          render={({ field }) => {
-            const match = (field.value ?? '').match(/^([VEve])-?(\d*)$/);
-            const prefix = match ? match[1].toUpperCase() : 'V';
-            const digits = match ? match[2] : (field.value ?? '').replace(/\D/g, '');
-            return (
-              <Box sx={{ display: 'flex', gap: 1, flex: 1 }}>
-                <FormControl size="medium" error={!!errors.cedula} sx={{ width: 90, flexShrink: 0 }}>
-                  <InputLabel>Tipo</InputLabel>
-                  <Select
-                    label="Tipo"
-                    value={prefix}
-                    onChange={(e) => field.onChange(`${e.target.value}-${digits}`)}
-                  >
-                    <MenuItem value="V">V</MenuItem>
-                    <MenuItem value="E">E</MenuItem>
-                  </Select>
-                </FormControl>
-                <TextField
-                  label="Número de Cédula"
-                  placeholder="Ej: 27736710"
-                  value={digits}
-                  error={!!errors.cedula}
-                  helperText={errors.cedula?.message}
-                  fullWidth
-                  slotProps={{ htmlInput: { inputMode: 'numeric' } }}
-                  onChange={(e) => {
-                    const onlyDigits = e.target.value.replace(/\D/g, '');
-                    field.onChange(`${prefix}-${onlyDigits}`);
-                  }}
-                  onBlur={() => field.onBlur()}
-                />
-              </Box>
-            );
-          }}
-        />
         <Controller
           name="firstName"
           control={control}
@@ -90,9 +90,6 @@ export function PatientFormFields({
             />
           )}
         />
-      </Stack>
-
-      <Stack direction="row" spacing={2}>
         <Controller
           name="lastName"
           control={control}
@@ -106,22 +103,23 @@ export function PatientFormFields({
             />
           )}
         />
-        <Controller
-          name="birthDate"
-          control={control}
-          render={({ field }) => (
-            <TextField
-              {...field}
-              type="date"
-              label="Fecha de Nacimiento"
-              slotProps={{ inputLabel: { shrink: true } }}
-              error={!!errors.birthDate}
-              helperText={errors.birthDate?.message}
-              fullWidth
-            />
-          )}
-        />
       </Stack>
+
+      <Controller
+        name="birthDate"
+        control={control}
+        render={({ field }) => (
+          <TextField
+            {...field}
+            type="date"
+            label="Fecha de Nacimiento"
+            slotProps={{ inputLabel: { shrink: true } }}
+            error={!!errors.birthDate}
+            helperText={errors.birthDate?.message}
+            fullWidth
+          />
+        )}
+      />
 
       <Controller
         name="email"

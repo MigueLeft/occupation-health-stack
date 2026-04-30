@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text } from 'drizzle-orm/pg-core';
 import { consultations } from '../consultations/consultations.schema';
 import { psychometricTestCatalog } from '../psychometric-test-catalog/psychometric-test-catalog.schema';
 
@@ -10,10 +10,6 @@ export const psychometricTests = pgTable('psychometric_tests', {
   catalogTestId: uuid('catalog_test_id')
     .notNull()
     .references(() => psychometricTestCatalog.id),
-  // Interpretación seleccionada del listado del catálogo
-  selectedInterpretation: varchar('selected_interpretation', {
-    length: 255,
-  }).notNull(),
   observations: text('observations'),
 });
 

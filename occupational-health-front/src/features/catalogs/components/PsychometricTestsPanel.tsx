@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { TableRow, TableCell, Box, Chip } from '@mui/material';
+import { TableRow, TableCell } from '@mui/material';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { CatalogTableView, CatalogEmptyRow } from './CatalogTableView';
 import { CatalogRowActions } from './CatalogRowActions';
@@ -18,27 +18,22 @@ export function PsychometricTestsPanel() {
   const [deleteTarget, setDeleteTarget] = useState<PsychometricTest | null>(null);
   const isPending = isCreating || isUpdating;
 
-  const handleSubmit = (name: string, interpretations: string[]) => {
+  const handleSubmit = (name: string) => {
     if (editTarget) {
-      update({ id: editTarget.id, payload: { name, interpretations } }, { onSuccess: () => { setEditTarget(null); setModalOpen(false); } });
+      update({ id: editTarget.id, payload: { name } }, { onSuccess: () => { setEditTarget(null); setModalOpen(false); } });
     } else {
-      create({ name, interpretations }, { onSuccess: () => setModalOpen(false) });
+      create({ name }, { onSuccess: () => setModalOpen(false) });
     }
   };
 
   return (
     <>
-      <CatalogTableView title="Tests Psicométricos" headers={['Nombre del Test', 'Interpretaciones']} isLoading={isLoading} onAdd={() => { setEditTarget(null); setModalOpen(true); }}>
+      <CatalogTableView title="Tests Psicométricos" headers={['Nombre del Test']} isLoading={isLoading} onAdd={() => { setEditTarget(null); setModalOpen(true); }}>
         {tests.length === 0
-          ? <CatalogEmptyRow colSpan={3} label="No hay tests registrados" />
+          ? <CatalogEmptyRow colSpan={2} label="No hay tests registrados" />
           : tests.map((test) => (
               <TableRow key={test.id} sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
                 <TableCell sx={{ fontWeight: 500 }}>{test.name}</TableCell>
-                <TableCell>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {test.interpretations.map((i) => <Chip key={i} label={i} size="small" />)}
-                  </Box>
-                </TableCell>
                 <TableCell><CatalogRowActions onEdit={() => { setEditTarget(test); setModalOpen(true); }} onDelete={() => setDeleteTarget(test)} /></TableCell>
               </TableRow>
             ))}

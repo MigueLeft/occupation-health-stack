@@ -64,6 +64,13 @@
       "when": 1777522882928,
       "tag": "0008_light_talos",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1777556850403,
+      "tag": "0009_familiar_spirit",
+      "breakpoints": true
     }
   ]
 }

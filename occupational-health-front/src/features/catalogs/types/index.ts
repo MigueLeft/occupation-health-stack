@@ -13,7 +13,6 @@ export interface Risk {
 export interface PsychometricTest {
   id: string;
   name: string;
-  interpretations: string[];
 }
 
 export interface Disease {

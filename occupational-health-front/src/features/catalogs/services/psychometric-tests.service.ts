@@ -1,7 +1,7 @@
 import { apiClient } from '@/lib/axios';
 import type { PsychometricTest } from '../types';
 
-type Payload = { name: string; interpretations: string[] };
+type Payload = { name: string };
 type R<T> = Promise<{ psychometricTest: T }>;
 
 export const psychometricTestsService = {

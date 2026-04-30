@@ -41,7 +41,7 @@ export const examResultsService = {
 // ─── Psychometric Tests ───────────────────────────────────────────────────────
 export interface PsychometricTestResult {
   id: string; consultationId: string; catalogTestId: string;
-  selectedInterpretation?: string | null; observations?: string | null;
+  observations?: string | null;
 }
 export type PsychometricPayload = Omit<PsychometricTestResult, 'id'>;
 

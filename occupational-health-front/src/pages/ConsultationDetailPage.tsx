@@ -1,4 +1,5 @@
-import { Box, Typography, Button, CircularProgress, Grid, Paper, Chip, Stack, Divider, Tooltip } from '@mui/material';
+import { useState } from 'react';
+import { Box, Typography, Button, CircularProgress, Grid, Paper, Chip, Stack, Divider, Tooltip, Tab, Tabs } from '@mui/material';
 import { EditOutlined } from '@mui/icons-material';
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { AppLayout } from '@/components/AppLayout';
@@ -53,11 +54,17 @@ export function ConsultationDetailPage() {
   const { data: exams = [] } = useExams();
   const { data: psychCatalog = [] } = usePsychometricCatalog();
 
+  const hasMedica = data?.type === 'Medica' || data?.type === 'Medica/Psicologica';
+  const hasPsicologica = data?.type === 'Psicologica' || data?.type === 'Medica/Psicologica';
+
+  const defaultTab = hasMedica ? 'medica' : 'psicologica';
+  const [activeTab, setActiveTab] = useState<'medica' | 'psicologica'>(defaultTab);
+
   if (isLoading || !data) {
     return <AppLayout><Box sx={{ display: 'flex', justifyContent: 'center', pt: 10 }}><CircularProgress /></Box></AppLayout>;
   }
 
-  const getName = (list: { id: string; name: string }[], id: string) => list.find((x) => x.id === id)?.name ?? '—';
+  const getName = (list: { id: string; name: string }[], itemId: string) => list.find((x) => x.id === itemId)?.name ?? '—';
   const getUserName = (uid?: string | null) => uid ? (users.find((u) => u.id === uid)?.name ?? uid) : '—';
 
   const physExam = data.physicalExam;
@@ -65,6 +72,7 @@ export function ConsultationDetailPage() {
     ? (physExam.weight / ((physExam.height / 100) ** 2)).toFixed(1) : null;
 
   const result = data.type === 'Medica' ? data.consultationResult : data.psychologicalResult;
+  const showTabs = hasMedica && hasPsicologica;
 
   return (
     <AppLayout>
@@ -99,7 +107,7 @@ export function ConsultationDetailPage() {
           </Box>
           <Box>
             <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 700, fontSize: '0.68rem' }}>Tipo</Typography>
-            <Typography variant="body2">{data.type === 'Medica' ? 'Médica' : 'Psicológica'}</Typography>
+            <Typography variant="body2">{data.type === 'Medica' ? 'Médica' : data.type === 'Psicologica' ? 'Psicológica' : 'Médica / Psicológica'}</Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 700, fontSize: '0.68rem' }}>Resultado</Typography>
@@ -107,12 +115,21 @@ export function ConsultationDetailPage() {
           </Box>
         </Box>
 
+        {/* Tabs (only shown when both types exist) */}
+        {showTabs && (
+          <Box sx={{ px: 4, borderBottom: '1px solid', borderColor: 'divider' }}>
+            <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)}>
+              <Tab label="Médica" value="medica" />
+              <Tab label="Psicológica" value="psicologica" />
+            </Tabs>
+          </Box>
+        )}
+
         <Box sx={{ flex: 1, overflow: 'auto', p: 3 }}>
-          {data.type === 'Medica' ? (
+          {(!showTabs && hasMedica) || (showTabs && activeTab === 'medica') ? (
             <Grid container spacing={3}>
               <Grid size={7}>
                 <Stack spacing={3}>
-                  {/* Información general */}
                   <SectionCard title="Información General">
                     <Stack spacing={2}>
                       <ReadField label="Tratamiento Actual" value={data.currentTreatment} />
@@ -127,7 +144,6 @@ export function ConsultationDetailPage() {
                     </Stack>
                   </SectionCard>
 
-                  {/* Examen físico */}
                   {physExam && (
                     <SectionCard title="Examen Físico">
                       <Grid container spacing={2}>
@@ -144,7 +160,6 @@ export function ConsultationDetailPage() {
                     </SectionCard>
                   )}
 
-                  {/* Resultados de exámenes */}
                   {data.examResults.length > 0 && (
                     <SectionCard title="Resultados de Exámenes">
                       <Stack spacing={1}>
@@ -162,7 +177,6 @@ export function ConsultationDetailPage() {
 
               <Grid size={5}>
                 <Stack spacing={3}>
-                  {/* Diagnóstico */}
                   <SectionCard title="Diagnóstico">
                     <Stack spacing={2}>
                       {data.consultationDiagnostics.length > 0 && (
@@ -179,7 +193,6 @@ export function ConsultationDetailPage() {
                     </Stack>
                   </SectionCard>
 
-                  {/* Recomendaciones */}
                   {(data.recommendations?.suggestedPPE || data.recommendations?.medicalAdequacyMeasures) && (
                     <SectionCard title="Recomendaciones">
                       <Stack spacing={2}>
@@ -190,7 +203,6 @@ export function ConsultationDetailPage() {
                     </SectionCard>
                   )}
 
-                  {/* Atendido por */}
                   <SectionCard title="Atendido por">
                     <Stack spacing={1.5} divider={<Divider />}>
                       <ReadField label="Registrado en sistema por" value={getUserName(data.systemAttendedById)} />

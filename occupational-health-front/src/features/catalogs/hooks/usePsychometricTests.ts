@@ -24,7 +24,7 @@ export function useCreatePsychometricTest() {
 export function useUpdatePsychometricTest() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: { name?: string; interpretations?: string[] } }) =>
+    mutationFn: ({ id, payload }: { id: string; payload: { name?: string } }) =>
       psychometricTestsService.update(id, payload),
     onSuccess: () => { qc.invalidateQueries({ queryKey: KEY }); toast.success('Test actualizado.'); },
     onError: () => toast.error('Error al actualizar el test'),

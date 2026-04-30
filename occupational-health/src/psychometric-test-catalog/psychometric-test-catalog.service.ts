@@ -52,7 +52,7 @@ export class PsychometricTestCatalogService {
 
     const [created] = await this.db
       .insert(psychometricTestCatalog)
-      .values({ name: dto.name, interpretations: dto.interpretations })
+      .values({ name: dto.name })
       .returning();
 
     return created;

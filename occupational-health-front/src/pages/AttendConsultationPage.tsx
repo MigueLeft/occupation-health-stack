@@ -140,7 +140,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
 
   const handleAddPsychTest = (catalogTestId: string) => {
     const tempId = `new-${Date.now()}`;
-    setLocalPsychTests((prev) => [...prev, { id: tempId, consultationId: id, catalogTestId, selectedInterpretation: null, observations: null, _isNew: true }]);
+    setLocalPsychTests((prev) => [...prev, { id: tempId, consultationId: id, catalogTestId, observations: null, _isNew: true }]);
   };
 
   const handleRemovePsychTest = (itemId: string) => {
@@ -163,6 +163,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   const handleSavePatientInitialData = async (patch: { bloodType?: string; dominantHand?: string; usesGlasses?: boolean; allergyIds?: string[] }) => {
     if (!data) return;
     await patientsService.update(data.patientId, patch);
+    await queryClient.invalidateQueries({ queryKey: ['patient', data.patientId] });
     refetchPatient();
   };
 
@@ -180,7 +181,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
         ),
         ...removedExamResultIds.map((erId) => examResultsService.remove(erId)),
         ...localPsychTests.filter((t) => t._isNew).map((t) =>
-          psychometricTestsService.create({ consultationId: id, catalogTestId: t.catalogTestId, selectedInterpretation: '' }),
+          psychometricTestsService.create({ consultationId: id, catalogTestId: t.catalogTestId }),
         ),
         ...removedPsychTestIds.map((tId) => psychometricTestsService.remove(tId)),
       ]);
@@ -223,8 +224,10 @@ export function AttendConsultationPage({ editMode = false }: Props) {
 
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['consultations'] }),
+        queryClient.invalidateQueries({ queryKey: ['consultation', id] }),
         queryClient.invalidateQueries({ queryKey: ['requests'] }),
         queryClient.invalidateQueries({ queryKey: ['patients'] }),
+        queryClient.invalidateQueries({ queryKey: ['patient', data.patientId] }),
       ]);
 
       toast.success('Consulta guardada exitosamente.');

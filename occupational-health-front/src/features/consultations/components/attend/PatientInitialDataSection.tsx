@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Box, TextField, MenuItem, Checkbox, FormControlLabel, Autocomplete, Button, Typography } from '@mui/material';
+import { Box, TextField, MenuItem, Checkbox, FormControlLabel, Autocomplete, Button, Typography, Chip } from '@mui/material';
 import { EditOutlined, SaveOutlined } from '@mui/icons-material';
 
 const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
@@ -30,7 +30,6 @@ export function PatientInitialDataSection({ bloodType, dominantHand, usesGlasses
   const [allergies, setAllergies] = useState<Allergy[]>(currentAllergies);
   const [saving, setSaving] = useState(false);
 
-  // Sync when parent data refreshes
   useEffect(() => {
     setBt(bloodType ?? '');
     setHand(dominantHand ?? '');
@@ -106,16 +105,26 @@ export function PatientInitialDataSection({ bloodType, dominantHand, usesGlasses
         </Box>
 
         {editing ? (
-          <Autocomplete
-            multiple
-            size="small"
-            options={allAllergies}
-            value={allergies}
-            getOptionLabel={(o) => o.name}
-            isOptionEqualToValue={(a, b) => a.id === b.id}
-            onChange={(_, v) => setAllergies(v)}
-            renderInput={(params) => <TextField {...params} label="Alergias" placeholder="Buscar alergia..." />}
-          />
+          <Box>
+            <Autocomplete
+              multiple
+              size="small"
+              options={allAllergies}
+              value={allergies}
+              getOptionLabel={(o) => o.name}
+              isOptionEqualToValue={(a, b) => a.id === b.id}
+              onChange={(_, v) => setAllergies(v)}
+              sx={{ '& .MuiAutocomplete-tag': { display: 'none' } }}
+              renderInput={(params) => <TextField {...params} label="Alergias" placeholder="Buscar alergia..." />}
+            />
+            {allergies.length > 0 && (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
+                {allergies.map((a) => (
+                  <Chip key={a.id} label={a.name} size="small" onDelete={() => setAllergies((prev) => prev.filter((x) => x.id !== a.id))} />
+                ))}
+              </Box>
+            )}
+          </Box>
         ) : (
           readonlyField('Alergias', allergies.map((a) => a.name).join(', ') || 'Sin alergias')
         )}
