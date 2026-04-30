@@ -17,6 +17,7 @@ import { CatalogsPage } from '@/pages/CatalogsPage';
 import { RequestsPage } from '@/pages/RequestsPage';
 import { ConsultasPage } from '@/pages/ConsultasPage';
 import { AttendConsultationPage } from '@/pages/AttendConsultationPage';
+import { EditConsultationPage } from '@/pages/EditConsultationPage';
 import { ExpedientePage } from '@/pages/ExpedientePage';
 import { ConsultationDetailPage } from '@/pages/ConsultationDetailPage';
 import { authClient } from '@/lib/auth-client';
@@ -135,6 +136,13 @@ const consultaAtenderRoute = createRoute({
   component: AttendConsultationPage,
 });
 
+const consultaEditarRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/consultas/$id/editar',
+  beforeLoad: requireAuth,
+  component: EditConsultationPage,
+});
+
 const expedienteRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/expedientes/$cedula',
@@ -160,6 +168,7 @@ const routeTree = rootRoute.addChildren([
   requestsRoute,
   consultasRoute,
   consultaAtenderRoute,
+  consultaEditarRoute,
   expedienteRoute,
   consultationDetailRoute,
 ]);

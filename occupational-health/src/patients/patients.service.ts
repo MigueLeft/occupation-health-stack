@@ -256,11 +256,14 @@ export class PatientsService {
       }
     }
 
-    // Actualizar datos del paciente si hay cambios
-    if (Object.keys(patientData).length > 0) {
+    // Filtrar undefined para evitar "No values to set" de Drizzle
+    const cleanPayload = Object.fromEntries(
+      Object.entries(patientData).filter(([, v]) => v !== undefined),
+    );
+    if (Object.keys(cleanPayload).length > 0) {
       await this.db
         .update(patients)
-        .set(patientData)
+        .set(cleanPayload)
         .where(eq(patients.cedula, cedula));
     }
 

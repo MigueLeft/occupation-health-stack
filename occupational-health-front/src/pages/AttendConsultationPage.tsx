@@ -32,7 +32,9 @@ type LocalDiagnostic = ConsultationDiagnostic & { _isNew?: true };
 type LocalExamResult = ExamResult & { _isNew?: true };
 type LocalPsychTest = PsychometricTestResult & { _isNew?: true };
 
-export function AttendConsultationPage() {
+interface Props { editMode?: boolean; }
+
+export function AttendConsultationPage({ editMode = false }: Props) {
   const { id } = useParams({ strict: false }) as { id: string };
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -226,7 +228,11 @@ export function AttendConsultationPage() {
       ]);
 
       toast.success('Consulta guardada exitosamente.');
-      navigate({ to: '/consultas' });
+      if (editMode && data) {
+        navigate({ to: '/expedientes/$cedula', params: { cedula: data.patientId } });
+      } else {
+        navigate({ to: '/consultas' });
+      }
     } catch {
       toast.error('Error al guardar la consulta');
     } finally {
@@ -245,12 +251,15 @@ export function AttendConsultationPage() {
       <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         <Box sx={{ px: 4, pt: 2.5, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid', borderColor: 'divider' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ cursor: 'pointer', '&:hover': { color: 'primary.main' } }} onClick={() => navigate({ to: '/consultas' })}>Consultas</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ cursor: 'pointer', '&:hover': { color: 'primary.main' } }}
+              onClick={() => editMode && data ? navigate({ to: '/expedientes/$cedula', params: { cedula: data.patientId } }) : navigate({ to: '/consultas' })}>
+              {editMode ? 'Expediente' : 'Consultas'}
+            </Typography>
             <Typography variant="body2" color="text.secondary">›</Typography>
-            <Typography variant="body2" sx={{ fontWeight: 600 }}>Atender Consulta</Typography>
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>{editMode ? 'Editar Consulta' : 'Atender Consulta'}</Typography>
           </Box>
           <Box sx={{ display: 'flex', gap: 1.5 }}>
-            <Button variant="outlined" onClick={() => navigate({ to: '/consultas' })}>Cancelar</Button>
+            <Button variant="outlined" onClick={() => editMode && data ? navigate({ to: '/expedientes/$cedula', params: { cedula: data.patientId } }) : navigate({ to: '/consultas' })}>Cancelar</Button>
             <Button variant="contained" startIcon={<SaveOutlined />} onClick={handleSave} disabled={isSaving}>
               {isSaving ? 'Guardando...' : 'Guardar Consulta'}
             </Button>
@@ -290,7 +299,7 @@ export function AttendConsultationPage() {
                     placeholder="Describa el tratamiento actual del paciente..."
                     sx={{ mt: 2.5 }}
                   />
-                  <ChronicDiseasesSection patientDiseases={localDiseases} allDiseases={diseases} onAdd={handleAddChronicDisease} onRemove={handleRemoveChronicDisease} />
+                  <ChronicDiseasesSection patientDiseases={localDiseases} allDiseases={diseases.filter((d) => d.isChronic)} onAdd={handleAddChronicDisease} onRemove={handleRemoveChronicDisease} />
                 </Paper>
                 <Box sx={{ mt: 3 }}>
                   <PhysicalExamSection value={physExam} onChange={setPhysExam} />

@@ -78,7 +78,7 @@ export function ConsultationDetailPage() {
             <Typography variant="body2" color="text.secondary">›</Typography>
             <Typography variant="body2" sx={{ fontWeight: 600 }}>Consulta</Typography>
           </Box>
-          <Button variant="contained" startIcon={<EditOutlined />} onClick={() => navigate({ to: '/consultas/$id/atender', params: { id } })}>
+          <Button variant="contained" startIcon={<EditOutlined />} onClick={() => navigate({ to: '/consultas/$id/editar', params: { id } })}>
             Editar
           </Button>
         </Box>

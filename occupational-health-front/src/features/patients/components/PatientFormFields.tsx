@@ -5,9 +5,12 @@ import {
   Divider,
   Autocomplete,
   Box,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import { Controller, type Control, type FieldErrors } from 'react-hook-form';
-import { autoFormatCedula } from '@/utils/cedula';
 import { autoFormatPhone } from '@/utils/phone';
 import type { PatientFormData } from './CreatePatientModal';
 import type { Company, Position } from '../types';
@@ -39,26 +42,40 @@ export function PatientFormFields({
         <Controller
           name="cedula"
           control={control}
-          render={({ field }) => (
-            <TextField
-              {...field}
-              label="Cédula de Identidad"
-              placeholder="Ej: 27736710"
-              error={!!errors.cedula}
-              helperText={errors.cedula?.message}
-              fullWidth
-              onChange={(e) => {
-                // Allow only digits and V/E prefix chars
-                const val = e.target.value.replace(/[^0-9VEve-]/g, '');
-                field.onChange(val);
-              }}
-              onBlur={(e) => {
-                const formatted = autoFormatCedula(e.target.value);
-                field.onChange(formatted);
-                field.onBlur();
-              }}
-            />
-          )}
+          render={({ field }) => {
+            const match = (field.value ?? '').match(/^([VEve])-?(\d*)$/);
+            const prefix = match ? match[1].toUpperCase() : 'V';
+            const digits = match ? match[2] : (field.value ?? '').replace(/\D/g, '');
+            return (
+              <Box sx={{ display: 'flex', gap: 1, flex: 1 }}>
+                <FormControl size="medium" error={!!errors.cedula} sx={{ width: 90, flexShrink: 0 }}>
+                  <InputLabel>Tipo</InputLabel>
+                  <Select
+                    label="Tipo"
+                    value={prefix}
+                    onChange={(e) => field.onChange(`${e.target.value}-${digits}`)}
+                  >
+                    <MenuItem value="V">V</MenuItem>
+                    <MenuItem value="E">E</MenuItem>
+                  </Select>
+                </FormControl>
+                <TextField
+                  label="Número de Cédula"
+                  placeholder="Ej: 27736710"
+                  value={digits}
+                  error={!!errors.cedula}
+                  helperText={errors.cedula?.message}
+                  fullWidth
+                  slotProps={{ htmlInput: { inputMode: 'numeric' } }}
+                  onChange={(e) => {
+                    const onlyDigits = e.target.value.replace(/\D/g, '');
+                    field.onChange(`${prefix}-${onlyDigits}`);
+                  }}
+                  onBlur={() => field.onBlur()}
+                />
+              </Box>
+            );
+          }}
         />
         <Controller
           name="firstName"
