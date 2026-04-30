@@ -34,17 +34,17 @@ export class PatientsService {
 
     if (!patient) return null;
 
-    // Obtiene empresa y cargo en paralelo
-    const [[company], [position]] = await Promise.all([
-      this.db
-        .select()
-        .from(companies)
-        .where(eq(companies.id, patient.companyId)),
-      this.db
-        .select()
-        .from(positions)
-        .where(eq(positions.id, patient.positionId)),
+    // Obtiene empresa y cargo en paralelo (solo si los IDs están presentes)
+    const [companyResult, positionResult] = await Promise.all([
+      patient.companyId
+        ? this.db.select().from(companies).where(eq(companies.id, patient.companyId))
+        : Promise.resolve([]),
+      patient.positionId
+        ? this.db.select().from(positions).where(eq(positions.id, patient.positionId))
+        : Promise.resolve([]),
     ]);
+    const [company] = companyResult;
+    const [position] = positionResult;
 
     // Obtiene las alergias del paciente
     const allergyLinks = await this.db
@@ -249,9 +249,11 @@ export class PatientsService {
 
     // Si se actualiza empresa o cargo, validar la combinación
     if (patientData.companyId || patientData.positionId) {
-      const companyId = patientData.companyId ?? existing.companyId;
-      const positionId = patientData.positionId ?? existing.positionId;
-      await this.validateCompanyAndPosition(companyId, positionId);
+      const companyId = patientData.companyId ?? existing.companyId ?? '';
+      const positionId = patientData.positionId ?? existing.positionId ?? '';
+      if (companyId && positionId) {
+        await this.validateCompanyAndPosition(companyId, positionId);
+      }
     }
 
     // Actualizar datos del paciente si hay cambios
