@@ -22,8 +22,10 @@ const DOMINANT_HANDS = [
 ];
 
 const schema = z.object({
-  firstName: z.string().min(1, 'El nombre es obligatorio').max(255),
-  lastName: z.string().min(1, 'El apellido es obligatorio').max(255),
+  firstName: z.string().min(1, 'El nombre es obligatorio').max(255)
+    .regex(/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]+$/, 'Solo se permiten letras'),
+  lastName: z.string().min(1, 'El apellido es obligatorio').max(255)
+    .regex(/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]+$/, 'Solo se permiten letras'),
   birthDate: z.string().min(1, 'La fecha de nacimiento es obligatoria')
     .refine((v) => {
       const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -37,10 +39,10 @@ const schema = z.object({
   usesGlasses: z.boolean().optional(),
   allergyIds: z.array(z.string()).optional(),
   emergencyContact: z.object({
-    name: z.string().min(1, 'El nombre del contacto es obligatorio').max(255),
-    phone: z.string().regex(/^\d{4}-?\d{7}$/, 'El teléfono debe tener 11 dígitos'),
-    relationship: z.string().min(1, 'El parentesco es obligatorio').max(100),
-  }),
+    name: z.string().max(255).optional().or(z.literal('')),
+    phone: z.string().optional().or(z.literal('')),
+    relationship: z.string().max(100).optional().or(z.literal('')),
+  }).optional(),
 });
 
 type EditPatientFormData = z.infer<typeof schema>;
@@ -90,7 +92,12 @@ export function EditPatientModal({ open, patient, onClose }: EditPatientModalPro
 
   const onSubmit = (data: EditPatientFormData) => {
     if (!patient) return;
-    updatePatient({ cedula: patient.cedula, payload: data }, { onSuccess: handleClose });
+    const hasEmergency = !!(data.emergencyContact?.name || data.emergencyContact?.phone || data.emergencyContact?.relationship);
+    const payload = {
+      ...data,
+      emergencyContact: hasEmergency ? data.emergencyContact : undefined,
+    };
+    updatePatient({ cedula: patient.cedula, payload }, { onSuccess: handleClose });
   };
 
   return (
@@ -116,10 +123,14 @@ export function EditPatientModal({ open, patient, onClose }: EditPatientModalPro
             </Typography>
             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
               <Controller name="firstName" control={control} render={({ field }) => (
-                <TextField {...field} label="Nombre" error={!!errors.firstName} helperText={errors.firstName?.message} size="small" fullWidth />
+                <TextField {...field} label="Nombre" error={!!errors.firstName} helperText={errors.firstName?.message} size="small" fullWidth
+                  onChange={(e) => field.onChange(e.target.value.replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]/g, ''))}
+                />
               )} />
               <Controller name="lastName" control={control} render={({ field }) => (
-                <TextField {...field} label="Apellido" error={!!errors.lastName} helperText={errors.lastName?.message} size="small" fullWidth />
+                <TextField {...field} label="Apellido" error={!!errors.lastName} helperText={errors.lastName?.message} size="small" fullWidth
+                  onChange={(e) => field.onChange(e.target.value.replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]/g, ''))}
+                />
               )} />
               <Controller name="birthDate" control={control} render={({ field }) => (
                 <TextField {...field} label="Fecha de Nacimiento" type="date" error={!!errors.birthDate} helperText={errors.birthDate?.message} size="small" fullWidth slotProps={{ inputLabel: { shrink: true } }} />
@@ -178,17 +189,17 @@ export function EditPatientModal({ open, patient, onClose }: EditPatientModalPro
 
             {/* Emergency contact */}
             <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.72rem', letterSpacing: '0.07em' }}>
-              Contacto de Emergencia
+              Contacto de Emergencia (opcional)
             </Typography>
             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
               <Controller name="emergencyContact.name" control={control} render={({ field }) => (
-                <TextField {...field} label="Nombre" error={!!errors.emergencyContact?.name} helperText={errors.emergencyContact?.name?.message} size="small" fullWidth />
+                <TextField {...field} label="Nombre (opcional)" error={!!errors.emergencyContact?.name} helperText={errors.emergencyContact?.name?.message} size="small" fullWidth />
               )} />
               <Controller name="emergencyContact.phone" control={control} render={({ field }) => (
-                <TextField {...field} label="Teléfono" error={!!errors.emergencyContact?.phone} helperText={errors.emergencyContact?.phone?.message} size="small" fullWidth />
+                <TextField {...field} label="Teléfono (opcional)" error={!!errors.emergencyContact?.phone} helperText={errors.emergencyContact?.phone?.message} size="small" fullWidth />
               )} />
               <Controller name="emergencyContact.relationship" control={control} render={({ field }) => (
-                <TextField {...field} label="Parentesco" error={!!errors.emergencyContact?.relationship} helperText={errors.emergencyContact?.relationship?.message} size="small" fullWidth />
+                <TextField {...field} label="Parentesco (opcional)" error={!!errors.emergencyContact?.relationship} helperText={errors.emergencyContact?.relationship?.message} size="small" fullWidth />
               )} />
             </Box>
           </Box>

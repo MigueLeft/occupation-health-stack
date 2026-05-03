@@ -41,6 +41,7 @@ export function PatientsPage() {
   const { data: patients = [], isLoading } = usePatients();
   const { data: companies = [] } = useCompanies();
   const { mutate: deletePatient, isPending: isDeleting } = useDeletePatient();
+  const navigate = useNavigate();
 
   const [search, setSearch] = useState('');
   const [sortAZ, setSortAZ] = useState(false);
@@ -117,7 +118,6 @@ export function PatientsPage() {
     setDeleteMultiOpen(false);
   };
 
-  const navigate = useNavigate();
   const handleView = (p: Patient) => navigate({ to: '/expedientes/$cedula', params: { cedula: p.cedula } });
   const handleEdit = (p: Patient) => setEditTarget(p);
 

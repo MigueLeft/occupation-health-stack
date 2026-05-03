@@ -223,11 +223,11 @@ export function AttendConsultationPage({ editMode = false }: Props) {
       });
 
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['consultations'] }),
-        queryClient.invalidateQueries({ queryKey: ['consultation', id] }),
-        queryClient.invalidateQueries({ queryKey: ['requests'] }),
-        queryClient.invalidateQueries({ queryKey: ['patients'] }),
-        queryClient.invalidateQueries({ queryKey: ['patient', data.patientId] }),
+        queryClient.refetchQueries({ queryKey: ['consultations'] }),
+        queryClient.refetchQueries({ queryKey: ['consultation', id] }),
+        queryClient.refetchQueries({ queryKey: ['requests'] }),
+        queryClient.refetchQueries({ queryKey: ['patients'] }),
+        queryClient.refetchQueries({ queryKey: ['patient', data.patientId] }),
       ]);
 
       toast.success('Consulta guardada exitosamente.');

@@ -24,17 +24,17 @@ export function PatientInfoBar({ patientName, patientId, company, position, eval
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, px: 4, py: 2.5, bgcolor: 'background.paper', borderBottom: '1px solid', borderColor: 'divider' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
-        <Avatar sx={{ width: 48, height: 48, bgcolor: 'primary.main', fontSize: '1rem' }}>{initials}</Avatar>
-        <Box>
-          <Typography variant="h3" sx={{ fontSize: '1rem' }}>{patientName}</Typography>
-          <Typography variant="body2" color="text.secondary">
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, minWidth: 0 }}>
+        <Avatar sx={{ width: 48, height: 48, bgcolor: 'primary.main', fontSize: '1rem', flexShrink: 0 }}>{initials}</Avatar>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography variant="h3" sx={{ fontSize: '1rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{patientName}</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {patientId} · {company} · {position}
           </Typography>
         </Box>
       </Box>
 
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
         <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
           Solicitud
         </Typography>
@@ -45,7 +45,7 @@ export function PatientInfoBar({ patientName, patientId, company, position, eval
         />
       </Box>
 
-      <Tabs value={activeTab} onChange={(_, v) => onTabChange(v)} sx={{ minHeight: 36 }}>
+      <Tabs value={activeTab} onChange={(_, v) => onTabChange(v)} sx={{ minHeight: 36, flexShrink: 0 }}>
         <Tab label="Médica" value="medica" sx={{ minHeight: 36, textTransform: 'none', fontWeight: 600 }} />
         <Tab label="Psicológica" value="psicologica" sx={{ minHeight: 36, textTransform: 'none', fontWeight: 600 }} />
       </Tabs>

@@ -87,6 +87,10 @@ export function PatientFormFields({
               error={!!errors.firstName}
               helperText={errors.firstName?.message}
               fullWidth
+              onChange={(e) => {
+                const lettersOnly = e.target.value.replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]/g, '');
+                field.onChange(lettersOnly);
+              }}
             />
           )}
         />
@@ -100,6 +104,10 @@ export function PatientFormFields({
               error={!!errors.lastName}
               helperText={errors.lastName?.message}
               fullWidth
+              onChange={(e) => {
+                const lettersOnly = e.target.value.replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]/g, '');
+                field.onChange(lettersOnly);
+              }}
             />
           )}
         />

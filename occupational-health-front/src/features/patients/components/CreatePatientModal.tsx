@@ -15,8 +15,10 @@ import { PatientFormFields } from './PatientFormFields';
 const schema = z.object({
   cedula: z.string()
     .regex(/^[VEve]-?\d{7,}$/, 'La cédula debe tener al menos 7 dígitos y comenzar con V o E'),
-  firstName: z.string().min(1, 'El nombre es obligatorio').max(255),
-  lastName: z.string().min(1, 'El apellido es obligatorio').max(255),
+  firstName: z.string().min(1, 'El nombre es obligatorio').max(255)
+    .regex(/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]+$/, 'Solo se permiten letras'),
+  lastName: z.string().min(1, 'El apellido es obligatorio').max(255)
+    .regex(/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]+$/, 'Solo se permiten letras'),
   birthDate: z.string().min(1, 'La fecha de nacimiento es obligatoria')
     .refine((v) => {
       const today = new Date(); today.setHours(0, 0, 0, 0);
