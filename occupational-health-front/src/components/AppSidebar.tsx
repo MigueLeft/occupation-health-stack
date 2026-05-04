@@ -22,6 +22,7 @@ import {
   AssignmentOutlined,
   LocalHospitalOutlined,
   LogoutOutlined,
+  AssessmentOutlined,
 } from '@mui/icons-material';
 import { Link, useRouterState } from '@tanstack/react-router';
 import { useAuth } from '@/features/auth';
@@ -41,6 +42,7 @@ const MAIN_ITEMS: NavItem[] = [
   { label: 'Solicitudes', icon: <AssignmentOutlined fontSize="small" />, to: '/solicitudes', module: 'requests' },
   { label: 'Consultas', icon: <LocalHospitalOutlined fontSize="small" />, to: '/consultas', module: 'consultations' },
   { label: 'Catálogos', icon: <LibraryBooksOutlined fontSize="small" />, to: '/catalogos', module: 'catalogs' },
+  { label: 'Reportes', icon: <AssessmentOutlined fontSize="small" />, to: '/reportes', module: 'reports' },
 ];
 
 const CONFIG_ITEMS: NavItem[] = [

@@ -25,6 +25,7 @@ import { ConsultationDiagnosticsModule } from './consultation-diagnostics/consul
 import { RolesModule } from './roles/roles.module';
 import { UsersModule } from './users/users.module';
 import { AuthUtilsModule } from './auth-utils/auth-utils.module';
+import { ReportsModule } from './reports/reports.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { AuthUtilsModule } from './auth-utils/auth-utils.module';
     RolesModule,
     UsersModule,
     AuthUtilsModule,
+    ReportsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: AuthGuard },

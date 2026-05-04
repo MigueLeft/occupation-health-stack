@@ -20,6 +20,7 @@ import { AttendConsultationPage } from '@/pages/AttendConsultationPage';
 import { EditConsultationPage } from '@/pages/EditConsultationPage';
 import { ExpedientePage } from '@/pages/ExpedientePage';
 import { ConsultationDetailPage } from '@/pages/ConsultationDetailPage';
+import { ReportsPage } from '@/pages/ReportsPage';
 import { authClient } from '@/lib/auth-client';
 import { toast } from 'sonner';
 
@@ -157,6 +158,13 @@ const consultationDetailRoute = createRoute({
   component: ConsultationDetailPage,
 });
 
+const reportsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/reportes',
+  beforeLoad: requireAuth,
+  component: ReportsPage,
+});
+
 const routeTree = rootRoute.addChildren([
   loginRoute,
   homeRoute,
@@ -171,6 +179,7 @@ const routeTree = rootRoute.addChildren([
   consultaEditarRoute,
   expedienteRoute,
   consultationDetailRoute,
+  reportsRoute,
 ]);
 
 export const router = createRouter({ routeTree });
