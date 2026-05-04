@@ -38,7 +38,7 @@ export function useAttendConsultation(consultationId: string) {
   const diagnosticsQ = useQuery({ queryKey: ['consultation-diagnostics', consultationId], queryFn: () => getConsultationDiagnostics(consultationId) });
   const psychometricQ = useQuery({ queryKey: ['psychometric-tests', consultationId], queryFn: () => getPsychometricTests(consultationId) });
 
-  const isLoading = consultationQ.isLoading || requestsQ.isLoading || patientsQ.isLoading;
+  const isLoading = consultationQ.isLoading || requestsQ.isLoading || patientsQ.isLoading || psychometricQ.isLoading;
 
   const data: FullConsultation | null = (() => {
     if (!consultationQ.data || !requestsQ.data || !patientsQ.data) return null;

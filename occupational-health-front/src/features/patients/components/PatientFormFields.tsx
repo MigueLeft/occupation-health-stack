@@ -67,7 +67,7 @@ export function PatientFormFields({
                 fullWidth
                 slotProps={{ htmlInput: { inputMode: 'numeric' } }}
                 onChange={(e) => {
-                  const onlyDigits = e.target.value.replace(/\D/g, '');
+                  const onlyDigits = e.target.value.replace(/\D/g, '').slice(0, 10);
                   field.onChange(`${prefix}-${onlyDigits}`);
                 }}
                 onBlur={() => field.onBlur()}
