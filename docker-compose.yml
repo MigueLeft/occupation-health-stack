@@ -23,6 +23,7 @@ services:
       BETTER_AUTH_SECRET: ugYTchBFeD0PNJzHqZ0RpZrz3Zp01dsf
       BETTER_AUTH_URL: http://localhost:3000
       FRONTEND_URL: http://localhost
+      LOAD_WORKERS: "false"
     ports:
       - "3000:3000"
     depends_on:
