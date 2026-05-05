@@ -63,5 +63,5 @@ export function useAttendConsultation(consultationId: string) {
     };
   })();
 
-  return { data, isLoading, refetchPatient: patientsQ.refetch };
+  return { data, isLoading, isPsychometricFetching: psychometricQ.isFetching, refetchPatient: patientsQ.refetch };
 }

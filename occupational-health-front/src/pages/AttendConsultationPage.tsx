@@ -6,7 +6,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { AppLayout } from '@/components/AppLayout';
 import { useAttendConsultation } from '@/features/consultations/hooks/useAttendConsultation';
-import { useAddPsychometricTest, useRemovePsychometricTest } from '@/features/consultations/hooks/usePsychometricTestActions';
 import { useExams } from '@/features/catalogs/hooks/useExams';
 import { useDiseases } from '@/features/catalogs/hooks/useDiseases';
 import { useDiseaseCategories } from '@/features/catalogs/hooks/useDiseaseCategories';
@@ -16,7 +15,7 @@ import { useAllergies } from '@/features/catalogs/hooks/useAllergies';
 import { useUsers } from '@/features/users/hooks/useUsers';
 import { useAuth } from '@/features/auth';
 import { consultationsService } from '@/features/consultations/services/consultations.service';
-import { physicalExamService, diagnosticsService, examResultsService } from '@/features/consultations/services/sub-entities.service';
+import { physicalExamService, diagnosticsService, examResultsService, psychometricTestsService } from '@/features/consultations/services/sub-entities.service';
 import { patientsService } from '@/features/patients/services/patients.service';
 import { PatientInfoBar } from '@/features/consultations/components/attend/PatientInfoBar';
 import { PhysicalExamSection } from '@/features/consultations/components/attend/PhysicalExamSection';
@@ -26,11 +25,12 @@ import { PsicologicaSection } from '@/features/consultations/components/attend/P
 import { ChronicDiseasesSection } from '@/features/consultations/components/attend/ChronicDiseasesSection';
 import { PatientInitialDataSection } from '@/features/consultations/components/attend/PatientInitialDataSection';
 import { AttendedBySection } from '@/features/consultations/components/attend/AttendedBySection';
-import type { PhysicalExamPayload, ConsultationDiagnostic, ExamResult } from '@/features/consultations/services/sub-entities.service';
+import type { PhysicalExamPayload, ConsultationDiagnostic, ExamResult, PsychometricTestResult } from '@/features/consultations/services/sub-entities.service';
 import type { ConsultationResult, PsychologicalResult } from '@/features/consultations/types';
 
 type LocalDiagnostic = ConsultationDiagnostic & { _isNew?: true };
 type LocalExamResult = ExamResult & { _isNew?: true };
+type LocalPsychTest = PsychometricTestResult & { _isNew?: true };
 
 interface Props { editMode?: boolean; }
 
@@ -39,9 +39,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
-  const { data, isLoading, refetchPatient } = useAttendConsultation(id);
-  const addPsychTest = useAddPsychometricTest(id);
-  const removePsychTest = useRemovePsychometricTest(id);
+  const { data, isLoading, isPsychometricFetching, refetchPatient } = useAttendConsultation(id);
 
   const [activeTab, setActiveTab] = useState<'medica' | 'psicologica'>('medica');
   const [isSaving, setIsSaving] = useState(false);
@@ -58,12 +56,14 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   const [medicalAttendedById, setMedicalAttendedById] = useState('');
   const [psychologicalAttendedById, setPsychologicalAttendedById] = useState('');
 
-  // Local lists — changes are only persisted when "Guardar Consulta" is clicked
+  // Local lists — cambios se persisten al hacer "Guardar Consulta"
   const [localDiagnostics, setLocalDiagnostics] = useState<LocalDiagnostic[]>([]);
   const [localExamResults, setLocalExamResults] = useState<LocalExamResult[]>([]);
+  const [localPsychTests, setLocalPsychTests] = useState<LocalPsychTest[]>([]);
   const [localDiseases, setLocalDiseases] = useState<{ id: string; name: string }[]>([]);
   const [removedDiagnosticIds, setRemovedDiagnosticIds] = useState<string[]>([]);
   const [removedExamResultIds, setRemovedExamResultIds] = useState<string[]>([]);
+  const [removedPsychTestIds, setRemovedPsychTestIds] = useState<string[]>([]);
 
   const [initialized, setInitialized] = useState(false);
 
@@ -86,7 +86,10 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data?.id, currentUser?.id]);
 
-  if (data && !initialized) {
+  // Inicialización: espera a que los tests psicométricos estén frescos antes de poblar
+  // el estado local, evitando que datos en caché obsoletos bloqueen la re-inicialización.
+  useEffect(() => {
+    if (!data || isPsychometricFetching || initialized) return;
     setConsultResult((data.consultationResult ?? '') as ConsultationResult | '');
     setPsychResult((data.psychologicalResult ?? '') as PsychologicalResult | '');
     setInterviewDone(data.interviewConducted ?? false);
@@ -107,11 +110,13 @@ export function AttendConsultationPage({ editMode = false }: Props) {
     }
     setLocalDiagnostics(data.consultationDiagnostics);
     setLocalExamResults(data.examResults);
+    setLocalPsychTests(data.psychometricTests);
     setLocalDiseases(data.patientDiseases);
     setInitialized(true);
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data?.id, isPsychometricFetching]);
 
-  // ─── Local-only add/remove handlers (reactive, no API calls) ─────────────
+  // ─── Handlers locales (reactivos, sin llamadas API hasta guardar) ──────────
   const handleAddDiagnostic = ({ categoryId, diseaseId, bodySystemId }: { categoryId: string; diseaseId: string; bodySystemId?: string }) => {
     const tempId = `new-${Date.now()}`;
     setLocalDiagnostics((prev) => [...prev, { id: tempId, consultationId: id, categoryId, diseaseId, bodySystemId: bodySystemId ?? null, _isNew: true }]);
@@ -138,11 +143,14 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   };
 
   const handleAddPsychTest = (catalogTestId: string) => {
-    addPsychTest.mutate({ consultationId: id, catalogTestId, observations: null });
+    const tempId = `new-${Date.now()}`;
+    setLocalPsychTests((prev) => [...prev, { id: tempId, consultationId: id, catalogTestId, observations: null, _isNew: true }]);
   };
 
   const handleRemovePsychTest = (itemId: string) => {
-    removePsychTest.mutate(itemId);
+    const item = localPsychTests.find((t) => t.id === itemId);
+    if (item && !item._isNew) setRemovedPsychTestIds((prev) => [...prev, itemId]);
+    setLocalPsychTests((prev) => prev.filter((t) => t.id !== itemId));
   };
 
   const handleAddChronicDisease = (diseaseId: string) => {
@@ -155,7 +163,6 @@ export function AttendConsultationPage({ editMode = false }: Props) {
     setLocalDiseases((prev) => prev.filter((d) => d.id !== diseaseId));
   };
 
-  // Patient initial data has its own save button — persisted immediately
   const handleSavePatientInitialData = async (patch: { bloodType?: string; dominantHand?: string; usesGlasses?: boolean; allergyIds?: string[] }) => {
     if (!data) return;
     await patientsService.update(data.patientId, patch);
@@ -176,6 +183,10 @@ export function AttendConsultationPage({ editMode = false }: Props) {
           examResultsService.create({ consultationId: id, examId: er.examId, resultValue: er.resultValue, observation: er.observation, url: null, result: er.result ?? null }),
         ),
         ...removedExamResultIds.map((erId) => examResultsService.remove(erId)),
+        ...localPsychTests.filter((t) => t._isNew).map((t) =>
+          psychometricTestsService.create({ consultationId: id, catalogTestId: t.catalogTestId }),
+        ),
+        ...removedPsychTestIds.map((tId) => psychometricTestsService.remove(tId)),
       ]);
 
       await patientsService.update(data.patientId, { diseaseIds: localDiseases.map((d) => d.id) });
@@ -186,7 +197,6 @@ export function AttendConsultationPage({ editMode = false }: Props) {
         await physicalExamService.create({ ...physExam, consultationId: id });
       }
 
-      // Auto-detect consultation type based on which results were filled in
       let detectedType = data.type;
       if (consultResult && psychResult) {
         detectedType = 'Medica/Psicologica';
@@ -220,6 +230,8 @@ export function AttendConsultationPage({ editMode = false }: Props) {
         queryClient.refetchQueries({ queryKey: ['requests'] }),
         queryClient.refetchQueries({ queryKey: ['patients'] }),
         queryClient.refetchQueries({ queryKey: ['patient', data.patientId] }),
+        // Invalida para que la próxima apertura no inicialice con datos en caché obsoletos
+        queryClient.invalidateQueries({ queryKey: ['psychometric-tests', id] }),
       ]);
 
       toast.success('Consulta guardada exitosamente.');
@@ -331,7 +343,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
                   psychologicalResult={psychResult} onResultChange={setPsychResult}
                   interviewConducted={interviewDone} onInterviewChange={setInterviewDone}
                   observations={psychObservations} onObservationsChange={setPsychObservations}
-                  psychometricTests={data.psychometricTests}
+                  psychometricTests={localPsychTests}
                   catalogTests={psychCatalog}
                   onAddTest={handleAddPsychTest}
                   onRemoveTest={handleRemovePsychTest}
