@@ -6,6 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { AppLayout } from '@/components/AppLayout';
 import { useAttendConsultation } from '@/features/consultations/hooks/useAttendConsultation';
+import { useAddPsychometricTest, useRemovePsychometricTest } from '@/features/consultations/hooks/usePsychometricTestActions';
 import { useExams } from '@/features/catalogs/hooks/useExams';
 import { useDiseases } from '@/features/catalogs/hooks/useDiseases';
 import { useDiseaseCategories } from '@/features/catalogs/hooks/useDiseaseCategories';
@@ -15,7 +16,7 @@ import { useAllergies } from '@/features/catalogs/hooks/useAllergies';
 import { useUsers } from '@/features/users/hooks/useUsers';
 import { useAuth } from '@/features/auth';
 import { consultationsService } from '@/features/consultations/services/consultations.service';
-import { physicalExamService, diagnosticsService, examResultsService, psychometricTestsService } from '@/features/consultations/services/sub-entities.service';
+import { physicalExamService, diagnosticsService, examResultsService } from '@/features/consultations/services/sub-entities.service';
 import { patientsService } from '@/features/patients/services/patients.service';
 import { PatientInfoBar } from '@/features/consultations/components/attend/PatientInfoBar';
 import { PhysicalExamSection } from '@/features/consultations/components/attend/PhysicalExamSection';
@@ -25,12 +26,11 @@ import { PsicologicaSection } from '@/features/consultations/components/attend/P
 import { ChronicDiseasesSection } from '@/features/consultations/components/attend/ChronicDiseasesSection';
 import { PatientInitialDataSection } from '@/features/consultations/components/attend/PatientInitialDataSection';
 import { AttendedBySection } from '@/features/consultations/components/attend/AttendedBySection';
-import type { PhysicalExamPayload, ConsultationDiagnostic, ExamResult, PsychometricTestResult } from '@/features/consultations/services/sub-entities.service';
+import type { PhysicalExamPayload, ConsultationDiagnostic, ExamResult } from '@/features/consultations/services/sub-entities.service';
 import type { ConsultationResult, PsychologicalResult } from '@/features/consultations/types';
 
 type LocalDiagnostic = ConsultationDiagnostic & { _isNew?: true };
 type LocalExamResult = ExamResult & { _isNew?: true };
-type LocalPsychTest = PsychometricTestResult & { _isNew?: true };
 
 interface Props { editMode?: boolean; }
 
@@ -40,6 +40,8 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
   const { data, isLoading, refetchPatient } = useAttendConsultation(id);
+  const addPsychTest = useAddPsychometricTest(id);
+  const removePsychTest = useRemovePsychometricTest(id);
 
   const [activeTab, setActiveTab] = useState<'medica' | 'psicologica'>('medica');
   const [isSaving, setIsSaving] = useState(false);
@@ -59,11 +61,9 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   // Local lists — changes are only persisted when "Guardar Consulta" is clicked
   const [localDiagnostics, setLocalDiagnostics] = useState<LocalDiagnostic[]>([]);
   const [localExamResults, setLocalExamResults] = useState<LocalExamResult[]>([]);
-  const [localPsychTests, setLocalPsychTests] = useState<LocalPsychTest[]>([]);
   const [localDiseases, setLocalDiseases] = useState<{ id: string; name: string }[]>([]);
   const [removedDiagnosticIds, setRemovedDiagnosticIds] = useState<string[]>([]);
   const [removedExamResultIds, setRemovedExamResultIds] = useState<string[]>([]);
-  const [removedPsychTestIds, setRemovedPsychTestIds] = useState<string[]>([]);
 
   const [initialized, setInitialized] = useState(false);
 
@@ -107,7 +107,6 @@ export function AttendConsultationPage({ editMode = false }: Props) {
     }
     setLocalDiagnostics(data.consultationDiagnostics);
     setLocalExamResults(data.examResults);
-    setLocalPsychTests(data.psychometricTests);
     setLocalDiseases(data.patientDiseases);
     setInitialized(true);
   }
@@ -139,14 +138,11 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   };
 
   const handleAddPsychTest = (catalogTestId: string) => {
-    const tempId = `new-${Date.now()}`;
-    setLocalPsychTests((prev) => [...prev, { id: tempId, consultationId: id, catalogTestId, observations: null, _isNew: true }]);
+    addPsychTest.mutate({ consultationId: id, catalogTestId, observations: null });
   };
 
   const handleRemovePsychTest = (itemId: string) => {
-    const item = localPsychTests.find((t) => t.id === itemId);
-    if (item && !item._isNew) setRemovedPsychTestIds((prev) => [...prev, itemId]);
-    setLocalPsychTests((prev) => prev.filter((t) => t.id !== itemId));
+    removePsychTest.mutate(itemId);
   };
 
   const handleAddChronicDisease = (diseaseId: string) => {
@@ -180,10 +176,6 @@ export function AttendConsultationPage({ editMode = false }: Props) {
           examResultsService.create({ consultationId: id, examId: er.examId, resultValue: er.resultValue, observation: er.observation, url: null, result: er.result ?? null }),
         ),
         ...removedExamResultIds.map((erId) => examResultsService.remove(erId)),
-        ...localPsychTests.filter((t) => t._isNew).map((t) =>
-          psychometricTestsService.create({ consultationId: id, catalogTestId: t.catalogTestId }),
-        ),
-        ...removedPsychTestIds.map((tId) => psychometricTestsService.remove(tId)),
       ]);
 
       await patientsService.update(data.patientId, { diseaseIds: localDiseases.map((d) => d.id) });
@@ -339,7 +331,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
                   psychologicalResult={psychResult} onResultChange={setPsychResult}
                   interviewConducted={interviewDone} onInterviewChange={setInterviewDone}
                   observations={psychObservations} onObservationsChange={setPsychObservations}
-                  psychometricTests={localPsychTests}
+                  psychometricTests={data.psychometricTests}
                   catalogTests={psychCatalog}
                   onAddTest={handleAddPsychTest}
                   onRemoveTest={handleRemovePsychTest}
