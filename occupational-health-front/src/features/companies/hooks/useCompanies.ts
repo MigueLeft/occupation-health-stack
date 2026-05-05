@@ -53,8 +53,8 @@ export function useDeleteCompany() {
       queryClient.invalidateQueries({ queryKey: COMPANIES_KEY });
       toast.success('Empresa eliminada correctamente');
     },
-    onError: () => {
-      toast.error('Error al eliminar la empresa');
+    onError: (error: { response?: { data?: { message?: string } } }) => {
+      toast.error(error.response?.data?.message ?? 'Error al eliminar la empresa');
     },
   });
 }

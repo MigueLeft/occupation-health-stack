@@ -21,18 +21,24 @@ export function ConsultasPage() {
   if (isPermLoading) return null;
   if (!can('consultations', 'view')) return <Navigate to="/" />;
 
-  const filtered = consultations.filter((c) => {
-    const name = c.patientName.toLowerCase();
-    if (filters.search && !name.includes(filters.search.toLowerCase())) return false;
-    if (filters.tipo !== 'all' && c.type !== filters.tipo) return false;
-    if (filters.status === 'active' && c.status === 'Finalizada') return false;
-    if (filters.status !== 'active' && filters.status !== 'all' && c.status !== filters.status) return false;
-    if (filters.resultado !== 'all') {
-      const result = c.type === 'Medica' ? c.consultationResult : c.psychologicalResult;
-      if (result !== filters.resultado) return false;
-    }
-    return true;
-  });
+  const filtered = (consultations ?? [])
+    .filter((c) => {
+      const name = c.patientName.toLowerCase();
+      if (filters.search && !name.includes(filters.search.toLowerCase())) return false;
+      if (filters.tipo !== 'all' && c.type !== filters.tipo) return false;
+      if (filters.status === 'active' && c.status === 'Finalizada') return false;
+      if (filters.status !== 'active' && filters.status !== 'all' && c.status !== filters.status) return false;
+      if (filters.resultado !== 'all') {
+        const result = c.type === 'Medica' ? c.consultationResult : c.psychologicalResult;
+        if (result !== filters.resultado) return false;
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      if (a.status === 'Pendiente' && b.status !== 'Pendiente') return -1;
+      if (b.status === 'Pendiente' && a.status !== 'Pendiente') return 1;
+      return b.requestDate.localeCompare(a.requestDate);
+    });
 
   return (
     <AppLayout>

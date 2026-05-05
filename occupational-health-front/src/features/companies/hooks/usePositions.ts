@@ -47,8 +47,8 @@ export function useDeletePosition() {
       queryClient.invalidateQueries({ queryKey: ['positions'] });
       toast.success('Cargo eliminado correctamente');
     },
-    onError: () => {
-      toast.error('Error al eliminar el cargo');
+    onError: (error: { response?: { data?: { message?: string } } }) => {
+      toast.error(error.response?.data?.message ?? 'Error al eliminar el cargo');
     },
   });
 }

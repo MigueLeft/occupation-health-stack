@@ -239,6 +239,7 @@ export class ReportsService {
   private drawFooter(doc: PDFKit.PDFDocument, pageNum: number, totalPages: number) {
     const pageHeight = doc.page.height;
     const footerY = pageHeight - FOOTER_HEIGHT + 4;
+    const lineSpacing = 9;
 
     // Separator line
     doc
@@ -248,7 +249,7 @@ export class ReportsService {
       .lineWidth(0.8)
       .stroke();
 
-    // Company info — right-aligned
+    // Company info — all lines at absolute positions to avoid doc.y drift issues
     doc
       .font('Helvetica-Bold')
       .fontSize(7.5)
@@ -257,10 +258,10 @@ export class ReportsService {
 
     doc.font('Helvetica').fontSize(6.5).fillColor('#444444');
     for (let i = 1; i < FOOTER_LINES.length; i++) {
-      doc.text(FOOTER_LINES[i], MARGIN, doc.y + 2, { width: USABLE_WIDTH, align: 'right' });
+      doc.text(FOOTER_LINES[i], MARGIN, footerY + i * lineSpacing, { width: USABLE_WIDTH, align: 'right' });
     }
 
-    // Page number — left side
+    // Page number — left side, same baseline as first footer line
     doc
       .font('Helvetica')
       .fontSize(7)

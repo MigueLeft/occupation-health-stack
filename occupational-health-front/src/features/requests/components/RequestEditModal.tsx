@@ -7,6 +7,7 @@ import { useForm, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { usePatients } from '@/features/patients';
+import { SpanishDateField } from '@/components/SpanishDateField';
 import {
   EVALUATION_REASONS, EVALUATION_REASON_LABELS,
   REQUEST_STATUSES, REQUEST_STATUS_LABELS,
@@ -73,8 +74,8 @@ function EditForm({ request, isPending, onSubmit, onClose }: Omit<Props, 'open'>
 
           <Controller name="requestDate" control={control}
             render={({ field }) => (
-              <TextField {...field} label="Fecha de la Solicitud" type="date" fullWidth
-                slotProps={{ inputLabel: { shrink: true } }}
+              <SpanishDateField label="Fecha de la Solicitud" fullWidth
+                value={field.value ?? ''} onChange={field.onChange}
                 error={!!errors.requestDate} helperText={errors.requestDate?.message}
               />
             )} />

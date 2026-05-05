@@ -61,8 +61,8 @@ export function useDeleteRole() {
       queryClient.invalidateQueries({ queryKey: ROLES_KEY });
       toast.success('Rol eliminado correctamente');
     },
-    onError: () => {
-      toast.error('Error al eliminar el rol');
+    onError: (error: { response?: { data?: { message?: string } } }) => {
+      toast.error(error.response?.data?.message ?? 'Error al eliminar el rol');
     },
   });
 }

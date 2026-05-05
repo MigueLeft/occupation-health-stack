@@ -117,6 +117,18 @@ export class CompaniesService {
   async remove(id: string): Promise<Company> {
     await this.findOne(id);
 
+    const [linkedPatient] = await this.db
+      .select({ cedula: patients.cedula })
+      .from(patients)
+      .where(eq(patients.companyId, id))
+      .limit(1);
+
+    if (linkedPatient) {
+      throw new ConflictException(
+        'No se puede eliminar esta empresa porque tiene pacientes asociados. Reasigne o elimine los pacientes primero.',
+      );
+    }
+
     const [deleted] = await this.db
       .delete(companies)
       .where(eq(companies.id, id))

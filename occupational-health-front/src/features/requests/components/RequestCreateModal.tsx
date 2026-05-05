@@ -8,6 +8,7 @@ import { useForm, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { usePatients } from '@/features/patients';
+import { SpanishDateField } from '@/components/SpanishDateField';
 import {
   EVALUATION_REASONS, EVALUATION_REASON_LABELS,
   CONSULTATION_TYPES, CONSULTATION_TYPE_LABELS,
@@ -78,8 +79,8 @@ export function RequestCreateModal({ open, onClose, isPending, onSubmit }: Props
           <Stack spacing={2.5}>
             <Controller name="requestDate" control={control}
               render={({ field }) => (
-                <TextField {...field} label="Fecha de la Solicitud" type="date" fullWidth
-                  slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: new Date().toISOString().split('T')[0] } }}
+                <SpanishDateField label="Fecha de la Solicitud" fullWidth
+                  value={field.value ?? ''} onChange={field.onChange}
                   error={!!errors.requestDate} helperText={errors.requestDate?.message}
                 />
               )} />

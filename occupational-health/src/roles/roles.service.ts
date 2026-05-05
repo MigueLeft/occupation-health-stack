@@ -94,6 +94,19 @@ export class RolesService {
 
   async remove(id: string) {
     await this.findOne(id);
+
+    const [linkedUser] = await this.db
+      .select({ id: user.id })
+      .from(user)
+      .where(eq(user.roleId, id))
+      .limit(1);
+
+    if (linkedUser) {
+      throw new ConflictException(
+        'No se puede eliminar este rol porque tiene usuarios asignados. Reasigne los usuarios a otro rol primero.',
+      );
+    }
+
     await this.db.delete(roles).where(eq(roles.id, id));
     return { message: 'Rol eliminado correctamente' };
   }

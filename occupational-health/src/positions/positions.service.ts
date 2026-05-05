@@ -3,12 +3,14 @@ import {
   Inject,
   NotFoundException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DRIZZLE } from '../database/database.module';
 import { positions, Position } from './positions.schema';
 import { companies } from '../companies/companies.schema';
+import { patients } from '../patients/patients.schema';
 import { CreatePositionDto } from './dto/create-position.dto';
 import { UpdatePositionDto } from './dto/update-position.dto';
 
@@ -87,6 +89,18 @@ export class PositionsService {
 
   async remove(id: string): Promise<Position> {
     await this.findOne(id);
+
+    const [linkedPatient] = await this.db
+      .select({ cedula: patients.cedula })
+      .from(patients)
+      .where(eq(patients.positionId, id))
+      .limit(1);
+
+    if (linkedPatient) {
+      throw new ConflictException(
+        'No se puede eliminar este cargo porque tiene pacientes asociados. Reasigne o elimine los pacientes primero.',
+      );
+    }
 
     const [deleted] = await this.db
       .delete(positions)

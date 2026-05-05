@@ -290,28 +290,32 @@ async function main() {
     console.log(`  ✓ ${bs.name}`);
   }
 
-  // Crear categorías de enfermedades (capítulos CIE-10)
-  console.log('\n📂 Creando categorías de enfermedades (CIE-10)...');
+  // Crear categorías de diagnóstico
+  console.log('\n📂 Creando categorías de diagnóstico...');
   const DISEASE_CATEGORIES_DATA = [
-    { name: 'Enfermedades Infecciosas y Parasitarias' },
-    { name: 'Neoplasias' },
-    { name: 'Enfermedades de la Sangre y Órganos Hematopoyéticos' },
-    { name: 'Enfermedades Endocrinas, Nutricionales y Metabólicas' },
-    { name: 'Trastornos Mentales y del Comportamiento' },
-    { name: 'Enfermedades del Sistema Nervioso' },
-    { name: 'Enfermedades del Ojo y sus Anexos' },
-    { name: 'Enfermedades del Oído' },
-    { name: 'Enfermedades del Aparato Circulatorio' },
-    { name: 'Enfermedades del Aparato Respiratorio' },
-    { name: 'Enfermedades del Aparato Digestivo' },
-    { name: 'Enfermedades de la Piel y Tejido Subcutáneo' },
-    { name: 'Enfermedades del Sistema Musculoesquelético y Tejido Conjuntivo' },
-    { name: 'Enfermedades del Aparato Genitourinario' },
-    { name: 'Embarazo, Parto y Puerperio' },
-    { name: 'Malformaciones Congénitas y Anomalías Cromosómicas' },
-    { name: 'Traumatismos, Envenenamientos y Causas Externas' },
-    { name: 'Factores que Influyen en el Estado de Salud' },
-    { name: 'Síntomas, Signos y Hallazgos Anormales' },
+    { name: 'Enfermedad Laboral' },
+    { name: 'Enfermedad Comun' },
+    { name: 'Accidente Laboral' },
+    { name: 'Accidente Comun' },
+    // { name: 'Enfermedades Infecciosas y Parasitarias' },
+    // { name: 'Neoplasias' },
+    // { name: 'Enfermedades de la Sangre y Órganos Hematopoyéticos' },
+    // { name: 'Enfermedades Endocrinas, Nutricionales y Metabólicas' },
+    // { name: 'Trastornos Mentales y del Comportamiento' },
+    // { name: 'Enfermedades del Sistema Nervioso' },
+    // { name: 'Enfermedades del Ojo y sus Anexos' },
+    // { name: 'Enfermedades del Oído' },
+    // { name: 'Enfermedades del Aparato Circulatorio' },
+    // { name: 'Enfermedades del Aparato Respiratorio' },
+    // { name: 'Enfermedades del Aparato Digestivo' },
+    // { name: 'Enfermedades de la Piel y Tejido Subcutáneo' },
+    // { name: 'Enfermedades del Sistema Musculoesquelético y Tejido Conjuntivo' },
+    // { name: 'Enfermedades del Aparato Genitourinario' },
+    // { name: 'Embarazo, Parto y Puerperio' },
+    // { name: 'Malformaciones Congénitas y Anomalías Cromosómicas' },
+    // { name: 'Traumatismos, Envenenamientos y Causas Externas' },
+    // { name: 'Factores que Influyen en el Estado de Salud' },
+    // { name: 'Síntomas, Signos y Hallazgos Anormales' },
   ];
   for (const dc of DISEASE_CATEGORIES_DATA) {
     await db

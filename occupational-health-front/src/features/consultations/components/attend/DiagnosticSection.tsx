@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Typography, Paper, TextField, MenuItem, Button, Chip, Stack } from '@mui/material';
+import { Box, Typography, Paper, TextField, Button, Chip, Stack, Autocomplete } from '@mui/material';
 import { AddOutlined } from '@mui/icons-material';
 import { CONSULTATION_RESULTS } from '../../types';
 import type { ConsultationResult } from '../../types';
@@ -24,14 +24,14 @@ interface Props {
 }
 
 export function DiagnosticSection({ diagnostics, onAddDiagnostic, onRemoveDiagnostic, categories, diseases, bodySystems, result, onResultChange, description, onDescriptionChange }: Props) {
-  const [catId, setCatId] = useState('');
-  const [diseaseId, setDiseaseId] = useState('');
-  const [sysId, setSysId] = useState('');
+  const [cat, setCat] = useState<Cat | null>(null);
+  const [disease, setDisease] = useState<Disease | null>(null);
+  const [sys, setSys] = useState<BodySystem | null>(null);
 
   const handleAdd = () => {
-    if (!catId || !diseaseId) return;
-    onAddDiagnostic({ categoryId: catId, diseaseId, bodySystemId: sysId || undefined });
-    setCatId(''); setDiseaseId(''); setSysId('');
+    if (!cat || !disease) return;
+    onAddDiagnostic({ categoryId: cat.id, diseaseId: disease.id, bodySystemId: sys?.id });
+    setCat(null); setDisease(null); setSys(null);
   };
 
   const getName = (list: Cat[], id: string) => list.find((x) => x.id === id)?.name ?? id;
@@ -41,17 +41,37 @@ export function DiagnosticSection({ diagnostics, onAddDiagnostic, onRemoveDiagno
       <Typography variant="h3" sx={{ mb: 2.5, fontSize: '1rem' }}>Diagnóstico</Typography>
 
       <Stack spacing={1.5}>
-        <TextField select size="small" label="Categoría" value={catId} onChange={(e) => setCatId(e.target.value)} fullWidth>
-          {categories.map((c) => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
-        </TextField>
-        <TextField select size="small" label="Enfermedad" value={diseaseId} onChange={(e) => setDiseaseId(e.target.value)} fullWidth>
-          {diseases.map((d) => <MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>)}
-        </TextField>
-        <TextField select size="small" label="Aparato/Sistema (opcional)" value={sysId} onChange={(e) => setSysId(e.target.value)} fullWidth>
-          <MenuItem value="">—</MenuItem>
-          {bodySystems.map((b) => <MenuItem key={b.id} value={b.id}>{b.name}</MenuItem>)}
-        </TextField>
-        <Button variant="outlined" startIcon={<AddOutlined />} onClick={handleAdd} disabled={!catId || !diseaseId} fullWidth>
+        <Autocomplete
+          size="small"
+          options={categories}
+          getOptionLabel={(c) => c.name}
+          value={cat}
+          onChange={(_, v) => setCat(v)}
+          renderInput={(params) => <TextField {...params} label="Categoría" placeholder="Buscar categoría..." />}
+          fullWidth
+          noOptionsText="Sin resultados"
+        />
+        <Autocomplete
+          size="small"
+          options={diseases}
+          getOptionLabel={(d) => d.name}
+          value={disease}
+          onChange={(_, v) => setDisease(v)}
+          renderInput={(params) => <TextField {...params} label="Enfermedad" placeholder="Buscar enfermedad..." />}
+          fullWidth
+          noOptionsText="Sin resultados"
+        />
+        <Autocomplete
+          size="small"
+          options={bodySystems}
+          getOptionLabel={(b) => b.name}
+          value={sys}
+          onChange={(_, v) => setSys(v)}
+          renderInput={(params) => <TextField {...params} label="Aparato/Sistema (opcional)" placeholder="Buscar aparato o sistema..." />}
+          fullWidth
+          noOptionsText="Sin resultados"
+        />
+        <Button variant="outlined" startIcon={<AddOutlined />} onClick={handleAdd} disabled={!cat || !disease} fullWidth>
           Agregar
         </Button>
         {diagnostics.length > 0 && (

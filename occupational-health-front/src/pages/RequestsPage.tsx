@@ -45,14 +45,20 @@ export function RequestsPage() {
   if (isPermLoading) return null;
   if (!can('requests', 'view')) return <Navigate to="/" />;
 
-  const filtered = requests.filter((r) => {
-    const name = r.patientName.toLowerCase();
-    if (filters.search && !name.includes(filters.search.toLowerCase())) return false;
-    if (filters.motivo !== 'all' && r.evaluationReason !== filters.motivo) return false;
-    if (filters.status !== 'all' && r.status !== filters.status) return false;
-    if (filters.dateFilter !== 'all' && !isInDateRange(r.requestDate, filters.dateFilter)) return false;
-    return true;
-  });
+  const filtered = requests
+    .filter((r) => {
+      const name = r.patientName.toLowerCase();
+      if (filters.search && !name.includes(filters.search.toLowerCase())) return false;
+      if (filters.motivo !== 'all' && r.evaluationReason !== filters.motivo) return false;
+      if (filters.status !== 'all' && r.status !== filters.status) return false;
+      if (filters.dateFilter !== 'all' && !isInDateRange(r.requestDate, filters.dateFilter)) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      if (a.status === 'Pendiente' && b.status !== 'Pendiente') return -1;
+      if (b.status === 'Pendiente' && a.status !== 'Pendiente') return 1;
+      return b.requestDate.localeCompare(a.requestDate);
+    });
 
   const handleCreate = (payload: Parameters<typeof createMutation.mutate>[0]) => {
     createMutation.mutate(payload, { onSuccess: () => setCreateOpen(false) });
