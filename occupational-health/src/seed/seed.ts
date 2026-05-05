@@ -10,6 +10,9 @@ import { roles, type PermissionsMatrix } from '../roles/roles.schema';
 import { user } from '../auth/auth.schema';
 import { auth } from '../auth/auth';
 import { SYSTEM_MODULES } from '../roles/constants';
+import { risks } from '../risks/risks.schema';
+import { exams } from '../exams/exams.schema';
+import { psychometricTestCatalog } from '../psychometric-test-catalog/psychometric-test-catalog.schema';
 
 const MODULES = SYSTEM_MODULES.map((m) => m.key);
 
@@ -170,6 +173,89 @@ async function main() {
       console.log(`  ✓ Contraseña temporal: Admin@2025!`);
       console.log(`  ✓ Rol asignado: Admin`);
     }
+  }
+
+  // Crear catálogo de riesgos
+  console.log('\n⚠️  Creando catálogo de riesgos...');
+  const RISKS_DATA = [
+    { name: 'Ruidos', type: 'Fisico' },
+    { name: 'Calor', type: 'Fisico' },
+    { name: 'Vibraciones', type: 'Fisico' },
+    { name: 'Radiaciones', type: 'Fisico' },
+    { name: 'Humo', type: 'Quimico' },
+    { name: 'Polvos', type: 'Quimico' },
+    { name: 'Metales', type: 'Quimico' },
+    { name: 'Gases', type: 'Quimico' },
+    { name: 'Solventes', type: 'Quimico' },
+    { name: 'Exp. Animales', type: 'Biologico' },
+    { name: 'Contacto Desechos', type: 'Biologico' },
+    { name: 'Aglomeraciones', type: 'Biologico' },
+    { name: 'Atencion al público', type: 'Biologico' },
+    { name: 'Microorganismos', type: 'Biologico' },
+    { name: 'Caidas', type: 'Mecanico' },
+    { name: 'Objetos filosos', type: 'Mecanico' },
+    { name: 'Trabajo en altura', type: 'Mecanico' },
+    { name: 'Caidas de objetos', type: 'Mecanico' },
+    { name: 'Atrapamiento', type: 'Mecanico' },
+    { name: 'Sedestacion prolongada', type: 'Disergonomicos' },
+    { name: 'Bipedestacion prolongada', type: 'Disergonomicos' },
+    { name: 'Manipulacion manual de carga', type: 'Disergonomicos' },
+    { name: 'Halar o empujar', type: 'Disergonomicos' },
+    { name: 'Movimientos repetitivos', type: 'Disergonomicos' },
+    { name: 'Sobrecarga mental', type: 'Psicosocial' },
+    { name: 'Atencion sostenida', type: 'Psicosocial' },
+    { name: 'Estilos de mando supervisorio rigido', type: 'Psicosocial' },
+    { name: 'Horas extra', type: 'Psicosocial' },
+    { name: 'Aislamiento', type: 'Psicosocial' },
+    { name: 'Esfuerzo visual', type: 'Psicosocial' },
+  ];
+  for (const risk of RISKS_DATA) {
+    await db.insert(risks).values(risk).onConflictDoNothing({ target: risks.name });
+    console.log(`  ✓ [${risk.type}] ${risk.name}`);
+  }
+
+  // Crear catálogo de exámenes
+  console.log('\n🔬 Creando catálogo de exámenes...');
+  const EXAMS_DATA = [
+    { name: 'Hematologia completa', category: 'Laboratorio' },
+    { name: 'Quimica sanguinea', category: 'Laboratorio' },
+    { name: 'Perfil lipidico', category: 'Laboratorio' },
+    { name: 'VDRL', category: 'Laboratorio' },
+    { name: 'Orina', category: 'Laboratorio' },
+    { name: 'Heces', category: 'Laboratorio' },
+    { name: 'Rx Torax PA', category: 'Estudio de Imagenes' },
+    { name: 'Rx Columna cervical', category: 'Estudio de Imagenes' },
+    { name: 'Rx Columna LS', category: 'Estudio de Imagenes' },
+    { name: 'Rx Columna dorsal', category: 'Estudio de Imagenes' },
+    { name: 'Audiometria', category: 'Pruebas Especiales' },
+    { name: 'Espirometria', category: 'Pruebas Especiales' },
+    { name: 'Goniometria', category: 'Pruebas Especiales' },
+    { name: 'Agudeza visual', category: 'Pruebas Especiales' },
+    { name: 'Certificado de salud', category: 'Pruebas Especiales' },
+  ];
+  for (const exam of EXAMS_DATA) {
+    await db.insert(exams).values(exam).onConflictDoNothing({ target: exams.name });
+    console.log(`  ✓ [${exam.category}] ${exam.name}`);
+  }
+
+  // Crear catálogo de tests psicométricos
+  console.log('\n🧠 Creando catálogo de tests psicométricos...');
+  const PSYCHOMETRIC_DATA = [
+    { name: '16 PF 5' },
+    { name: '16 PF' },
+    { name: 'Test de Kostick' },
+    { name: 'IPV' },
+    { name: 'Test de Barsit' },
+    { name: 'Raven' },
+    { name: 'Wartegg' },
+    { name: 'Persona bajo la lluvia' },
+  ];
+  for (const test of PSYCHOMETRIC_DATA) {
+    await db
+      .insert(psychometricTestCatalog)
+      .values(test)
+      .onConflictDoNothing({ target: psychometricTestCatalog.name });
+    console.log(`  ✓ ${test.name}`);
   }
 
   console.log('\n✅ Seed completado exitosamente!\n');
