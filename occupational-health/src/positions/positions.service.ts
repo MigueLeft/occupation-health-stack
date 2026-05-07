@@ -5,7 +5,7 @@ import {
   BadRequestException,
   ConflictException,
 } from '@nestjs/common';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, isNull } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DRIZZLE } from '../database/database.module';
 import { positions, positionRisks, Position } from './positions.schema';
@@ -28,7 +28,12 @@ export class PositionsService {
       })
       .from(positionRisks)
       .innerJoin(risks, eq(positionRisks.riskId, risks.id))
-      .where(eq(positionRisks.positionId, positionId));
+      .where(
+        and(
+          eq(positionRisks.positionId, positionId),
+          isNull(positionRisks.removedAt),
+        ),
+      );
 
     return rows.sort((a, b) => a.type.localeCompare(b.type));
   }
@@ -141,19 +146,20 @@ export class PositionsService {
       );
     }
 
-    const [existing] = await this.db
+    const [activeAssignment] = await this.db
       .select()
       .from(positionRisks)
       .where(
         and(
           eq(positionRisks.positionId, positionId),
           eq(positionRisks.riskId, riskId),
+          isNull(positionRisks.removedAt),
         ),
       );
 
-    if (existing) {
+    if (activeAssignment) {
       throw new ConflictException(
-        `El riesgo "${risk.name}" ya está asociado a este cargo.`,
+        `El riesgo "${risk.name}" ya está activo en este cargo.`,
       );
     }
 
@@ -165,11 +171,13 @@ export class PositionsService {
     await this.findOne(positionId);
 
     await this.db
-      .delete(positionRisks)
+      .update(positionRisks)
+      .set({ removedAt: new Date() })
       .where(
         and(
           eq(positionRisks.positionId, positionId),
           eq(positionRisks.riskId, riskId),
+          isNull(positionRisks.removedAt),
         ),
       );
 
