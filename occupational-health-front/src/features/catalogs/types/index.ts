@@ -37,6 +37,19 @@ export interface GeoLocation {
   type: string;
 }
 
+export interface MedicalSpecialty {
+  id: string;
+  name: string;
+}
+
+export interface RiskExposureCategory {
+  id: string;
+  name: string;
+  riskType: string;
+  conditions?: string | null;
+  healthEffects?: string | null;
+}
+
 export const EXAM_CATEGORIES = ['Laboratorio', 'Estudio de Imagenes', 'Pruebas Especiales'] as const;
 export type ExamCategory = (typeof EXAM_CATEGORIES)[number];
 

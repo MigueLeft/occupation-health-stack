@@ -5,7 +5,8 @@ import { patients } from '../patients/patients.schema';
 export const EVALUATION_REASONS = [
   'Pre-empleo',
   'Egreso',
-  'Pre/Post-vacacional',
+  'Pre-vacacional',
+  'Post-vacacional',
   'Periodica',
   'Consulta',
   'Post-reposo',

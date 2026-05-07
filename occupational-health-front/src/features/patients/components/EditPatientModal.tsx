@@ -20,6 +20,7 @@ const DOMINANT_HANDS = [
   { value: 'left', label: 'Izquierda' },
   { value: 'both', label: 'Ambas' },
 ];
+const SEX_OPTIONS = ['Masculino', 'Femenino'];
 
 const schema = z.object({
   firstName: z.string().min(1, 'El nombre es obligatorio').max(255)
@@ -31,6 +32,7 @@ const schema = z.object({
       const today = new Date(); today.setHours(0, 0, 0, 0);
       return new Date(v) < today;
     }, { message: 'La fecha de nacimiento no puede ser hoy ni una fecha futura' }),
+  sex: z.string().optional().or(z.literal('')),
   companyId: z.string().uuid('Selecciona una empresa'),
   positionId: z.string().uuid('Selecciona un cargo'),
   bloodType: z.string().optional(),
@@ -72,6 +74,7 @@ export function EditPatientModal({ open, patient, onClose }: EditPatientModalPro
         firstName: patient.firstName,
         lastName: patient.lastName,
         birthDate: patient.birthDate ?? '',
+        sex: patient.sex ?? '',
         companyId: patient.companyId ?? '',
         positionId: patient.positionId ?? '',
         bloodType: patient.bloodType ?? '',
@@ -93,6 +96,7 @@ export function EditPatientModal({ open, patient, onClose }: EditPatientModalPro
     const hasEmergency = !!(data.emergencyContact?.name || data.emergencyContact?.phone || data.emergencyContact?.relationship);
     const payload = {
       ...data,
+      sex: data.sex || undefined,
       emergencyContact: hasEmergency ? data.emergencyContact : undefined,
     };
     updatePatient({ cedula: patient.cedula, payload }, { onSuccess: handleClose });
@@ -132,6 +136,12 @@ export function EditPatientModal({ open, patient, onClose }: EditPatientModalPro
               )} />
               <Controller name="birthDate" control={control} render={({ field }) => (
                 <TextField {...field} label="Fecha de Nacimiento" type="date" error={!!errors.birthDate} helperText={errors.birthDate?.message} size="small" fullWidth slotProps={{ inputLabel: { shrink: true } }} />
+              )} />
+              <Controller name="sex" control={control} render={({ field }) => (
+                <TextField {...field} select label="Sexo" size="small" fullWidth value={field.value ?? ''}>
+                  <MenuItem value=""><em>Sin especificar</em></MenuItem>
+                  {SEX_OPTIONS.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
+                </TextField>
               )} />
               <Controller name="companyId" control={control} render={({ field }) => (
                 <TextField {...field} select label="Empresa" error={!!errors.companyId} helperText={errors.companyId?.message} size="small" fullWidth

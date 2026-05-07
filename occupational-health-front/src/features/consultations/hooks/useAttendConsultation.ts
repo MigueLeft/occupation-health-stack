@@ -2,7 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/axios';
 import { requestsService } from '@/features/requests/services/requests.service';
 import { patientsService } from '@/features/patients/services/patients.service';
-import type { Consultation, ConsultationWithDetails, RestPeriod } from '../types';
+import { referralsService } from '../services/referrals.service';
+import type { Consultation, ConsultationWithDetails, RestPeriod, ConsultationReferral } from '../types';
 import type { PhysicalExam, ConsultationDiagnostic, ExamResult, PsychometricTestResult } from '../services/sub-entities.service';
 import type { EvaluationReason, RequestStatus } from '@/features/requests/types';
 import type { Patient } from '@/features/patients/types';
@@ -18,6 +19,7 @@ interface FullConsultation extends ConsultationWithDetails {
   patient: Patient | null;
   positionRisks: PositionRisk[];
   restPeriod: RestPeriod | null;
+  referral: ConsultationReferral | null;
 }
 
 async function getConsultation(id: string): Promise<{ consultation: Consultation & { physicalExam: PhysicalExam | null; examResults: ExamResult[]; restPeriod: RestPeriod | null } }> {
@@ -46,6 +48,7 @@ export function useAttendConsultation(consultationId: string) {
   const patientsQ = useQuery({ queryKey: ['patients'], queryFn: () => patientsService.getAll() });
   const diagnosticsQ = useQuery({ queryKey: ['consultation-diagnostics', consultationId], queryFn: () => getConsultationDiagnostics(consultationId) });
   const psychometricQ = useQuery({ queryKey: ['psychometric-tests', consultationId], queryFn: () => getPsychometricTests(consultationId) });
+  const referralQ = useQuery({ queryKey: ['consultation-referral', consultationId], queryFn: () => referralsService.getByConsultation(consultationId) });
 
   const patient = (() => {
     if (!consultationQ.data || !requestsQ.data || !patientsQ.data) return null;
@@ -83,6 +86,7 @@ export function useAttendConsultation(consultationId: string) {
       patient: pat ?? null,
       positionRisks: positionRisksQ.data ?? [],
       restPeriod: c.restPeriod ?? null,
+      referral: referralQ.data ?? null,
     };
   })();
 

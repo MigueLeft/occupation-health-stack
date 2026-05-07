@@ -1,7 +1,8 @@
 export const EVALUATION_REASONS = [
   'Pre-empleo',
   'Egreso',
-  'Pre/Post-vacacional',
+  'Pre-vacacional',
+  'Post-vacacional',
   'Periodica',
   'Consulta',
   'Post-reposo',
@@ -12,7 +13,8 @@ export type EvaluationReason = (typeof EVALUATION_REASONS)[number];
 export const EVALUATION_REASON_LABELS: Record<EvaluationReason, string> = {
   'Pre-empleo': 'Pre-empleo',
   'Egreso': 'Egreso',
-  'Pre/Post-vacacional': 'Pre/Post-vacacional',
+  'Pre-vacacional': 'Pre-vacacional',
+  'Post-vacacional': 'Post-vacacional',
   'Periodica': 'Periódica',
   'Consulta': 'Consulta',
   'Post-reposo': 'Post-reposo',

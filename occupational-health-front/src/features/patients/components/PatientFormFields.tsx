@@ -15,6 +15,11 @@ import { autoFormatPhone } from '@/utils/phone';
 import type { PatientFormData } from './CreatePatientModal';
 import type { Company, Position } from '../types';
 
+const SEX_OPTIONS = [
+  { value: 'Masculino', label: 'Masculino' },
+  { value: 'Femenino', label: 'Femenino' },
+];
+
 interface PatientFormFieldsProps {
   control: Control<PatientFormData>;
   errors: FieldErrors<PatientFormData>;
@@ -113,21 +118,36 @@ export function PatientFormFields({
         />
       </Stack>
 
-      <Controller
-        name="birthDate"
-        control={control}
-        render={({ field }) => (
-          <TextField
-            {...field}
-            type="date"
-            label="Fecha de Nacimiento"
-            slotProps={{ inputLabel: { shrink: true } }}
-            error={!!errors.birthDate}
-            helperText={errors.birthDate?.message}
-            fullWidth
-          />
-        )}
-      />
+      <Stack direction="row" spacing={2}>
+        <Controller
+          name="birthDate"
+          control={control}
+          render={({ field }) => (
+            <TextField
+              {...field}
+              type="date"
+              label="Fecha de Nacimiento"
+              slotProps={{ inputLabel: { shrink: true } }}
+              error={!!errors.birthDate}
+              helperText={errors.birthDate?.message}
+              fullWidth
+            />
+          )}
+        />
+        <Controller
+          name="sex"
+          control={control}
+          render={({ field }) => (
+            <FormControl fullWidth>
+              <InputLabel>Sexo</InputLabel>
+              <Select {...field} label="Sexo" value={field.value ?? ''}>
+                <MenuItem value=""><em>Sin especificar</em></MenuItem>
+                {SEX_OPTIONS.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
+              </Select>
+            </FormControl>
+          )}
+        />
+      </Stack>
 
       <Stack direction="row" spacing={2}>
         <Controller

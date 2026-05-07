@@ -5,8 +5,21 @@ import {
   integer,
   date,
   unique,
+  varchar,
 } from 'drizzle-orm/pg-core';
 import { consultations } from '../consultations/consultations.schema';
+import { diseases } from '../diseases/diseases.schema';
+
+// Motivos de reposo médico
+export const REST_PERIOD_REASONS = [
+  'Accidente Comun',
+  'Accidente Laboral',
+  'Enfermedad Comun',
+  'Enfermedad Laboral',
+  'Maternidad',
+  'Otro',
+] as const;
+export type RestPeriodReason = (typeof REST_PERIOD_REASONS)[number];
 
 export const restPeriods = pgTable(
   'rest_periods',
@@ -21,6 +34,8 @@ export const restPeriods = pgTable(
     days: integer('days'),
     startDate: date('start_date'),
     endDate: date('end_date'),
+    reason: varchar('reason', { length: 50 }),
+    diseaseId: uuid('disease_id').references(() => diseases.id, { onDelete: 'set null' }),
   },
   (t) => [unique('uq_rest_period_consultation').on(t.consultationId)],
 );

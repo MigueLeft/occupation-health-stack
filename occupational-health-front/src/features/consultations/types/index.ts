@@ -42,6 +42,16 @@ export interface RestPeriod {
   days?: number | null;
   startDate?: string | null;
   endDate?: string | null;
+  reason?: string | null;
+  diseaseId?: string | null;
+}
+
+export interface ConsultationReferral {
+  id: string;
+  consultationId: string;
+  requiresReferral: boolean;
+  specialtyId?: string | null;
+  specialtyName?: string | null;
 }
 
 export interface Consultation {

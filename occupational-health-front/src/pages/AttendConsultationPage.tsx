@@ -17,6 +17,7 @@ import { useAuth } from '@/features/auth';
 import { consultationsService } from '@/features/consultations/services/consultations.service';
 import { physicalExamService, diagnosticsService, examResultsService, psychometricTestsService } from '@/features/consultations/services/sub-entities.service';
 import { restPeriodsService } from '@/features/consultations/services/rest-periods.service';
+import { referralsService } from '@/features/consultations/services/referrals.service';
 import { patientsService } from '@/features/patients/services/patients.service';
 import { PatientInfoBar } from '@/features/consultations/components/attend/PatientInfoBar';
 import { PhysicalExamSection } from '@/features/consultations/components/attend/PhysicalExamSection';
@@ -27,7 +28,9 @@ import { ChronicDiseasesSection } from '@/features/consultations/components/atte
 import { PatientInitialDataSection } from '@/features/consultations/components/attend/PatientInitialDataSection';
 import { AttendedBySection } from '@/features/consultations/components/attend/AttendedBySection';
 import { RestPeriodSection } from '@/features/consultations/components/attend/RestPeriodSection';
+import { ReferralSection } from '@/features/consultations/components/attend/ReferralSection';
 import { ExposureRisksBar } from '@/features/consultations/components/attend/ExposureRisksBar';
+import { useMedicalSpecialties } from '@/features/catalogs/hooks/useMedicalSpecialties';
 import { SavePartialModal } from '@/features/consultations/components/attend/SavePartialModal';
 import type { PhysicalExamPayload, ConsultationDiagnostic, ExamResult, PsychometricTestResult } from '@/features/consultations/services/sub-entities.service';
 import type { ConsultationResult, ConsultationType, PsychologicalResult, PsychologicalAptitude } from '@/features/consultations/types';
@@ -66,6 +69,10 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   const [isHealthy, setIsHealthy] = useState(false);
   const [requiresRest, setRequiresRest] = useState(false);
   const [restDays, setRestDays] = useState<number | ''>('');
+  const [restReason, setRestReason] = useState('');
+  const [restDiseaseId, setRestDiseaseId] = useState('');
+  const [requiresReferral, setRequiresReferral] = useState(false);
+  const [referralSpecialtyId, setReferralSpecialtyId] = useState('');
 
   const [localDiagnostics, setLocalDiagnostics] = useState<LocalDiagnostic[]>([]);
   const [localExamResults, setLocalExamResults] = useState<LocalExamResult[]>([]);
@@ -84,6 +91,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   const { data: psychCatalog = [] } = usePsychometricCatalog();
   const { data: allergies = [] } = useAllergies();
   const { data: users = [] } = useUsers();
+  const { data: medicalSpecialties = [] } = useMedicalSpecialties();
 
   useEffect(() => {
     if (!data || !currentUser?.id) return;
@@ -122,6 +130,12 @@ export function AttendConsultationPage({ editMode = false }: Props) {
     if (data.restPeriod) {
       setRequiresRest(data.restPeriod.requiresRest);
       setRestDays(data.restPeriod.days ?? '');
+      setRestReason(data.restPeriod.reason ?? '');
+      setRestDiseaseId(data.restPeriod.diseaseId ?? '');
+    }
+    if (data.referral) {
+      setRequiresReferral(data.referral.requiresReferral);
+      setReferralSpecialtyId(data.referral.specialtyId ?? '');
     }
     setLocalDiagnostics(data.consultationDiagnostics);
     setLocalExamResults(data.examResults);
@@ -223,14 +237,24 @@ export function AttendConsultationPage({ editMode = false }: Props) {
         await restPeriodsService.update(data.restPeriod.id, {
           requiresRest,
           days: requiresRest && restDays !== '' ? Number(restDays) : null,
+          reason: requiresRest && restReason ? restReason : null,
+          diseaseId: requiresRest && restDiseaseId ? restDiseaseId : null,
         });
       } else if (requiresRest) {
         await restPeriodsService.create({
           consultationId: id,
           requiresRest: true,
           days: restDays !== '' ? Number(restDays) : undefined,
+          reason: restReason || undefined,
+          diseaseId: restDiseaseId || undefined,
         });
       }
+
+      await referralsService.upsert({
+        consultationId: id,
+        requiresReferral,
+        specialtyId: requiresReferral && referralSpecialtyId ? referralSpecialtyId : undefined,
+      });
 
       await consultationsService.update(id, {
         type,
@@ -405,6 +429,24 @@ export function AttendConsultationPage({ editMode = false }: Props) {
                     onRequiresRestChange={setRequiresRest}
                     days={restDays}
                     onDaysChange={setRestDays}
+                    reason={restReason}
+                    onReasonChange={setRestReason}
+                    diseaseId={restDiseaseId}
+                    onDiseaseIdChange={setRestDiseaseId}
+                    diagnosedDiseases={localDiagnostics
+                      .map((d) => diseases.find((dis) => dis.id === d.diseaseId))
+                      .filter((d): d is NonNullable<typeof d> => !!d)
+                      .map((d) => ({ id: d.id, name: d.name }))
+                      .filter((d, i, arr) => arr.findIndex((x) => x.id === d.id) === i)}
+                  />
+                </Box>
+                <Box sx={{ mt: 3 }}>
+                  <ReferralSection
+                    requiresReferral={requiresReferral}
+                    onRequiresReferralChange={setRequiresReferral}
+                    specialtyId={referralSpecialtyId}
+                    onSpecialtyIdChange={setReferralSpecialtyId}
+                    specialties={medicalSpecialties}
                   />
                 </Box>
                 <Paper variant="outlined" sx={{ p: 3, borderRadius: 2, mt: 3 }}>

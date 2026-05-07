@@ -27,6 +27,9 @@ import { UsersModule } from './users/users.module';
 import { AuthUtilsModule } from './auth-utils/auth-utils.module';
 import { ReportsModule } from './reports/reports.module';
 import { GeoCatalogModule } from './geo-catalog/geo-catalog.module';
+import { MedicalSpecialtiesModule } from './medical-specialties/medical-specialties.module';
+import { RiskExposureCategoriesModule } from './risk-exposure-categories/risk-exposure-categories.module';
+import { ConsultationReferralsModule } from './consultation-referrals/consultation-referrals.module';
 
 @Module({
   imports: [
@@ -42,6 +45,8 @@ import { GeoCatalogModule } from './geo-catalog/geo-catalog.module';
     RisksModule,
     PsychometricTestCatalogModule,
     GeoCatalogModule,
+    MedicalSpecialtiesModule,
+    RiskExposureCategoriesModule,
     // Estructura de empresa
     CompaniesModule,
     PositionsModule,
@@ -55,6 +60,7 @@ import { GeoCatalogModule } from './geo-catalog/geo-catalog.module';
     ExamResultsModule,
     PsychometricTestsModule,
     ConsultationDiagnosticsModule,
+    ConsultationReferralsModule,
     RolesModule,
     UsersModule,
     AuthUtilsModule,

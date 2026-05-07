@@ -16,6 +16,7 @@ import { EmergencyContactDto } from './emergency-contact.dto';
 
 const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 const DOMINANT_HANDS = ['right', 'left', 'both'];
+const SEX_OPTIONS = ['Masculino', 'Femenino'];
 
 export class UpdatePatientDto {
   @IsOptional()
@@ -57,6 +58,12 @@ export class UpdatePatientDto {
     message: `La mano dominante debe ser una de las siguientes: ${DOMINANT_HANDS.join(', ')}.`,
   })
   dominantHand?: string;
+
+  @IsOptional()
+  @IsIn(SEX_OPTIONS, {
+    message: `El sexo debe ser uno de los siguientes: ${SEX_OPTIONS.join(', ')}.`,
+  })
+  sex?: string;
 
   @IsOptional()
   @IsBoolean({

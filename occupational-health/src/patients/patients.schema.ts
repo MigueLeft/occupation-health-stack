@@ -27,6 +27,7 @@ export const patients = pgTable('patients', {
   bloodType: varchar('blood_type', { length: 10 }),
   dominantHand: varchar('dominant_hand', { length: 20 }),
   usesGlasses: boolean('uses_glasses').default(false),
+  sex: varchar('sex', { length: 20 }),
   companyId: uuid('company_id').references(() => companies.id),
   positionId: uuid('position_id').references(() => positions.id),
 });

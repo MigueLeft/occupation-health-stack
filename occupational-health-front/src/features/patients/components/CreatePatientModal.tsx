@@ -24,6 +24,7 @@ const schema = z.object({
       const today = new Date(); today.setHours(0, 0, 0, 0);
       return new Date(v) < today;
     }, { message: 'La fecha de nacimiento no puede ser hoy ni una fecha futura' }),
+  sex: z.string().optional().or(z.literal('')),
   companyId: z.string().uuid('Selecciona una empresa'),
   positionId: z.string().uuid('Selecciona un cargo'),
   emergencyContact: z.object({
@@ -65,6 +66,7 @@ export function CreatePatientModal({ open, onClose }: CreatePatientModalProps) {
     const hasEmergency = !!(data.emergencyContact?.name || data.emergencyContact?.phone || data.emergencyContact?.relationship);
     const payload = {
       ...data,
+      sex: data.sex || undefined,
       emergencyContact: hasEmergency ? data.emergencyContact : undefined,
     };
     createPatient(payload, { onSuccess: handleClose });

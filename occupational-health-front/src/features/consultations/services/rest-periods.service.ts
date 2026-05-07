@@ -6,6 +6,8 @@ export const restPeriodsService = {
     consultationId: string;
     requiresRest: boolean;
     days?: number;
+    reason?: string;
+    diseaseId?: string;
   }): Promise<RestPeriod> {
     const { data } = await apiClient.post<{ restPeriod: RestPeriod }>('/rest-periods', payload);
     return data.restPeriod;
@@ -14,6 +16,8 @@ export const restPeriodsService = {
   async update(id: string, payload: {
     requiresRest?: boolean;
     days?: number | null;
+    reason?: string | null;
+    diseaseId?: string | null;
   }): Promise<RestPeriod> {
     const { data } = await apiClient.patch<{ restPeriod: RestPeriod }>(`/rest-periods/${id}`, payload);
     return data.restPeriod;

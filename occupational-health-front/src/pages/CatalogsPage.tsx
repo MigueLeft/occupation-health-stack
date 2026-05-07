@@ -5,7 +5,7 @@ import { AppLayout } from '@/components/AppLayout';
 import {
   CatalogLayout, ExamsPanel, RisksPanel, PsychometricTestsPanel,
   DiseasesPanel, AllergiesPanel, BodySystemsPanel, DiseaseCategoriesPanel,
-  GeoCatalogPanel,
+  GeoCatalogPanel, MedicalSpecialtiesPanel, RiskExposureCategoriesPanel,
 } from '@/features/catalogs';
 import type { CatalogTab } from '@/features/catalogs';
 import { usePermissions } from '@/features/auth';
@@ -19,6 +19,8 @@ const PANEL_MAP: Record<CatalogTab, React.ReactNode> = {
   'body-systems': <BodySystemsPanel />,
   categories: <DiseaseCategoriesPanel />,
   geo: <GeoCatalogPanel />,
+  'medical-specialties': <MedicalSpecialtiesPanel />,
+  'exposure-categories': <RiskExposureCategoriesPanel />,
 };
 
 export function CatalogsPage() {

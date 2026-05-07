@@ -7,4 +7,6 @@ export { AllergiesPanel } from './components/AllergiesPanel';
 export { BodySystemsPanel } from './components/BodySystemsPanel';
 export { DiseaseCategoriesPanel } from './components/DiseaseCategoriesPanel';
 export { GeoCatalogPanel } from './components/GeoCatalogPanel';
+export { MedicalSpecialtiesPanel } from './components/MedicalSpecialtiesPanel';
+export { RiskExposureCategoriesPanel } from './components/RiskExposureCategoriesPanel';
 export type { CatalogTab } from './components/CatalogLayout';

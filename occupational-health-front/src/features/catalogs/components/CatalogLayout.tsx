@@ -9,11 +9,15 @@ export type CatalogTab =
   | 'allergies'
   | 'body-systems'
   | 'categories'
-  | 'geo';
+  | 'geo'
+  | 'medical-specialties'
+  | 'exposure-categories';
 
 const NAV_ITEMS: { id: CatalogTab; label: string }[] = [
   { id: 'exams', label: 'Exámenes' },
   { id: 'risks', label: 'Riesgo de Exposición' },
+  { id: 'exposure-categories', label: 'Categorías de Exposición' },
+  { id: 'medical-specialties', label: 'Especialidades Médicas' },
   { id: 'psychometric', label: 'Tests Psicométricos' },
   { id: 'diseases', label: 'Enfermedades' },
   { id: 'allergies', label: 'Alergias' },
