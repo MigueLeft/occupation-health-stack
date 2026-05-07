@@ -97,7 +97,8 @@ export function CompanyFormModal({ open, onClose, company }: CompanyFormModalPro
           : { name: '', rif: '', address: '', contact: '', email: '', stateId: '', cityId: '', municipalityId: '', parishId: '' },
       );
     }
-  }, [open, company, reset]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const handleClose = () => { reset(); setLogo(null); onClose(); };
 
@@ -118,19 +119,18 @@ export function CompanyFormModal({ open, onClose, company }: CompanyFormModalPro
   };
 
   const onSubmit = (data: FormData) => {
-    const payload = {
+    const commonFields = {
       ...data,
       email: data.email || undefined,
       stateId: data.stateId || undefined,
       cityId: data.cityId || undefined,
       municipalityId: data.municipalityId || undefined,
       parishId: data.parishId || undefined,
-      logo: logo ?? undefined,
     };
     if (isEdit) {
-      updateCompany({ id: company.id, payload }, { onSuccess: handleClose });
+      updateCompany({ id: company.id, payload: { ...commonFields, logo } }, { onSuccess: handleClose });
     } else {
-      createCompany(payload, { onSuccess: handleClose });
+      createCompany({ ...commonFields, logo: logo ?? undefined }, { onSuccess: handleClose });
     }
   };
 

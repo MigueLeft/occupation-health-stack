@@ -28,8 +28,9 @@ import { PatientInitialDataSection } from '@/features/consultations/components/a
 import { AttendedBySection } from '@/features/consultations/components/attend/AttendedBySection';
 import { RestPeriodSection } from '@/features/consultations/components/attend/RestPeriodSection';
 import { ExposureRisksBar } from '@/features/consultations/components/attend/ExposureRisksBar';
+import { SavePartialModal } from '@/features/consultations/components/attend/SavePartialModal';
 import type { PhysicalExamPayload, ConsultationDiagnostic, ExamResult, PsychometricTestResult } from '@/features/consultations/services/sub-entities.service';
-import type { ConsultationResult, PsychologicalResult, PsychologicalAptitude } from '@/features/consultations/types';
+import type { ConsultationResult, ConsultationType, PsychologicalResult, PsychologicalAptitude } from '@/features/consultations/types';
 
 type LocalDiagnostic = ConsultationDiagnostic & { _isNew?: true };
 type LocalExamResult = ExamResult & { _isNew?: true };
@@ -46,6 +47,8 @@ export function AttendConsultationPage({ editMode = false }: Props) {
 
   const [activeTab, setActiveTab] = useState<'medica' | 'psicologica'>('medica');
   const [isSaving, setIsSaving] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [saveEmptySection, setSaveEmptySection] = useState<'medica' | 'psicologica'>('psicologica');
 
   const [treatment, setTreatment] = useState('');
   const [physExam, setPhysExam] = useState<PhysicalExamPayload>({});
@@ -55,6 +58,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   const [medObservations, setMedObservations] = useState('');
   const [psychResult, setPsychResult] = useState<PsychologicalResult | ''>('');
   const [psychAptitude, setPsychAptitude] = useState<PsychologicalAptitude | ''>('');
+  const [psychAptitudeDetails, setPsychAptitudeDetails] = useState('');
   const [interviewDone, setInterviewDone] = useState(false);
   const [psychObservations, setPsychObservations] = useState('');
   const [medicalAttendedById, setMedicalAttendedById] = useState('');
@@ -105,6 +109,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
     setDiagDescription(data.diagnosisDescription ?? '');
     setMedObservations((data.observations as { medica?: string } | null)?.medica ?? '');
     setPsychObservations((data.observations as { psicologica?: string } | null)?.psicologica ?? '');
+    setPsychAptitudeDetails((data.observations as { aptitudeDetails?: string } | null)?.aptitudeDetails ?? '');
     setRecommendations({
       suggestedPPE: data.recommendations?.suggestedPPE ?? '',
       medicalAdequacyMeasures: data.recommendations?.medicalAdequacyMeasures ?? '',
@@ -122,6 +127,14 @@ export function AttendConsultationPage({ editMode = false }: Props) {
     setLocalExamResults(data.examResults);
     setLocalPsychTests(data.psychometricTests);
     setLocalDiseases(data.patientDiseases);
+
+    // Auto-switch to incomplete tab on partial save reopen
+    if (data.status === 'En Proceso' && data.type === 'Medica' && data.consultationResult) {
+      setActiveTab('psicologica');
+    } else if (data.status === 'En Proceso' && data.type === 'Psicologica' && data.psychologicalResult) {
+      setActiveTab('medica');
+    }
+
     setInitialized(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data?.id, isPsychometricFetching]);
@@ -179,7 +192,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
     refetchPatient();
   };
 
-  const handleSave = async () => {
+  const performSave = async (type: ConsultationType, status: 'Finalizada' | 'En Proceso') => {
     if (!data) return;
     setIsSaving(true);
     try {
@@ -206,7 +219,6 @@ export function AttendConsultationPage({ editMode = false }: Props) {
         await physicalExamService.create({ ...physExam, consultationId: id });
       }
 
-      // Gestionar reposo
       if (data.restPeriod) {
         await restPeriodsService.update(data.restPeriod.id, {
           requiresRest,
@@ -220,17 +232,9 @@ export function AttendConsultationPage({ editMode = false }: Props) {
         });
       }
 
-      let detectedType = data.type;
-      if (consultResult && psychResult) {
-        detectedType = 'Medica/Psicologica';
-      } else if (consultResult) {
-        detectedType = 'Medica';
-      } else if (psychResult) {
-        detectedType = 'Psicologica';
-      }
-
       await consultationsService.update(id, {
-        type: detectedType,
+        type,
+        status,
         currentTreatment: treatment || undefined,
         consultationResult: consultResult || undefined,
         psychologicalResult: psychResult || undefined,
@@ -243,10 +247,13 @@ export function AttendConsultationPage({ editMode = false }: Props) {
           psychologicalAdequacyMeasures: recommendations.psychologicalAdequacyMeasures || undefined,
         },
         interviewConducted: interviewDone,
-        observations: { medica: medObservations || undefined, psicologica: psychObservations || undefined },
+        observations: {
+          medica: medObservations || undefined,
+          psicologica: psychObservations || undefined,
+          aptitudeDetails: psychAptitudeDetails || undefined,
+        },
         medicalAttendedById: medicalAttendedById || undefined,
         psychologicalAttendedById: psychologicalAttendedById || undefined,
-        status: 'Finalizada',
       });
 
       await Promise.all([
@@ -259,7 +266,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
         queryClient.invalidateQueries({ queryKey: ['psychometric-tests', id] }),
       ]);
 
-      toast.success('Consulta guardada exitosamente.');
+      toast.success(status === 'Finalizada' ? 'Consulta guardada exitosamente.' : 'Sección guardada. La consulta quedó En Proceso.');
       if (editMode && data) {
         navigate({ to: '/expedientes/$cedula', params: { cedula: data.patientId } });
       } else {
@@ -272,7 +279,42 @@ export function AttendConsultationPage({ editMode = false }: Props) {
     }
   };
 
+  const handleSave = async () => {
+    if (!data) return;
+
+    const medicalDone = !!consultResult;
+    const psychDone = !!psychResult;
+
+    // Determine if we're in a "first save" context (no tab is already completed)
+    const isPartialSave = data.status === 'En Proceso' &&
+      ((data.type === 'Medica' && !!data.consultationResult) ||
+       (data.type === 'Psicologica' && !!data.psychologicalResult));
+
+    // Show modal only for Medica/Psicologica consultations on first save with one section empty
+    if (data.type === 'Medica/Psicologica' && !isPartialSave && medicalDone !== psychDone) {
+      setSaveEmptySection(medicalDone ? 'psicologica' : 'medica');
+      setShowSaveModal(true);
+      return;
+    }
+
+    const type: ConsultationType =
+      medicalDone && psychDone ? 'Medica/Psicologica'
+      : medicalDone ? 'Medica'
+      : psychDone ? 'Psicologica'
+      : data.type;
+
+    await performSave(type, 'Finalizada');
+  };
+
   const systemAttendedByName = users.find((u) => u.id === data?.systemAttendedById)?.name;
+
+  // Determines which tab to hide when the consultation was partially saved (one section done)
+  const hiddenTab: 'medica' | 'psicologica' | undefined =
+    data?.status === 'En Proceso' && data.type === 'Medica' && !!data.consultationResult
+      ? 'medica'
+      : data?.status === 'En Proceso' && data.type === 'Psicologica' && !!data.psychologicalResult
+      ? 'psicologica'
+      : undefined;
 
   if (isLoading || !data) {
     return <AppLayout><Box sx={{ display: 'flex', justifyContent: 'center', pt: 10 }}><CircularProgress /></Box></AppLayout>;
@@ -307,6 +349,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
           requestDate={data.requestDate}
           activeTab={activeTab}
           onTabChange={setActiveTab}
+          hiddenTab={hiddenTab}
         />
 
         <Box sx={{ flex: 1, overflow: 'auto', p: 3 }}>
@@ -383,6 +426,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
                 <PsicologicaSection
                   psychologicalResult={psychResult} onResultChange={setPsychResult}
                   psychologicalAptitude={psychAptitude} onAptitudeChange={setPsychAptitude}
+                  aptitudeDetails={psychAptitudeDetails} onAptitudeDetailsChange={setPsychAptitudeDetails}
                   interviewConducted={interviewDone} onInterviewChange={setInterviewDone}
                   observations={psychObservations} onObservationsChange={setPsychObservations}
                   psychometricTests={localPsychTests}
@@ -398,6 +442,22 @@ export function AttendConsultationPage({ editMode = false }: Props) {
           )}
         </Box>
       </Box>
+      <SavePartialModal
+        open={showSaveModal}
+        emptySection={saveEmptySection}
+        isSaving={isSaving}
+        onFinalize={() => {
+          setShowSaveModal(false);
+          const type: ConsultationType = saveEmptySection === 'psicologica' ? 'Medica' : 'Psicologica';
+          performSave(type, 'Finalizada');
+        }}
+        onSavePartial={() => {
+          setShowSaveModal(false);
+          const type: ConsultationType = saveEmptySection === 'psicologica' ? 'Medica' : 'Psicologica';
+          performSave(type, 'En Proceso');
+        }}
+        onCancel={() => setShowSaveModal(false)}
+      />
     </AppLayout>
   );
 }

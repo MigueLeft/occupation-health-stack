@@ -12,6 +12,8 @@ interface Props {
   onResultChange: (r: PsychologicalResult | '') => void;
   psychologicalAptitude: PsychologicalAptitude | '' | undefined;
   onAptitudeChange: (r: PsychologicalAptitude | '') => void;
+  aptitudeDetails: string;
+  onAptitudeDetailsChange: (v: string) => void;
   interviewConducted: boolean;
   onInterviewChange: (v: boolean) => void;
   observations: string;
@@ -25,6 +27,7 @@ interface Props {
 export function PsicologicaSection({
   psychologicalResult, onResultChange,
   psychologicalAptitude, onAptitudeChange,
+  aptitudeDetails, onAptitudeDetailsChange,
   interviewConducted, onInterviewChange,
   observations, onObservationsChange,
   psychometricTests, catalogTests,
@@ -61,7 +64,7 @@ export function PsicologicaSection({
 
         <Box>
           <Typography variant="subtitle2" sx={{ mb: 1 }}>Aptitud Psicológica</Typography>
-          <Stack direction="row" spacing={1}>
+          <Stack direction="row" spacing={1} sx={{ mb: 1.5 }}>
             {PSYCHOLOGICAL_APTITUDES.map((r) => {
               const color = r === 'Apto' ? 'success' : r === 'No Apto' ? 'error' : 'warning';
               return (
@@ -73,6 +76,16 @@ export function PsicologicaSection({
               );
             })}
           </Stack>
+          <TextField
+            label="Detalles de Aptitud"
+            size="small"
+            fullWidth
+            multiline
+            rows={2}
+            placeholder="Ej: Apto Condicionado — requiere seguimiento en 3 meses..."
+            value={aptitudeDetails}
+            onChange={(e) => onAptitudeDetailsChange(e.target.value)}
+          />
         </Box>
 
         <FormControlLabel control={<Checkbox checked={interviewConducted} onChange={(e) => onInterviewChange(e.target.checked)} />} label="Entrevista realizada" />

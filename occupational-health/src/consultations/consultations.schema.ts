@@ -71,6 +71,7 @@ export const consultations = pgTable(
     observations: jsonb('observations').$type<{
       medica?: string;
       psicologica?: string;
+      aptitudeDetails?: string;
     }>(),
     systemAttendedById: text('system_attended_by_id').references(
       () => user.id,

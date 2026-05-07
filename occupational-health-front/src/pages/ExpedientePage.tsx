@@ -159,25 +159,29 @@ export function ExpedientePage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  patientConsultations.map((c) => {
-                    const result = c.type === 'Psicologica' ? c.psychologicalResult : c.consultationResult;
-                    return (
-                      <TableRow key={c.id} sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
-                        <TableCell><Typography variant="body2" color="text.secondary">{formatDate(c.requestDate)}</Typography></TableCell>
-                        <TableCell><Typography variant="body2" color="text.secondary">{EVALUATION_REASON_LABELS[c.evaluationReason] ?? c.evaluationReason}</Typography></TableCell>
-                        <TableCell><ConsultationTypeChip type={c.type} /></TableCell>
-                        <TableCell><ConsultationResultChip result={result} /></TableCell>
-                        <TableCell><RequestStatusChip status={c.requestStatus} /></TableCell>
-                        <TableCell>
-                          <Tooltip title="Ver consulta">
-                            <IconButton size="small" onClick={() => navigate({ to: '/expedientes/$cedula/consultas/$id', params: { cedula, id: c.id } })} sx={{ color: 'text.secondary' }}>
-                              <VisibilityOutlined fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
+                  patientConsultations.map((c) => (
+                    <TableRow key={c.id} sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
+                      <TableCell><Typography variant="body2" color="text.secondary">{formatDate(c.requestDate)}</Typography></TableCell>
+                      <TableCell><Typography variant="body2" color="text.secondary">{EVALUATION_REASON_LABELS[c.evaluationReason] ?? c.evaluationReason}</Typography></TableCell>
+                      <TableCell><ConsultationTypeChip type={c.type} /></TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                          <ConsultationResultChip result={c.consultationResult ?? null} />
+                          {c.psychologicalAptitude && (
+                            <ConsultationResultChip result={c.psychologicalAptitude as import('@/features/consultations/types').ConsultationResultUnion} />
+                          )}
+                        </Box>
+                      </TableCell>
+                      <TableCell><RequestStatusChip status={c.requestStatus} /></TableCell>
+                      <TableCell>
+                        <Tooltip title="Ver consulta">
+                          <IconButton size="small" onClick={() => navigate({ to: '/expedientes/$cedula/consultas/$id', params: { cedula, id: c.id } })} sx={{ color: 'text.secondary' }}>
+                            <VisibilityOutlined fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  ))
                 )}
               </TableBody>
             </Table>

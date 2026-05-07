@@ -43,7 +43,7 @@ export class UpdateCompanyDto {
 
   @IsOptional()
   @IsString({ message: 'El logo debe ser una cadena de texto (base64).' })
-  logo?: string;
+  logo?: string | null;
 
   @IsOptional()
   @IsUUID('4', { message: 'El ID del estado debe ser un UUID válido.' })

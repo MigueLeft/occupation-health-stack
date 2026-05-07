@@ -26,9 +26,13 @@ interface PositionsTableProps {
 
 export function PositionsTable({ positions, companyId }: PositionsTableProps) {
   const { mutate: deletePosition, isPending: isDeleting } = useDeletePosition();
-  const [editTarget, setEditTarget] = useState<Position | null>(null);
+  const [editTargetId, setEditTargetId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Position | null>(null);
-  const [risksTarget, setRisksTarget] = useState<Position | null>(null);
+  const [risksTargetId, setRisksTargetId] = useState<string | null>(null);
+
+  // Derive live positions from the current prop to avoid stale state after refetch
+  const editTarget = editTargetId ? (positions.find((p) => p.id === editTargetId) ?? null) : null;
+  const risksTarget = risksTargetId ? (positions.find((p) => p.id === risksTargetId) ?? null) : null;
 
   return (
     <>
@@ -84,12 +88,12 @@ export function PositionsTable({ positions, companyId }: PositionsTableProps) {
                 <TableCell>
                   <Box sx={{ display: 'flex', gap: 0.5 }}>
                     <Tooltip title="Gestionar riesgos">
-                      <IconButton size="small" onClick={() => setRisksTarget(pos)}>
+                      <IconButton size="small" onClick={() => setRisksTargetId(pos.id)}>
                         <WarningAmberOutlined fontSize="small" sx={{ color: 'warning.main' }} />
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="Editar cargo">
-                      <IconButton size="small" onClick={() => setEditTarget(pos)}>
+                      <IconButton size="small" onClick={() => setEditTargetId(pos.id)}>
                         <EditOutlined fontSize="small" sx={{ color: 'secondary.main' }} />
                       </IconButton>
                     </Tooltip>
@@ -114,16 +118,16 @@ export function PositionsTable({ positions, companyId }: PositionsTableProps) {
       </TableContainer>
 
       <PositionFormModal
-        open={editTarget !== null}
-        onClose={() => setEditTarget(null)}
+        open={editTargetId !== null}
+        onClose={() => setEditTargetId(null)}
         companyId={companyId}
         position={editTarget}
       />
 
       {risksTarget && (
         <PositionRisksModal
-          open={risksTarget !== null}
-          onClose={() => setRisksTarget(null)}
+          open={risksTargetId !== null}
+          onClose={() => setRisksTargetId(null)}
           position={risksTarget}
         />
       )}

@@ -48,7 +48,7 @@ export interface CreateCompanyPayload {
   parishId?: string;
 }
 
-export type UpdateCompanyPayload = Partial<CreateCompanyPayload>;
+export type UpdateCompanyPayload = Omit<Partial<CreateCompanyPayload>, 'logo'> & { logo?: string | null };
 
 export interface CreatePositionPayload {
   name: string;

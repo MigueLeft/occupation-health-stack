@@ -4,10 +4,11 @@ import {
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, or } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DRIZZLE } from '../database/database.module';
 import { geoLocations, GeoLocation } from './geo-catalog.schema';
+import { companies } from '../companies/companies.schema';
 import { CreateGeoLocationDto } from './dto/create-geo-location.dto';
 import { UpdateGeoLocationDto } from './dto/update-geo-location.dto';
 
@@ -77,6 +78,25 @@ export class GeoCatalogService {
 
   async remove(id: string): Promise<GeoLocation> {
     await this.findOne(id);
+
+    const [linkedCompany] = await this.db
+      .select({ id: companies.id })
+      .from(companies)
+      .where(
+        or(
+          eq(companies.stateId, id),
+          eq(companies.cityId, id),
+          eq(companies.municipalityId, id),
+          eq(companies.parishId, id),
+        ),
+      )
+      .limit(1);
+
+    if (linkedCompany) {
+      throw new ConflictException(
+        'No se puede eliminar esta ubicación geográfica porque está siendo utilizada por una o más empresas. Reasigne o actualice las empresas relacionadas primero.',
+      );
+    }
 
     const [deleted] = await this.db
       .delete(geoLocations)

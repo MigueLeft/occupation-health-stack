@@ -32,6 +32,7 @@ export interface Recommendations {
 export interface Observations {
   medica?: string;
   psicologica?: string;
+  aptitudeDetails?: string;
 }
 
 export interface RestPeriod {

@@ -4,11 +4,12 @@ import {
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
-import { eq, count } from 'drizzle-orm';
+import { eq, count, and, isNull } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DRIZZLE } from '../database/database.module';
 import { companies, Company } from './companies.schema';
-import { positions } from '../positions/positions.schema';
+import { positions, positionRisks } from '../positions/positions.schema';
+import { risks } from '../risks/risks.schema';
 import { patients } from '../patients/patients.schema';
 import { geoLocations } from '../geo-catalog/geo-catalog.schema';
 import { CreateCompanyDto } from './dto/create-company.dto';
@@ -17,6 +18,20 @@ import { UpdateCompanyDto } from './dto/update-company.dto';
 @Injectable()
 export class CompaniesService {
   constructor(@Inject(DRIZZLE) private readonly db: NodePgDatabase) {}
+
+  private async getRisksForPosition(positionId: string) {
+    const rows = await this.db
+      .select({ id: risks.id, name: risks.name, type: risks.type })
+      .from(positionRisks)
+      .innerJoin(risks, eq(positionRisks.riskId, risks.id))
+      .where(
+        and(
+          eq(positionRisks.positionId, positionId),
+          isNull(positionRisks.removedAt),
+        ),
+      );
+    return rows.sort((a, b) => a.type.localeCompare(b.type));
+  }
 
   private async resolveGeoNames(company: Company) {
     const ids = [
@@ -85,10 +100,13 @@ export class CompaniesService {
           parishName: company.parishId
             ? (geoMap.get(company.parishId) ?? null)
             : null,
-          positions: companyPositions.map((p) => ({
-            ...p,
-            employeeCount: countMap.get(p.id) ?? 0,
-          })),
+          positions: await Promise.all(
+            companyPositions.map(async (p) => ({
+              ...p,
+              employeeCount: countMap.get(p.id) ?? 0,
+              risks: await this.getRisksForPosition(p.id),
+            })),
+          ),
         };
       }),
     );
@@ -126,7 +144,12 @@ export class CompaniesService {
       parishName: company.parishId
         ? (geoMap.get(company.parishId) ?? null)
         : null,
-      positions: companyPositions,
+      positions: await Promise.all(
+        companyPositions.map(async (p) => ({
+          ...p,
+          risks: await this.getRisksForPosition(p.id),
+        })),
+      ),
     };
   }
 
