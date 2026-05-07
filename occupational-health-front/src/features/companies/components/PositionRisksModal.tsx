@@ -56,7 +56,7 @@ export function PositionRisksModal({ open, onClose, position }: Props) {
       <DialogContent sx={{ pt: 3 }}>
         <Stack spacing={2.5}>
           {/* Agregar riesgo */}
-          <Box>
+          <Box sx={{ pt: 3 }}>
             <Typography variant="subtitle2" sx={{ mb: 1 }}>Agregar riesgo</Typography>
             <Stack direction="row" spacing={1}>
               <SearchableSelect
