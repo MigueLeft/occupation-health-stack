@@ -2,7 +2,6 @@ import {
   IsString,
   IsNotEmpty,
   MaxLength,
-  IsEmail,
   IsBoolean,
   IsOptional,
   IsUUID,
@@ -46,10 +45,6 @@ export class UpdatePatientDto {
   })
   @Type(() => EmergencyContactDto)
   emergencyContact?: EmergencyContactDto;
-
-  @IsOptional()
-  @IsEmail({}, { message: 'El correo electrónico no tiene un formato válido.' })
-  email?: string;
 
   @IsOptional()
   @IsIn(BLOOD_TYPES, {

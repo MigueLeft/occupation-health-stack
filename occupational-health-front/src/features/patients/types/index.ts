@@ -24,7 +24,6 @@ export interface Patient {
   firstName: string;
   lastName: string;
   birthDate: string | null;
-  email: string | null;
   bloodType: string | null;
   dominantHand: string | null;
   usesGlasses: boolean | null;
@@ -42,7 +41,6 @@ export interface CreatePatientPayload {
   firstName: string;
   lastName: string;
   birthDate: string;
-  email: string;
   companyId: string;
   positionId: string;
   emergencyContact?: Partial<EmergencyContact>;

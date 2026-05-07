@@ -8,7 +8,8 @@ export type CatalogTab =
   | 'diseases'
   | 'allergies'
   | 'body-systems'
-  | 'categories';
+  | 'categories'
+  | 'geo';
 
 const NAV_ITEMS: { id: CatalogTab; label: string }[] = [
   { id: 'exams', label: 'Exámenes' },
@@ -18,6 +19,7 @@ const NAV_ITEMS: { id: CatalogTab; label: string }[] = [
   { id: 'allergies', label: 'Alergias' },
   { id: 'body-systems', label: 'Aparatos y Sistemas' },
   { id: 'categories', label: 'Categorías de Diagnóstico' },
+  { id: 'geo', label: 'Catálogo Geográfico' },
 ];
 
 interface CatalogLayoutProps {

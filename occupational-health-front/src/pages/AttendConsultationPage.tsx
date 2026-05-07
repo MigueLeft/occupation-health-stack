@@ -16,6 +16,7 @@ import { useUsers } from '@/features/users/hooks/useUsers';
 import { useAuth } from '@/features/auth';
 import { consultationsService } from '@/features/consultations/services/consultations.service';
 import { physicalExamService, diagnosticsService, examResultsService, psychometricTestsService } from '@/features/consultations/services/sub-entities.service';
+import { restPeriodsService } from '@/features/consultations/services/rest-periods.service';
 import { patientsService } from '@/features/patients/services/patients.service';
 import { PatientInfoBar } from '@/features/consultations/components/attend/PatientInfoBar';
 import { PhysicalExamSection } from '@/features/consultations/components/attend/PhysicalExamSection';
@@ -25,8 +26,10 @@ import { PsicologicaSection } from '@/features/consultations/components/attend/P
 import { ChronicDiseasesSection } from '@/features/consultations/components/attend/ChronicDiseasesSection';
 import { PatientInitialDataSection } from '@/features/consultations/components/attend/PatientInitialDataSection';
 import { AttendedBySection } from '@/features/consultations/components/attend/AttendedBySection';
+import { RestPeriodSection } from '@/features/consultations/components/attend/RestPeriodSection';
+import { ExposureRisksBar } from '@/features/consultations/components/attend/ExposureRisksBar';
 import type { PhysicalExamPayload, ConsultationDiagnostic, ExamResult, PsychometricTestResult } from '@/features/consultations/services/sub-entities.service';
-import type { ConsultationResult, PsychologicalResult } from '@/features/consultations/types';
+import type { ConsultationResult, PsychologicalResult, PsychologicalAptitude } from '@/features/consultations/types';
 
 type LocalDiagnostic = ConsultationDiagnostic & { _isNew?: true };
 type LocalExamResult = ExamResult & { _isNew?: true };
@@ -51,12 +54,15 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   const [recommendations, setRecommendations] = useState({ suggestedPPE: '', medicalAdequacyMeasures: '', psychologicalAdequacyMeasures: '' });
   const [medObservations, setMedObservations] = useState('');
   const [psychResult, setPsychResult] = useState<PsychologicalResult | ''>('');
+  const [psychAptitude, setPsychAptitude] = useState<PsychologicalAptitude | ''>('');
   const [interviewDone, setInterviewDone] = useState(false);
   const [psychObservations, setPsychObservations] = useState('');
   const [medicalAttendedById, setMedicalAttendedById] = useState('');
   const [psychologicalAttendedById, setPsychologicalAttendedById] = useState('');
+  const [isHealthy, setIsHealthy] = useState(false);
+  const [requiresRest, setRequiresRest] = useState(false);
+  const [restDays, setRestDays] = useState<number | ''>('');
 
-  // Local lists — cambios se persisten al hacer "Guardar Consulta"
   const [localDiagnostics, setLocalDiagnostics] = useState<LocalDiagnostic[]>([]);
   const [localExamResults, setLocalExamResults] = useState<LocalExamResult[]>([]);
   const [localPsychTests, setLocalPsychTests] = useState<LocalPsychTest[]>([]);
@@ -86,12 +92,12 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data?.id, currentUser?.id]);
 
-  // Inicialización: espera a que los tests psicométricos estén frescos antes de poblar
-  // el estado local, evitando que datos en caché obsoletos bloqueen la re-inicialización.
   useEffect(() => {
     if (!data || isPsychometricFetching || initialized) return;
     setConsultResult((data.consultationResult ?? '') as ConsultationResult | '');
     setPsychResult((data.psychologicalResult ?? '') as PsychologicalResult | '');
+    setPsychAptitude((data.psychologicalAptitude ?? '') as PsychologicalAptitude | '');
+    setIsHealthy(data.isHealthy ?? false);
     setInterviewDone(data.interviewConducted ?? false);
     setMedicalAttendedById(data.medicalAttendedById ?? '');
     setPsychologicalAttendedById(data.psychologicalAttendedById ?? '');
@@ -108,6 +114,10 @@ export function AttendConsultationPage({ editMode = false }: Props) {
       const { id: _id, consultationId: _cid, ...physExamFields } = data.physicalExam;
       setPhysExam(physExamFields);
     }
+    if (data.restPeriod) {
+      setRequiresRest(data.restPeriod.requiresRest);
+      setRestDays(data.restPeriod.days ?? '');
+    }
     setLocalDiagnostics(data.consultationDiagnostics);
     setLocalExamResults(data.examResults);
     setLocalPsychTests(data.psychometricTests);
@@ -116,7 +126,6 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data?.id, isPsychometricFetching]);
 
-  // ─── Handlers locales (reactivos, sin llamadas API hasta guardar) ──────────
   const handleAddDiagnostic = ({ categoryId, diseaseId, bodySystemId }: { categoryId: string; diseaseId: string; bodySystemId?: string }) => {
     const tempId = `new-${Date.now()}`;
     setLocalDiagnostics((prev) => [...prev, { id: tempId, consultationId: id, categoryId, diseaseId, bodySystemId: bodySystemId ?? null, _isNew: true }]);
@@ -197,6 +206,20 @@ export function AttendConsultationPage({ editMode = false }: Props) {
         await physicalExamService.create({ ...physExam, consultationId: id });
       }
 
+      // Gestionar reposo
+      if (data.restPeriod) {
+        await restPeriodsService.update(data.restPeriod.id, {
+          requiresRest,
+          days: requiresRest && restDays !== '' ? Number(restDays) : null,
+        });
+      } else if (requiresRest) {
+        await restPeriodsService.create({
+          consultationId: id,
+          requiresRest: true,
+          days: restDays !== '' ? Number(restDays) : undefined,
+        });
+      }
+
       let detectedType = data.type;
       if (consultResult && psychResult) {
         detectedType = 'Medica/Psicologica';
@@ -211,6 +234,8 @@ export function AttendConsultationPage({ editMode = false }: Props) {
         currentTreatment: treatment || undefined,
         consultationResult: consultResult || undefined,
         psychologicalResult: psychResult || undefined,
+        psychologicalAptitude: psychAptitude || undefined,
+        isHealthy,
         diagnosisDescription: diagDescription || undefined,
         recommendations: {
           suggestedPPE: recommendations.suggestedPPE || undefined,
@@ -227,10 +252,10 @@ export function AttendConsultationPage({ editMode = false }: Props) {
       await Promise.all([
         queryClient.refetchQueries({ queryKey: ['consultations'] }),
         queryClient.refetchQueries({ queryKey: ['consultation', id] }),
+        queryClient.refetchQueries({ queryKey: ['consultation-diagnostics', id] }),
         queryClient.refetchQueries({ queryKey: ['requests'] }),
         queryClient.refetchQueries({ queryKey: ['patients'] }),
         queryClient.refetchQueries({ queryKey: ['patient', data.patientId] }),
-        // Invalida para que la próxima apertura no inicialice con datos en caché obsoletos
         queryClient.invalidateQueries({ queryKey: ['psychometric-tests', id] }),
       ]);
 
@@ -285,6 +310,13 @@ export function AttendConsultationPage({ editMode = false }: Props) {
         />
 
         <Box sx={{ flex: 1, overflow: 'auto', p: 3 }}>
+          {/* Riesgos de exposición del cargo */}
+          {data.positionRisks.length > 0 && (
+            <Box sx={{ mb: 3 }}>
+              <ExposureRisksBar risks={data.positionRisks} />
+            </Box>
+          )}
+
           {activeTab === 'medica' ? (
             <Grid container spacing={3}>
               <Grid size={7}>
@@ -322,7 +354,16 @@ export function AttendConsultationPage({ editMode = false }: Props) {
                   onRemoveDiagnostic={handleRemoveDiagnostic}
                   result={consultResult} onResultChange={setConsultResult}
                   description={diagDescription} onDescriptionChange={setDiagDescription}
+                  isHealthy={isHealthy} onIsHealthyChange={setIsHealthy}
                 />
+                <Box sx={{ mt: 3 }}>
+                  <RestPeriodSection
+                    requiresRest={requiresRest}
+                    onRequiresRestChange={setRequiresRest}
+                    days={restDays}
+                    onDaysChange={setRestDays}
+                  />
+                </Box>
                 <Paper variant="outlined" sx={{ p: 3, borderRadius: 2, mt: 3 }}>
                   <Typography variant="h3" sx={{ mb: 2.5, fontSize: '1rem' }}>Recomendaciones</Typography>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -341,6 +382,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
               <Grid size={8}>
                 <PsicologicaSection
                   psychologicalResult={psychResult} onResultChange={setPsychResult}
+                  psychologicalAptitude={psychAptitude} onAptitudeChange={setPsychAptitude}
                   interviewConducted={interviewDone} onInterviewChange={setInterviewDone}
                   observations={psychObservations} onObservationsChange={setPsychObservations}
                   psychometricTests={localPsychTests}

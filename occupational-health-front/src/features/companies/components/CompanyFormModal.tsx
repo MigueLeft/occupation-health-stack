@@ -1,22 +1,32 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
-  Button, IconButton, Stack, TextField,
+  Button, IconButton, Stack, TextField, Box, Typography,
+  MenuItem, Avatar,
 } from '@mui/material';
-import { CloseOutlined } from '@mui/icons-material';
+import { CloseOutlined, CameraAltOutlined } from '@mui/icons-material';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useCreateCompany, useUpdateCompany } from '../hooks/useCompanies';
+import { useGeoCatalog } from '@/features/catalogs/hooks/useGeoCatalog';
 import { autoFormatRif } from '@/utils/rif';
 import { autoFormatPhone } from '@/utils/phone';
 import type { CompanyWithPositions } from '../types';
+
+const MAX_LOGO_SIZE = 200 * 1024; // 200 KB
+const LOGO_MAX_DIMENSION = 256;
 
 const schema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres').max(255),
   rif: z.string().min(10, 'El RIF debe tener al menos 10 caracteres'),
   address: z.string().min(1, 'La dirección es obligatoria').max(500),
   contact: z.string().regex(/^\d{4}-?\d{7}$/, 'El teléfono debe tener 11 dígitos (ej: 04145652189)'),
+  email: z.string().email('El correo no tiene formato válido').optional().or(z.literal('')),
+  stateId: z.string().optional(),
+  cityId: z.string().optional(),
+  municipalityId: z.string().optional(),
+  parishId: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -27,11 +37,47 @@ interface CompanyFormModalProps {
   company?: CompanyWithPositions | null;
 }
 
+async function resizeImageToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const canvas = document.createElement('canvas');
+      let { width, height } = img;
+      if (width > LOGO_MAX_DIMENSION || height > LOGO_MAX_DIMENSION) {
+        if (width > height) {
+          height = Math.round((height * LOGO_MAX_DIMENSION) / width);
+          width = LOGO_MAX_DIMENSION;
+        } else {
+          width = Math.round((width * LOGO_MAX_DIMENSION) / height);
+          height = LOGO_MAX_DIMENSION;
+        }
+      }
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/webp', 0.8));
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
 export function CompanyFormModal({ open, onClose, company }: CompanyFormModalProps) {
   const isEdit = !!company;
   const { mutate: createCompany, isPending: isCreating } = useCreateCompany();
   const { mutate: updateCompany, isPending: isUpdating } = useUpdateCompany();
   const isPending = isCreating || isUpdating;
+
+  const { data: states = [] } = useGeoCatalog('Estado');
+  const { data: cities = [] } = useGeoCatalog('Ciudad');
+  const { data: municipalities = [] } = useGeoCatalog('Municipio');
+  const { data: parishes = [] } = useGeoCatalog('Parroquia');
+
+  const [logo, setLogo] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const { control, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -39,21 +85,52 @@ export function CompanyFormModal({ open, onClose, company }: CompanyFormModalPro
 
   useEffect(() => {
     if (open) {
+      setLogo(company?.logo ?? null);
       reset(
         company
-          ? { name: company.name, rif: company.rif, address: company.address, contact: company.contact }
-          : { name: '', rif: '', address: '', contact: '' },
+          ? {
+              name: company.name, rif: company.rif, address: company.address,
+              contact: company.contact, email: company.email ?? '',
+              stateId: company.stateId ?? '', cityId: company.cityId ?? '',
+              municipalityId: company.municipalityId ?? '', parishId: company.parishId ?? '',
+            }
+          : { name: '', rif: '', address: '', contact: '', email: '', stateId: '', cityId: '', municipalityId: '', parishId: '' },
       );
     }
   }, [open, company, reset]);
 
-  const handleClose = () => { reset(); onClose(); };
+  const handleClose = () => { reset(); setLogo(null); onClose(); };
+
+  const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > MAX_LOGO_SIZE) {
+      alert('El logo no puede superar 200 KB.');
+      return;
+    }
+    try {
+      const b64 = await resizeImageToBase64(file);
+      setLogo(b64);
+    } catch {
+      alert('Error al procesar la imagen.');
+    }
+    if (fileRef.current) fileRef.current.value = '';
+  };
 
   const onSubmit = (data: FormData) => {
+    const payload = {
+      ...data,
+      email: data.email || undefined,
+      stateId: data.stateId || undefined,
+      cityId: data.cityId || undefined,
+      municipalityId: data.municipalityId || undefined,
+      parishId: data.parishId || undefined,
+      logo: logo ?? undefined,
+    };
     if (isEdit) {
-      updateCompany({ id: company.id, payload: data }, { onSuccess: handleClose });
+      updateCompany({ id: company.id, payload }, { onSuccess: handleClose });
     } else {
-      createCompany(data, { onSuccess: handleClose });
+      createCompany(payload, { onSuccess: handleClose });
     }
   };
 
@@ -74,13 +151,36 @@ export function CompanyFormModal({ open, onClose, company }: CompanyFormModalPro
       <form onSubmit={handleSubmit(onSubmit)}>
         <DialogContent sx={{ pt: 3 }}>
           <Stack spacing={2.5}>
+            {/* Logo upload */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Avatar
+                src={logo ?? undefined}
+                variant="rounded"
+                sx={{ width: 72, height: 72, bgcolor: 'action.selected', fontSize: '2rem' }}
+              >
+                {!logo && <CameraAltOutlined sx={{ color: 'text.disabled' }} />}
+              </Avatar>
+              <Box>
+                <Typography variant="subtitle2">Logo de la Empresa (opcional)</Typography>
+                <Typography variant="caption" color="text.secondary">Máx. 200 KB · Se redimensiona automáticamente a 256×256</Typography>
+                <Box>
+                  <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleLogoChange} />
+                  <Button size="small" variant="outlined" sx={{ mt: 0.5, mr: 1 }} onClick={() => fileRef.current?.click()}>
+                    {logo ? 'Cambiar' : 'Subir logo'}
+                  </Button>
+                  {logo && (
+                    <Button size="small" color="error" onClick={() => setLogo(null)}>Quitar</Button>
+                  )}
+                </Box>
+              </Box>
+            </Box>
+
             <Stack direction="row" spacing={2}>
               <Controller
                 name="name"
                 control={control}
                 render={({ field }) => (
-                  <TextField {...field} label="Nombre de la Empresa" placeholder="Nombre de la empresa"
-                    error={!!errors.name} helperText={errors.name?.message} fullWidth />
+                  <TextField {...field} label="Nombre de la Empresa" error={!!errors.name} helperText={errors.name?.message} fullWidth />
                 )}
               />
               <Controller
@@ -94,41 +194,91 @@ export function CompanyFormModal({ open, onClose, company }: CompanyFormModalPro
                     error={!!errors.rif}
                     fullWidth
                     onChange={(e) => field.onChange(e.target.value.replace(/\D/g, ''))}
-                    onBlur={(e) => {
-                      const formatted = autoFormatRif(e.target.value);
-                      field.onChange(formatted);
-                      field.onBlur();
-                    }}
+                    onBlur={(e) => { field.onChange(autoFormatRif(e.target.value)); field.onBlur(); }}
                   />
                 )}
               />
             </Stack>
+
             <Controller
               name="address"
               control={control}
               render={({ field }) => (
-                <TextField {...field} label="Dirección" placeholder="Dirección de la empresa"
-                  error={!!errors.address} helperText={errors.address?.message} />
+                <TextField {...field} label="Dirección" error={!!errors.address} helperText={errors.address?.message} />
               )}
             />
-            <Controller
-              name="contact"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label="Contacto"
-                  placeholder="04145652189"
-                  error={!!errors.contact}
-                  helperText={errors.contact?.message}
-                  onBlur={(e) => {
-                    const formatted = autoFormatPhone(e.target.value);
-                    field.onChange(formatted);
-                    field.onBlur();
-                  }}
-                />
-              )}
-            />
+
+            <Stack direction="row" spacing={2}>
+              <Controller
+                name="contact"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Contacto"
+                    placeholder="04145652189"
+                    error={!!errors.contact}
+                    helperText={errors.contact?.message}
+                    fullWidth
+                    onBlur={(e) => { field.onChange(autoFormatPhone(e.target.value)); field.onBlur(); }}
+                  />
+                )}
+              />
+              <Controller
+                name="email"
+                control={control}
+                render={({ field }) => (
+                  <TextField {...field} label="Correo Electrónico (opcional)" type="email" error={!!errors.email} helperText={errors.email?.message} fullWidth />
+                )}
+              />
+            </Stack>
+
+            {/* Campos geográficos */}
+            <Typography variant="subtitle2" color="text.secondary">Ubicación Geográfica (opcional)</Typography>
+            <Stack direction="row" spacing={2}>
+              <Controller
+                name="stateId"
+                control={control}
+                render={({ field }) => (
+                  <TextField {...field} select label="Estado" fullWidth>
+                    <MenuItem value="">— Sin seleccionar —</MenuItem>
+                    {states.map((s) => <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>)}
+                  </TextField>
+                )}
+              />
+              <Controller
+                name="cityId"
+                control={control}
+                render={({ field }) => (
+                  <TextField {...field} select label="Ciudad" fullWidth>
+                    <MenuItem value="">— Sin seleccionar —</MenuItem>
+                    {cities.map((c) => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
+                  </TextField>
+                )}
+              />
+            </Stack>
+            <Stack direction="row" spacing={2}>
+              <Controller
+                name="municipalityId"
+                control={control}
+                render={({ field }) => (
+                  <TextField {...field} select label="Municipio" fullWidth>
+                    <MenuItem value="">— Sin seleccionar —</MenuItem>
+                    {municipalities.map((m) => <MenuItem key={m.id} value={m.id}>{m.name}</MenuItem>)}
+                  </TextField>
+                )}
+              />
+              <Controller
+                name="parishId"
+                control={control}
+                render={({ field }) => (
+                  <TextField {...field} select label="Parroquia" fullWidth>
+                    <MenuItem value="">— Sin seleccionar —</MenuItem>
+                    {parishes.map((p) => <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>)}
+                  </TextField>
+                )}
+              />
+            </Stack>
           </Stack>
         </DialogContent>
 

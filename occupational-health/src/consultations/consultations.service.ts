@@ -20,7 +20,6 @@ import { UpdateConsultationDto } from './dto/update-consultation.dto';
 export class ConsultationsService {
   constructor(@Inject(DRIZZLE) private readonly db: NodePgDatabase) {}
 
-  // Construye la respuesta completa de la consulta con sus datos relacionados
   private async buildConsultationResponse(id: string) {
     const [consultation] = await this.db
       .select()
@@ -75,7 +74,6 @@ export class ConsultationsService {
   }
 
   async create(dto: CreateConsultationDto) {
-    // Verificar que la solicitud existe
     const [request] = await this.db
       .select()
       .from(requests)
@@ -87,7 +85,6 @@ export class ConsultationsService {
       );
     }
 
-    // Una solicitud solo puede tener una consulta
     const [existing] = await this.db
       .select()
       .from(consultations)
@@ -100,7 +97,6 @@ export class ConsultationsService {
       );
     }
 
-    // Validar que los campos psicológicos solo se envíen si el tipo es Psicológica
     if (dto.type === 'Medica' && dto.interviewConducted !== undefined) {
       throw new BadRequestException(
         `El campo "entrevista realizada" solo aplica para consultas de tipo Psicológica.`,
@@ -124,7 +120,6 @@ export class ConsultationsService {
       );
     }
 
-    // Spread to a plain object to avoid Drizzle issues with class instances
     const updatePayload: Record<string, unknown> = {};
     if (dto.type !== undefined) updatePayload.type = dto.type;
     if (dto.currentTreatment !== undefined)
@@ -135,6 +130,9 @@ export class ConsultationsService {
       updatePayload.consultationResult = dto.consultationResult;
     if (dto.psychologicalResult !== undefined)
       updatePayload.psychologicalResult = dto.psychologicalResult;
+    if (dto.psychologicalAptitude !== undefined)
+      updatePayload.psychologicalAptitude = dto.psychologicalAptitude;
+    if (dto.isHealthy !== undefined) updatePayload.isHealthy = dto.isHealthy;
     if (dto.diagnosisDescription !== undefined)
       updatePayload.diagnosisDescription = dto.diagnosisDescription;
     if (dto.recommendations !== undefined)
@@ -155,7 +153,6 @@ export class ConsultationsService {
       .where(eq(consultations.id, id))
       .returning();
 
-    // Sincronizar el estado de la solicitud con el de la consulta
     if (dto.status === 'En Proceso' || dto.status === 'Finalizada') {
       await this.db
         .update(requests)

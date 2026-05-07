@@ -5,12 +5,13 @@ import {
   BadRequestException,
   ConflictException,
 } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DRIZZLE } from '../database/database.module';
-import { positions, Position } from './positions.schema';
+import { positions, positionRisks, Position } from './positions.schema';
 import { companies } from '../companies/companies.schema';
 import { patients } from '../patients/patients.schema';
+import { risks } from '../risks/risks.schema';
 import { CreatePositionDto } from './dto/create-position.dto';
 import { UpdatePositionDto } from './dto/update-position.dto';
 
@@ -18,15 +19,34 @@ import { UpdatePositionDto } from './dto/update-position.dto';
 export class PositionsService {
   constructor(@Inject(DRIZZLE) private readonly db: NodePgDatabase) {}
 
-  async findAll(companyId?: string): Promise<Position[]> {
-    // Permite filtrar por empresa si se proporciona el parámetro
-    if (companyId) {
-      return this.db
-        .select()
-        .from(positions)
-        .where(eq(positions.companyId, companyId));
-    }
-    return this.db.select().from(positions);
+  private async getRisksForPosition(positionId: string) {
+    const rows = await this.db
+      .select({
+        id: risks.id,
+        name: risks.name,
+        type: risks.type,
+      })
+      .from(positionRisks)
+      .innerJoin(risks, eq(positionRisks.riskId, risks.id))
+      .where(eq(positionRisks.positionId, positionId));
+
+    return rows.sort((a, b) => a.type.localeCompare(b.type));
+  }
+
+  async findAll(companyId?: string) {
+    const list = companyId
+      ? await this.db
+          .select()
+          .from(positions)
+          .where(eq(positions.companyId, companyId))
+      : await this.db.select().from(positions);
+
+    return Promise.all(
+      list.map(async (p) => ({
+        ...p,
+        risks: await this.getRisksForPosition(p.id),
+      })),
+    );
   }
 
   async findOne(id: string): Promise<Position> {
@@ -44,7 +64,6 @@ export class PositionsService {
   }
 
   async create(dto: CreatePositionDto): Promise<Position> {
-    // Verificar que la empresa existe antes de crear el cargo
     const [company] = await this.db
       .select()
       .from(companies)
@@ -57,14 +76,12 @@ export class PositionsService {
     }
 
     const [created] = await this.db.insert(positions).values(dto).returning();
-
     return created;
   }
 
   async update(id: string, dto: UpdatePositionDto): Promise<Position> {
     await this.findOne(id);
 
-    // Si se cambia la empresa, verificar que la nueva empresa exista
     if (dto.companyId) {
       const [company] = await this.db
         .select()
@@ -108,5 +125,60 @@ export class PositionsService {
       .returning();
 
     return deleted;
+  }
+
+  async addRisk(positionId: string, riskId: string) {
+    await this.findOne(positionId);
+
+    const [risk] = await this.db
+      .select()
+      .from(risks)
+      .where(eq(risks.id, riskId));
+
+    if (!risk) {
+      throw new NotFoundException(
+        `No se encontró ningún riesgo con el ID "${riskId}".`,
+      );
+    }
+
+    const [existing] = await this.db
+      .select()
+      .from(positionRisks)
+      .where(
+        and(
+          eq(positionRisks.positionId, positionId),
+          eq(positionRisks.riskId, riskId),
+        ),
+      );
+
+    if (existing) {
+      throw new ConflictException(
+        `El riesgo "${risk.name}" ya está asociado a este cargo.`,
+      );
+    }
+
+    await this.db.insert(positionRisks).values({ positionId, riskId });
+    return this.getRisksForPosition(positionId);
+  }
+
+  async removeRisk(positionId: string, riskId: string) {
+    await this.findOne(positionId);
+
+    await this.db
+      .delete(positionRisks)
+      .where(
+        and(
+          eq(positionRisks.positionId, positionId),
+          eq(positionRisks.riskId, riskId),
+        ),
+      );
+
+    return this.getRisksForPosition(positionId);
+  }
+
+  async getPositionWithRisks(id: string) {
+    const position = await this.findOne(id);
+    const riskList = await this.getRisksForPosition(id);
+    return { ...position, risks: riskList };
   }
 }

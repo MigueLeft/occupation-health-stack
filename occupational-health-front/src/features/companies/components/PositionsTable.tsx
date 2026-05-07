@@ -1,13 +1,23 @@
 import { useState } from 'react';
 import {
   Table, TableHead, TableBody, TableRow, TableCell,
-  TableContainer, IconButton, Tooltip, Box, Typography, Stack,
+  TableContainer, IconButton, Tooltip, Box, Typography, Stack, Chip,
 } from '@mui/material';
-import { EditOutlined, DeleteOutlined } from '@mui/icons-material';
+import { EditOutlined, DeleteOutlined, WarningAmberOutlined } from '@mui/icons-material';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { PositionFormModal } from './PositionFormModal';
+import { PositionRisksModal } from './PositionRisksModal';
 import { useDeletePosition } from '../hooks/usePositions';
 import type { Position } from '../types';
+
+const RISK_TYPE_COLOR: Record<string, 'error' | 'warning' | 'info' | 'success' | 'secondary' | 'default'> = {
+  Fisico: 'error',
+  Quimico: 'warning',
+  Biologico: 'success',
+  Mecanico: 'info',
+  Disergonomicos: 'secondary',
+  Psicosocial: 'default',
+};
 
 interface PositionsTableProps {
   positions: Position[];
@@ -18,6 +28,7 @@ export function PositionsTable({ positions, companyId }: PositionsTableProps) {
   const { mutate: deletePosition, isPending: isDeleting } = useDeletePosition();
   const [editTarget, setEditTarget] = useState<Position | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Position | null>(null);
+  const [risksTarget, setRisksTarget] = useState<Position | null>(null);
 
   return (
     <>
@@ -25,7 +36,7 @@ export function PositionsTable({ positions, companyId }: PositionsTableProps) {
         <Table size="small">
           <TableHead>
             <TableRow sx={{ bgcolor: 'primary.main' }}>
-              {['Nombre del Cargo', 'Descripción', 'Empleados', 'Acciones'].map((h) => (
+              {['Nombre del Cargo', 'Descripción', 'Riesgos', 'Empleados', 'Acciones'].map((h) => (
                 <TableCell key={h} sx={{ color: 'primary.contrastText', fontWeight: 700, py: 1.5, whiteSpace: 'nowrap' }}>
                   {h}
                 </TableCell>
@@ -35,24 +46,36 @@ export function PositionsTable({ positions, companyId }: PositionsTableProps) {
           <TableBody>
             {positions.map((pos) => (
               <TableRow key={pos.id} sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
-                <TableCell sx={{ maxWidth: 200 }}>
-                  <Tooltip title={pos.name.length > 28 ? pos.name : ''} placement="top-start">
+                <TableCell sx={{ maxWidth: 180 }}>
+                  <Tooltip title={pos.name.length > 25 ? pos.name : ''} placement="top-start">
                     <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {pos.name}
                     </Typography>
                   </Tooltip>
                 </TableCell>
-                <TableCell sx={{ maxWidth: 240 }}>
+                <TableCell sx={{ maxWidth: 200 }}>
                   {pos.description ? (
-                    <Tooltip title={pos.description.length > 40 ? pos.description : ''} placement="top-start">
+                    <Tooltip title={pos.description.length > 35 ? pos.description : ''} placement="top-start">
                       <Stack component="span" sx={{ color: 'text.secondary', fontSize: '0.875rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
                         {pos.description}
                       </Stack>
                     </Tooltip>
                   ) : (
-                    <Typography component="span" sx={{ color: 'text.disabled', fontSize: '0.85rem' }}>
-                      Sin descripción
-                    </Typography>
+                    <Typography component="span" sx={{ color: 'text.disabled', fontSize: '0.85rem' }}>Sin descripción</Typography>
+                  )}
+                </TableCell>
+                <TableCell sx={{ maxWidth: 220 }}>
+                  {pos.risks && pos.risks.length > 0 ? (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      {pos.risks.slice(0, 3).map((r) => (
+                        <Chip key={r.id} label={r.type} size="small" color={RISK_TYPE_COLOR[r.type] ?? 'default'} />
+                      ))}
+                      {pos.risks.length > 3 && (
+                        <Chip label={`+${pos.risks.length - 3}`} size="small" />
+                      )}
+                    </Box>
+                  ) : (
+                    <Typography component="span" sx={{ color: 'text.disabled', fontSize: '0.85rem' }}>Sin riesgos</Typography>
                   )}
                 </TableCell>
                 <TableCell sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>
@@ -60,6 +83,11 @@ export function PositionsTable({ positions, companyId }: PositionsTableProps) {
                 </TableCell>
                 <TableCell>
                   <Box sx={{ display: 'flex', gap: 0.5 }}>
+                    <Tooltip title="Gestionar riesgos">
+                      <IconButton size="small" onClick={() => setRisksTarget(pos)}>
+                        <WarningAmberOutlined fontSize="small" sx={{ color: 'warning.main' }} />
+                      </IconButton>
+                    </Tooltip>
                     <Tooltip title="Editar cargo">
                       <IconButton size="small" onClick={() => setEditTarget(pos)}>
                         <EditOutlined fontSize="small" sx={{ color: 'secondary.main' }} />
@@ -76,7 +104,7 @@ export function PositionsTable({ positions, companyId }: PositionsTableProps) {
             ))}
             {positions.length === 0 && (
               <TableRow>
-                <TableCell colSpan={4} align="center" sx={{ py: 4, color: 'text.disabled' }}>
+                <TableCell colSpan={5} align="center" sx={{ py: 4, color: 'text.disabled' }}>
                   No hay cargos registrados
                 </TableCell>
               </TableRow>
@@ -91,6 +119,14 @@ export function PositionsTable({ positions, companyId }: PositionsTableProps) {
         companyId={companyId}
         position={editTarget}
       />
+
+      {risksTarget && (
+        <PositionRisksModal
+          open={risksTarget !== null}
+          onClose={() => setRisksTarget(null)}
+          position={risksTarget}
+        />
+      )}
 
       <ConfirmDialog
         open={deleteTarget !== null}

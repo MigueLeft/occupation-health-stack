@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import {
   Dialog, DialogContent, Box, Typography,
-  Button, IconButton, Divider, Stack, Tooltip,
+  Button, IconButton, Divider, Stack, Tooltip, Avatar,
 } from '@mui/material';
-import { CloseOutlined, EditOutlined, AddOutlined } from '@mui/icons-material';
+import { CloseOutlined, EditOutlined, AddOutlined, BusinessOutlined } from '@mui/icons-material';
 import { formatRif } from '@/utils/rif';
 import { PositionsTable } from './PositionsTable';
 import { PositionFormModal } from './PositionFormModal';
@@ -27,11 +27,8 @@ function InfoItem({ label, value }: { label: string; value: string }) {
         <Typography
           variant="body1"
           sx={{
-            fontWeight: 600,
-            mt: 0.25,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
+            fontWeight: 600, mt: 0.25, overflow: 'hidden',
+            textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             fontSize: value.length > 30 ? '0.85rem' : undefined,
           }}
         >
@@ -47,6 +44,10 @@ export function CompanyDetailModal({ open, onClose, company }: CompanyDetailModa
   const [editCompanyOpen, setEditCompanyOpen] = useState(false);
 
   if (!company) return null;
+
+  const geoLine = [company.stateName, company.cityName, company.municipalityName, company.parishName]
+    .filter(Boolean)
+    .join(', ');
 
   return (
     <>
@@ -77,12 +78,25 @@ export function CompanyDetailModal({ open, onClose, company }: CompanyDetailModa
         <DialogContent sx={{ p: 0 }}>
           <Box sx={{ display: 'flex', minHeight: 480 }}>
             {/* Left panel - company info */}
-            <Box sx={{ width: 280, flexShrink: 0, p: 3, borderRight: '1px solid', borderColor: 'divider' }}>
+            <Box sx={{ width: 290, flexShrink: 0, p: 3, borderRight: '1px solid', borderColor: 'divider' }}>
+              {/* Logo */}
+              <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2.5 }}>
+                <Avatar
+                  src={company.logo ?? undefined}
+                  variant="rounded"
+                  sx={{ width: 80, height: 80, bgcolor: 'action.selected' }}
+                >
+                  {!company.logo && <BusinessOutlined sx={{ color: 'text.disabled', fontSize: 36 }} />}
+                </Avatar>
+              </Box>
+
               <Stack spacing={2.5} divider={<Divider />}>
                 <InfoItem label="Empresa" value={company.name} />
                 <InfoItem label="RIF" value={formatRif(company.rif)} />
                 <InfoItem label="Dirección" value={company.address} />
                 <InfoItem label="Contacto" value={company.contact} />
+                {company.email && <InfoItem label="Correo" value={company.email} />}
+                {geoLine && <InfoItem label="Ubicación" value={geoLine} />}
                 <InfoItem label="Nro. Cargos" value={`${company.positions.length} cargos`} />
               </Stack>
             </Box>
@@ -90,7 +104,7 @@ export function CompanyDetailModal({ open, onClose, company }: CompanyDetailModa
             {/* Right panel - positions */}
             <Box sx={{ flex: 1, p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography variant="h3">Cargos</Typography>
+                <Typography variant="h3">Cargos y Riesgos de Exposición</Typography>
                 <Button
                   variant="contained"
                   size="small"

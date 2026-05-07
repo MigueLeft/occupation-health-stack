@@ -26,6 +26,7 @@ import { RolesModule } from './roles/roles.module';
 import { UsersModule } from './users/users.module';
 import { AuthUtilsModule } from './auth-utils/auth-utils.module';
 import { ReportsModule } from './reports/reports.module';
+import { GeoCatalogModule } from './geo-catalog/geo-catalog.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { ReportsModule } from './reports/reports.module';
     ExamsModule,
     RisksModule,
     PsychometricTestCatalogModule,
+    GeoCatalogModule,
     // Estructura de empresa
     CompaniesModule,
     PositionsModule,

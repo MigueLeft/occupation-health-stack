@@ -129,21 +129,6 @@ export function PatientFormFields({
         )}
       />
 
-      <Controller
-        name="email"
-        control={control}
-        render={({ field }) => (
-          <TextField
-            {...field}
-            label="Correo Electrónico"
-            type="email"
-            placeholder="correo@empresa.com"
-            error={!!errors.email}
-            helperText={errors.email?.message}
-          />
-        )}
-      />
-
       <Stack direction="row" spacing={2}>
         <Controller
           name="companyId"

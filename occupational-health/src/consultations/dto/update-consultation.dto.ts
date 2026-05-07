@@ -11,6 +11,7 @@ import {
   CONSULTATION_STATUSES,
   CONSULTATION_TYPES,
   PSYCHOLOGICAL_RESULTS,
+  PSYCHOLOGICAL_APTITUDES,
 } from '../consultations.schema';
 import { RecommendationsDto } from './recommendations.dto';
 
@@ -42,6 +43,16 @@ export class UpdateConsultationDto {
     message: `El resultado psicológico debe ser uno de: ${PSYCHOLOGICAL_RESULTS.join(', ')}.`,
   })
   psychologicalResult?: string;
+
+  @IsOptional()
+  @IsIn(PSYCHOLOGICAL_APTITUDES, {
+    message: `La aptitud psicológica debe ser una de: ${PSYCHOLOGICAL_APTITUDES.join(', ')}.`,
+  })
+  psychologicalAptitude?: string;
+
+  @IsOptional()
+  @IsBoolean({ message: 'El campo paciente sano debe ser verdadero o falso.' })
+  isHealthy?: boolean;
 
   @IsOptional()
   @IsString({

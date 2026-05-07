@@ -18,7 +18,6 @@ import { RequirePermission } from '../auth/require-permission.decorator';
 export class PositionsController {
   constructor(private readonly positionsService: PositionsService) {}
 
-  // Permite filtrar por empresa: GET /positions?companyId=<uuid>
   @Get()
   @RequirePermission('positions', 'view')
   async findAll(@Query('companyId') companyId?: string) {
@@ -29,7 +28,7 @@ export class PositionsController {
   @Get(':id')
   @RequirePermission('positions', 'view')
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
-    const position = await this.positionsService.findOne(id);
+    const position = await this.positionsService.getPositionWithRisks(id);
     return { position };
   }
 
@@ -55,5 +54,26 @@ export class PositionsController {
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     const position = await this.positionsService.remove(id);
     return { position };
+  }
+
+  // Gestión de riesgos de exposición por cargo
+  @Post(':id/risks/:riskId')
+  @RequirePermission('positions', 'edit')
+  async addRisk(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('riskId', ParseUUIDPipe) riskId: string,
+  ) {
+    const risks = await this.positionsService.addRisk(id, riskId);
+    return { risks };
+  }
+
+  @Delete(':id/risks/:riskId')
+  @RequirePermission('positions', 'edit')
+  async removeRisk(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('riskId', ParseUUIDPipe) riskId: string,
+  ) {
+    const risks = await this.positionsService.removeRisk(id, riskId);
+    return { risks };
   }
 }

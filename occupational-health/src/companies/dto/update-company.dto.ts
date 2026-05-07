@@ -1,4 +1,11 @@
-import { IsString, IsNotEmpty, MaxLength, IsOptional } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  MaxLength,
+  IsOptional,
+  IsEmail,
+  IsUUID,
+} from 'class-validator';
 
 export class UpdateCompanyDto {
   @IsOptional()
@@ -28,4 +35,29 @@ export class UpdateCompanyDto {
     message: 'El contacto no puede exceder los 255 caracteres.',
   })
   contact?: string;
+
+  @IsOptional()
+  @IsEmail({}, { message: 'El correo electrónico no tiene un formato válido.' })
+  @MaxLength(255, { message: 'El correo no puede exceder los 255 caracteres.' })
+  email?: string;
+
+  @IsOptional()
+  @IsString({ message: 'El logo debe ser una cadena de texto (base64).' })
+  logo?: string;
+
+  @IsOptional()
+  @IsUUID('4', { message: 'El ID del estado debe ser un UUID válido.' })
+  stateId?: string;
+
+  @IsOptional()
+  @IsUUID('4', { message: 'El ID de la ciudad debe ser un UUID válido.' })
+  cityId?: string;
+
+  @IsOptional()
+  @IsUUID('4', { message: 'El ID del municipio debe ser un UUID válido.' })
+  municipalityId?: string;
+
+  @IsOptional()
+  @IsUUID('4', { message: 'El ID de la parroquia debe ser un UUID válido.' })
+  parishId?: string;
 }

@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { Box, Typography, Paper, TextField, MenuItem, Button, Stack, FormControlLabel, Checkbox, IconButton, Divider } from '@mui/material';
 import { AddOutlined, DeleteOutlined } from '@mui/icons-material';
-import { PSYCHOLOGICAL_RESULTS } from '../../types';
-import type { PsychologicalResult } from '../../types';
+import { PSYCHOLOGICAL_RESULTS, PSYCHOLOGICAL_APTITUDES } from '../../types';
+import type { PsychologicalResult, PsychologicalAptitude } from '../../types';
 import type { PsychometricTestResult } from '../../services/sub-entities.service';
 
 interface CatalogTest { id: string; name: string; }
 interface Props {
   psychologicalResult: PsychologicalResult | '' | undefined;
   onResultChange: (r: PsychologicalResult | '') => void;
+  psychologicalAptitude: PsychologicalAptitude | '' | undefined;
+  onAptitudeChange: (r: PsychologicalAptitude | '') => void;
   interviewConducted: boolean;
   onInterviewChange: (v: boolean) => void;
   observations: string;
@@ -19,7 +21,14 @@ interface Props {
   onRemoveTest: (id: string) => void;
 }
 
-export function PsicologicaSection({ psychologicalResult, onResultChange, interviewConducted, onInterviewChange, observations, onObservationsChange, psychometricTests, catalogTests, onAddTest, onRemoveTest }: Props) {
+export function PsicologicaSection({
+  psychologicalResult, onResultChange,
+  psychologicalAptitude, onAptitudeChange,
+  interviewConducted, onInterviewChange,
+  observations, onObservationsChange,
+  psychometricTests, catalogTests,
+  onAddTest, onRemoveTest,
+}: Props) {
   const [testId, setTestId] = useState('');
 
   const handleAdd = () => {
@@ -34,7 +43,7 @@ export function PsicologicaSection({ psychologicalResult, onResultChange, interv
 
       <Stack spacing={2.5}>
         <Box>
-          <Typography variant="subtitle2" sx={{ mb: 1 }}>Resultado</Typography>
+          <Typography variant="subtitle2" sx={{ mb: 1 }}>Estado de la Evaluación</Typography>
           <Stack direction="row" spacing={1}>
             {PSYCHOLOGICAL_RESULTS.map((r) => (
               <Button key={r} size="small"
@@ -46,6 +55,22 @@ export function PsicologicaSection({ psychologicalResult, onResultChange, interv
                 }
               >{r}</Button>
             ))}
+          </Stack>
+        </Box>
+
+        <Box>
+          <Typography variant="subtitle2" sx={{ mb: 1 }}>Aptitud Psicológica</Typography>
+          <Stack direction="row" spacing={1}>
+            {PSYCHOLOGICAL_APTITUDES.map((r) => {
+              const color = r === 'Apto' ? 'success' : r === 'No Apto' ? 'error' : 'warning';
+              return (
+                <Button key={r} size="small"
+                  color={color}
+                  variant={psychologicalAptitude === r ? 'contained' : 'outlined'}
+                  onClick={() => onAptitudeChange(psychologicalAptitude === r ? '' : r)}
+                >{r}</Button>
+              );
+            })}
           </Stack>
         </Box>
 

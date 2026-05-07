@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Box, Typography, Button, CircularProgress, Grid, Paper, Chip, Stack, Divider, Tooltip, Tab, Tabs } from '@mui/material';
-import { EditOutlined } from '@mui/icons-material';
+import { EditOutlined, CheckCircleOutlined, HotelOutlined, WarningAmberOutlined } from '@mui/icons-material';
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { AppLayout } from '@/components/AppLayout';
 import { useAttendConsultation } from '@/features/consultations/hooks/useAttendConsultation';
@@ -12,6 +12,11 @@ import { useExams } from '@/features/catalogs/hooks/useExams';
 import { usePsychometricTests as usePsychometricCatalog } from '@/features/catalogs/hooks/usePsychometricTests';
 import { EVALUATION_REASON_LABELS } from '@/features/requests/types';
 import { ConsultationResultChip } from '@/features/consultations/components/ConsultationResultChip';
+
+const RISK_TYPE_COLOR: Record<string, 'error' | 'warning' | 'info' | 'success' | 'secondary' | 'default'> = {
+  Fisico: 'error', Quimico: 'warning', Biologico: 'success',
+  Mecanico: 'info', Disergonomicos: 'secondary', Psicosocial: 'default',
+};
 
 function formatDate(d: string) {
   if (!d) return '—';
@@ -71,7 +76,7 @@ export function ConsultationDetailPage() {
   const bmi = physExam?.weight && physExam?.height && physExam.height > 0
     ? (physExam.weight / ((physExam.height / 100) ** 2)).toFixed(1) : null;
 
-  const result = data.type === 'Medica' ? data.consultationResult : data.psychologicalResult;
+  const result = data.type === 'Psicologica' ? data.psychologicalResult : data.consultationResult;
   const showTabs = hasMedica && hasPsicologica;
 
   return (
@@ -115,7 +120,6 @@ export function ConsultationDetailPage() {
           </Box>
         </Box>
 
-        {/* Tabs (only shown when both types exist) */}
         {showTabs && (
           <Box sx={{ px: 4, borderBottom: '1px solid', borderColor: 'divider' }}>
             <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)}>
@@ -126,6 +130,25 @@ export function ConsultationDetailPage() {
         )}
 
         <Box sx={{ flex: 1, overflow: 'auto', p: 3 }}>
+          {/* Riesgos del cargo */}
+          {data.positionRisks.length > 0 && (
+            <Paper variant="outlined" sx={{ px: 3, py: 1.5, mb: 3, borderRadius: 2, bgcolor: 'warning.50', borderColor: 'warning.200' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <WarningAmberOutlined sx={{ color: 'warning.main', fontSize: '1rem' }} />
+                  <Typography variant="caption" sx={{ fontWeight: 700, color: 'warning.dark', textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: '0.68rem' }}>
+                    Riesgos del Cargo
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                  {data.positionRisks.map((r) => (
+                    <Chip key={r.id} label={`${r.type}: ${r.name}`} size="small" color={RISK_TYPE_COLOR[r.type] ?? 'default'} />
+                  ))}
+                </Box>
+              </Box>
+            </Paper>
+          )}
+
           {(!showTabs && hasMedica) || (showTabs && activeTab === 'medica') ? (
             <Grid container spacing={3}>
               <Grid size={7}>
@@ -178,20 +201,40 @@ export function ConsultationDetailPage() {
               <Grid size={5}>
                 <Stack spacing={3}>
                   <SectionCard title="Diagnóstico">
-                    <Stack spacing={2}>
-                      {data.consultationDiagnostics.length > 0 && (
-                        <Box>
-                          <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 700, fontSize: '0.68rem' }}>Diagnósticos</Typography>
-                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-                            {data.consultationDiagnostics.map((d) => (
-                              <Chip key={d.id} size="small" label={`${getName(categories, d.categoryId)} · ${getName(diseases, d.diseaseId)}${d.bodySystemId ? ` · ${getName(bodySystems, d.bodySystemId)}` : ''}`} />
-                            ))}
+                    {data.isHealthy ? (
+                      <Box sx={{ py: 2, textAlign: 'center' }}>
+                        <CheckCircleOutlined sx={{ fontSize: 36, color: 'success.main', mb: 0.5 }} />
+                        <Typography variant="body1" color="success.main" sx={{ fontWeight: 700 }}>Paciente Sano</Typography>
+                        <Typography variant="body2" color="text.secondary">Sin diagnósticos registrados</Typography>
+                      </Box>
+                    ) : (
+                      <Stack spacing={2}>
+                        {data.consultationDiagnostics.length > 0 && (
+                          <Box>
+                            <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 700, fontSize: '0.68rem' }}>Diagnósticos</Typography>
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                              {data.consultationDiagnostics.map((d) => (
+                                <Chip key={d.id} size="small" label={`${getName(categories, d.categoryId)} · ${getName(diseases, d.diseaseId)}${d.bodySystemId ? ` · ${getName(bodySystems, d.bodySystemId)}` : ''}`} />
+                              ))}
+                            </Box>
                           </Box>
-                        </Box>
-                      )}
-                      <ReadField label="Descripción" value={data.diagnosisDescription} />
-                    </Stack>
+                        )}
+                        <ReadField label="Descripción" value={data.diagnosisDescription} />
+                      </Stack>
+                    )}
                   </SectionCard>
+
+                  {/* Reposo médico */}
+                  {data.restPeriod?.requiresRest && (
+                    <SectionCard title="Reposo Médico">
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <HotelOutlined sx={{ color: 'primary.main' }} />
+                        <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                          {data.restPeriod.days ? `${data.restPeriod.days} días de reposo` : 'Reposo indicado'}
+                        </Typography>
+                      </Box>
+                    </SectionCard>
+                  )}
 
                   {(data.recommendations?.suggestedPPE || data.recommendations?.medicalAdequacyMeasures) && (
                     <SectionCard title="Recomendaciones">
@@ -220,9 +263,15 @@ export function ConsultationDetailPage() {
                   <SectionCard title="Evaluación Psicológica">
                     <Stack spacing={2}>
                       <Box>
-                        <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 700, fontSize: '0.68rem' }}>Resultado</Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 700, fontSize: '0.68rem' }}>Estado de la Evaluación</Typography>
                         <Box sx={{ mt: 0.5 }}><ConsultationResultChip result={data.psychologicalResult} /></Box>
                       </Box>
+                      {data.psychologicalAptitude && (
+                        <Box>
+                          <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 700, fontSize: '0.68rem' }}>Aptitud Psicológica</Typography>
+                          <Box sx={{ mt: 0.5 }}><ConsultationResultChip result={data.psychologicalAptitude} /></Box>
+                        </Box>
+                      )}
                       <ReadField label="Entrevista realizada" value={data.interviewConducted ? 'Sí' : 'No'} />
                       {data.psychometricTests.length > 0 && (
                         <Box>

@@ -43,6 +43,7 @@ export function useCreateRequest() {
     mutationFn: (payload: CreateRequestPayload) => requestsService.create(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: REQUESTS_KEY });
+      queryClient.invalidateQueries({ queryKey: CONSULTATIONS_KEY });
       toast.success('Solicitud creada exitosamente.');
     },
     onError: (error: { response?: { data?: { message?: string } } }) => {

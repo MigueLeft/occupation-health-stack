@@ -18,6 +18,9 @@ export type ConsultationResult = (typeof CONSULTATION_RESULTS)[number];
 export const PSYCHOLOGICAL_RESULTS = ['Completada', 'En Espera', 'Incompleta'] as const;
 export type PsychologicalResult = (typeof PSYCHOLOGICAL_RESULTS)[number];
 
+export const PSYCHOLOGICAL_APTITUDES = ['Apto', 'No Apto', 'Apto Condicionado'] as const;
+export type PsychologicalAptitude = (typeof PSYCHOLOGICAL_APTITUDES)[number];
+
 export type ConsultationResultUnion = ConsultationResult | PsychologicalResult;
 
 export interface Recommendations {
@@ -31,6 +34,15 @@ export interface Observations {
   psicologica?: string;
 }
 
+export interface RestPeriod {
+  id: string;
+  consultationId: string;
+  requiresRest: boolean;
+  days?: number | null;
+  startDate?: string | null;
+  endDate?: string | null;
+}
+
 export interface Consultation {
   id: string;
   requestId: string;
@@ -40,12 +52,15 @@ export interface Consultation {
   interviewConducted?: boolean | null;
   consultationResult?: ConsultationResult | null;
   psychologicalResult?: PsychologicalResult | null;
+  psychologicalAptitude?: PsychologicalAptitude | null;
+  isHealthy?: boolean | null;
   diagnosisDescription?: string | null;
   recommendations?: Recommendations | null;
   observations?: Observations | null;
   systemAttendedById?: string | null;
   medicalAttendedById?: string | null;
   psychologicalAttendedById?: string | null;
+  restPeriod?: RestPeriod | null;
 }
 
 export interface ConsultationWithDetails extends Consultation {
@@ -63,6 +78,8 @@ export interface CreateConsultationPayload {
   interviewConducted?: boolean;
   consultationResult?: string;
   psychologicalResult?: string;
+  psychologicalAptitude?: string;
+  isHealthy?: boolean;
   diagnosisDescription?: string;
   recommendations?: Recommendations;
   observations?: Observations;

@@ -10,7 +10,6 @@ import {
 import { requests } from '../requests/requests.schema';
 import { user } from '../auth/auth.schema';
 
-// Tipos de consulta
 export const CONSULTATION_TYPES = [
   'Medica',
   'Psicologica',
@@ -18,7 +17,6 @@ export const CONSULTATION_TYPES = [
 ] as const;
 export type ConsultationType = (typeof CONSULTATION_TYPES)[number];
 
-// Estados de la consulta
 export const CONSULTATION_STATUSES = [
   'Pendiente',
   'En Proceso',
@@ -26,7 +24,6 @@ export const CONSULTATION_STATUSES = [
 ] as const;
 export type ConsultationStatus = (typeof CONSULTATION_STATUSES)[number];
 
-// Resultados posibles de la consulta médica
 export const CONSULTATION_RESULTS = [
   'Apto',
   'No Apto',
@@ -34,7 +31,6 @@ export const CONSULTATION_RESULTS = [
 ] as const;
 export type ConsultationResult = (typeof CONSULTATION_RESULTS)[number];
 
-// Estados posibles del resultado psicológico
 export const PSYCHOLOGICAL_RESULTS = [
   'Completada',
   'En Espera',
@@ -42,7 +38,13 @@ export const PSYCHOLOGICAL_RESULTS = [
 ] as const;
 export type PsychologicalResult = (typeof PSYCHOLOGICAL_RESULTS)[number];
 
-// Tipo auxiliar para las recomendaciones del médico (todos opcionales ya que el médico puede completarlos gradualmente)
+export const PSYCHOLOGICAL_APTITUDES = [
+  'Apto',
+  'No Apto',
+  'Apto Condicionado',
+] as const;
+export type PsychologicalAptitude = (typeof PSYCHOLOGICAL_APTITUDES)[number];
+
 export type Recommendations = {
   suggestedPPE?: string;
   medicalAdequacyMeasures?: string;
@@ -54,28 +56,22 @@ export const consultations = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     status: varchar('status', { length: 20 }).notNull().default('Pendiente'),
-    // Una solicitud solo puede tener una consulta
     requestId: uuid('request_id')
       .notNull()
       .references(() => requests.id, { onDelete: 'cascade' }),
     type: varchar('type', { length: 20 }).notNull(),
-    // Tratamiento actual que toma el paciente al momento de la consulta
     currentTreatment: text('current_treatment'),
-    // Solo aplica para consultas psicológicas
     interviewConducted: boolean('interview_conducted'),
-    // Resultado de la evaluación médica (Apto, No Apto, Apto Condicionado)
     consultationResult: varchar('consultation_result', { length: 30 }),
-    // Resultado de la evaluación psicológica
     psychologicalResult: varchar('psychological_result', { length: 30 }),
+    psychologicalAptitude: varchar('psychological_aptitude', { length: 30 }),
+    isHealthy: boolean('is_healthy').default(false),
     diagnosisDescription: text('diagnosis_description'),
-    // JSON con las recomendaciones del médico (EPP, medidas de adecuación)
     recommendations: jsonb('recommendations').$type<Recommendations>(),
-    // Observaciones libres separadas por sección
     observations: jsonb('observations').$type<{
       medica?: string;
       psicologica?: string;
     }>(),
-    // Registro de quién atendió la consulta
     systemAttendedById: text('system_attended_by_id').references(
       () => user.id,
       { onDelete: 'set null' },

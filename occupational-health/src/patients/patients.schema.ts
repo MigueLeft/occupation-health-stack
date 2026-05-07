@@ -12,7 +12,6 @@ import { diseases } from '../diseases/diseases.schema';
 import { companies } from '../companies/companies.schema';
 import { positions } from '../positions/positions.schema';
 
-// Tipo auxiliar para el contacto de emergencia
 export type EmergencyContact = {
   name: string;
   phone: string;
@@ -25,7 +24,6 @@ export const patients = pgTable('patients', {
   lastName: varchar('last_name', { length: 255 }).notNull(),
   birthDate: date('birth_date'),
   emergencyContact: jsonb('emergency_contact').$type<EmergencyContact>(),
-  email: varchar('email', { length: 255 }).unique(),
   bloodType: varchar('blood_type', { length: 10 }),
   dominantHand: varchar('dominant_hand', { length: 20 }),
   usesGlasses: boolean('uses_glasses').default(false),
@@ -33,7 +31,6 @@ export const patients = pgTable('patients', {
   positionId: uuid('position_id').references(() => positions.id),
 });
 
-// Tabla intermedia: paciente ↔ alergias (many-to-many)
 export const patientAllergies = pgTable(
   'patient_allergies',
   {
@@ -47,7 +44,6 @@ export const patientAllergies = pgTable(
   (t) => [primaryKey({ columns: [t.patientId, t.allergyId] })],
 );
 
-// Tabla intermedia: paciente ↔ enfermedades (many-to-many)
 export const patientDiseases = pgTable(
   'patient_diseases',
   {

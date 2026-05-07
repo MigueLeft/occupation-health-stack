@@ -14,8 +14,6 @@ import { auth } from '../auth/auth';
 import type { CreateUserDto } from './dto/create-user.dto';
 import type { UpdateUserDto } from './dto/update-user.dto';
 
-const TEMP_PASSWORD = 'Salud@2025!';
-
 @Injectable()
 export class UsersService {
   constructor(@Inject(DRIZZLE) private readonly db: NodePgDatabase) {}
@@ -61,7 +59,7 @@ export class UsersService {
     const fullName = `${dto.firstName} ${dto.lastName}`.trim();
 
     const response = await auth.api.signUpEmail({
-      body: { name: fullName, email: dto.email, password: TEMP_PASSWORD },
+      body: { name: fullName, email: dto.email, password: dto.password },
     });
 
     let createdUser: { id: string; email: string } | null = null;

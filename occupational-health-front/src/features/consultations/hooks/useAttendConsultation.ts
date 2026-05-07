@@ -2,10 +2,12 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/axios';
 import { requestsService } from '@/features/requests/services/requests.service';
 import { patientsService } from '@/features/patients/services/patients.service';
-import type { Consultation, ConsultationWithDetails } from '../types';
+import type { Consultation, ConsultationWithDetails, RestPeriod } from '../types';
 import type { PhysicalExam, ConsultationDiagnostic, ExamResult, PsychometricTestResult } from '../services/sub-entities.service';
 import type { EvaluationReason, RequestStatus } from '@/features/requests/types';
 import type { Patient } from '@/features/patients/types';
+
+interface PositionRisk { id: string; name: string; type: string; }
 
 interface FullConsultation extends ConsultationWithDetails {
   physicalExam: PhysicalExam | null;
@@ -14,9 +16,11 @@ interface FullConsultation extends ConsultationWithDetails {
   psychometricTests: PsychometricTestResult[];
   patientDiseases: { id: string; name: string }[];
   patient: Patient | null;
+  positionRisks: PositionRisk[];
+  restPeriod: RestPeriod | null;
 }
 
-async function getConsultation(id: string): Promise<{ consultation: Consultation & { physicalExam: PhysicalExam | null; examResults: ExamResult[] } }> {
+async function getConsultation(id: string): Promise<{ consultation: Consultation & { physicalExam: PhysicalExam | null; examResults: ExamResult[]; restPeriod: RestPeriod | null } }> {
   const { data } = await apiClient.get(`/consultations/${id}`);
   return data;
 }
@@ -31,6 +35,11 @@ async function getPsychometricTests(consultationId: string): Promise<Psychometri
   return data.psychometricTests;
 }
 
+async function getPositionRisks(positionId: string): Promise<PositionRisk[]> {
+  const { data } = await apiClient.get<{ position: { risks: PositionRisk[] } }>(`/positions/${positionId}`);
+  return (data.position.risks ?? []).sort((a, b) => a.type.localeCompare(b.type));
+}
+
 export function useAttendConsultation(consultationId: string) {
   const consultationQ = useQuery({ queryKey: ['consultation', consultationId], queryFn: () => getConsultation(consultationId) });
   const requestsQ = useQuery({ queryKey: ['requests'], queryFn: () => requestsService.getAll() });
@@ -38,28 +47,42 @@ export function useAttendConsultation(consultationId: string) {
   const diagnosticsQ = useQuery({ queryKey: ['consultation-diagnostics', consultationId], queryFn: () => getConsultationDiagnostics(consultationId) });
   const psychometricQ = useQuery({ queryKey: ['psychometric-tests', consultationId], queryFn: () => getPsychometricTests(consultationId) });
 
+  const patient = (() => {
+    if (!consultationQ.data || !requestsQ.data || !patientsQ.data) return null;
+    const req = requestsQ.data.requests.find((r) => r.id === consultationQ.data!.consultation.requestId);
+    return req ? patientsQ.data.patients.find((p) => p.cedula === req.patientId) : null;
+  })();
+
+  const positionRisksQ = useQuery({
+    queryKey: ['position-risks', patient?.positionId],
+    queryFn: () => getPositionRisks(patient!.positionId!),
+    enabled: !!patient?.positionId,
+  });
+
   const isLoading = consultationQ.isLoading || requestsQ.isLoading || patientsQ.isLoading || psychometricQ.isLoading;
 
   const data: FullConsultation | null = (() => {
     if (!consultationQ.data || !requestsQ.data || !patientsQ.data) return null;
     const c = consultationQ.data.consultation;
     const req = requestsQ.data.requests.find((r) => r.id === c.requestId);
-    const patient = req ? patientsQ.data.patients.find((p) => p.cedula === req.patientId) : null;
+    const pat = req ? patientsQ.data.patients.find((p) => p.cedula === req.patientId) : null;
     return {
       ...c,
       requestDate: req?.requestDate ?? '',
       evaluationReason: (req?.evaluationReason ?? '') as EvaluationReason,
       requestStatus: (req?.status ?? 'Pendiente') as RequestStatus,
       patientId: req?.patientId ?? '',
-      patientName: patient ? `${patient.firstName} ${patient.lastName}` : (req?.patientId ?? ''),
-      company: patient?.company?.name ?? '',
-      position: patient?.position?.name ?? '',
+      patientName: pat ? `${pat.firstName} ${pat.lastName}` : (req?.patientId ?? ''),
+      company: pat?.company?.name ?? '',
+      position: pat?.position?.name ?? '',
       physicalExam: c.physicalExam ?? null,
       consultationDiagnostics: diagnosticsQ.data ?? [],
       examResults: c.examResults ?? [],
       psychometricTests: psychometricQ.data ?? [],
-      patientDiseases: patient?.diseases ?? [],
-      patient: patient ?? null,
+      patientDiseases: pat?.diseases ?? [],
+      patient: pat ?? null,
+      positionRisks: positionRisksQ.data ?? [],
+      restPeriod: c.restPeriod ?? null,
     };
   })();
 

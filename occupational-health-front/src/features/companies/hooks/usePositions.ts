@@ -52,3 +52,35 @@ export function useDeletePosition() {
     },
   });
 }
+
+export function useAddPositionRisk() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ positionId, riskId }: { positionId: string; riskId: string }) =>
+      positionsService.addRisk(positionId, riskId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: COMPANIES_KEY });
+      toast.success('Riesgo agregado al cargo.');
+    },
+    onError: (error: { response?: { data?: { message?: string } } }) => {
+      toast.error(error.response?.data?.message ?? 'Error al agregar el riesgo.');
+    },
+  });
+}
+
+export function useRemovePositionRisk() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ positionId, riskId }: { positionId: string; riskId: string }) =>
+      positionsService.removeRisk(positionId, riskId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: COMPANIES_KEY });
+      toast.success('Riesgo eliminado del cargo.');
+    },
+    onError: (error: { response?: { data?: { message?: string } } }) => {
+      toast.error(error.response?.data?.message ?? 'Error al eliminar el riesgo.');
+    },
+  });
+}

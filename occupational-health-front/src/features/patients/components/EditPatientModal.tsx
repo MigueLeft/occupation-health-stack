@@ -31,7 +31,6 @@ const schema = z.object({
       const today = new Date(); today.setHours(0, 0, 0, 0);
       return new Date(v) < today;
     }, { message: 'La fecha de nacimiento no puede ser hoy ni una fecha futura' }),
-  email: z.email('Correo electrónico inválido'),
   companyId: z.string().uuid('Selecciona una empresa'),
   positionId: z.string().uuid('Selecciona un cargo'),
   bloodType: z.string().optional(),
@@ -73,7 +72,6 @@ export function EditPatientModal({ open, patient, onClose }: EditPatientModalPro
         firstName: patient.firstName,
         lastName: patient.lastName,
         birthDate: patient.birthDate ?? '',
-        email: patient.email ?? '',
         companyId: patient.companyId ?? '',
         positionId: patient.positionId ?? '',
         bloodType: patient.bloodType ?? '',
@@ -134,9 +132,6 @@ export function EditPatientModal({ open, patient, onClose }: EditPatientModalPro
               )} />
               <Controller name="birthDate" control={control} render={({ field }) => (
                 <TextField {...field} label="Fecha de Nacimiento" type="date" error={!!errors.birthDate} helperText={errors.birthDate?.message} size="small" fullWidth slotProps={{ inputLabel: { shrink: true } }} />
-              )} />
-              <Controller name="email" control={control} render={({ field }) => (
-                <TextField {...field} label="Correo Electrónico" error={!!errors.email} helperText={errors.email?.message} size="small" fullWidth />
               )} />
               <Controller name="companyId" control={control} render={({ field }) => (
                 <TextField {...field} select label="Empresa" error={!!errors.companyId} helperText={errors.companyId?.message} size="small" fullWidth

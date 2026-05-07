@@ -24,7 +24,6 @@ const schema = z.object({
       const today = new Date(); today.setHours(0, 0, 0, 0);
       return new Date(v) < today;
     }, { message: 'La fecha de nacimiento no puede ser hoy ni una fecha futura' }),
-  email: z.string().email('Correo electrónico inválido'),
   companyId: z.string().uuid('Selecciona una empresa'),
   positionId: z.string().uuid('Selecciona un cargo'),
   emergencyContact: z.object({

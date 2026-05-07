@@ -10,6 +10,7 @@ import { DRIZZLE } from '../database/database.module';
 import { companies, Company } from './companies.schema';
 import { positions } from '../positions/positions.schema';
 import { patients } from '../patients/patients.schema';
+import { geoLocations } from '../geo-catalog/geo-catalog.schema';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 
@@ -17,10 +18,43 @@ import { UpdateCompanyDto } from './dto/update-company.dto';
 export class CompaniesService {
   constructor(@Inject(DRIZZLE) private readonly db: NodePgDatabase) {}
 
+  private async resolveGeoNames(company: Company) {
+    const ids = [
+      company.stateId,
+      company.cityId,
+      company.municipalityId,
+      company.parishId,
+    ].filter(Boolean) as string[];
+
+    if (ids.length === 0) return company;
+
+    const geoList = await this.db
+      .select()
+      .from(geoLocations)
+      .where(
+        ids.length === 1
+          ? eq(geoLocations.id, ids[0])
+          : eq(geoLocations.id, ids[0]),
+      );
+
+    // Resuelve los nombres de las ubicaciones geográficas
+    const geoMap = new Map(geoList.map((g) => [g.id, g.name]));
+    return {
+      ...company,
+      stateName: company.stateId ? (geoMap.get(company.stateId) ?? null) : null,
+      cityName: company.cityId ? (geoMap.get(company.cityId) ?? null) : null,
+      municipalityName: company.municipalityId
+        ? (geoMap.get(company.municipalityId) ?? null)
+        : null,
+      parishName: company.parishId
+        ? (geoMap.get(company.parishId) ?? null)
+        : null,
+    };
+  }
+
   async findAll() {
     const result = await this.db.select().from(companies);
 
-    // Cuenta empleados por cargo para calcular employeeCount
     const employeeCounts = await this.db
       .select({ positionId: patients.positionId, total: count() })
       .from(patients)
@@ -29,6 +63,10 @@ export class CompaniesService {
     const countMap = new Map(
       employeeCounts.map((r) => [r.positionId, Number(r.total)]),
     );
+
+    // Obtiene todos los geo locations de una sola vez para optimizar
+    const allGeoLocations = await this.db.select().from(geoLocations);
+    const geoMap = new Map(allGeoLocations.map((g) => [g.id, g.name]));
 
     const companiesWithPositions = await Promise.all(
       result.map(async (company) => {
@@ -39,6 +77,14 @@ export class CompaniesService {
 
         return {
           ...company,
+          stateName: company.stateId ? (geoMap.get(company.stateId) ?? null) : null,
+          cityName: company.cityId ? (geoMap.get(company.cityId) ?? null) : null,
+          municipalityName: company.municipalityId
+            ? (geoMap.get(company.municipalityId) ?? null)
+            : null,
+          parishName: company.parishId
+            ? (geoMap.get(company.parishId) ?? null)
+            : null,
           positions: companyPositions.map((p) => ({
             ...p,
             employeeCount: countMap.get(p.id) ?? 0,
@@ -62,17 +108,29 @@ export class CompaniesService {
       );
     }
 
-    // Obtiene los cargos de la empresa
     const companyPositions = await this.db
       .select()
       .from(positions)
       .where(eq(positions.companyId, id));
 
-    return { ...company, positions: companyPositions };
+    const allGeoLocations = await this.db.select().from(geoLocations);
+    const geoMap = new Map(allGeoLocations.map((g) => [g.id, g.name]));
+
+    return {
+      ...company,
+      stateName: company.stateId ? (geoMap.get(company.stateId) ?? null) : null,
+      cityName: company.cityId ? (geoMap.get(company.cityId) ?? null) : null,
+      municipalityName: company.municipalityId
+        ? (geoMap.get(company.municipalityId) ?? null)
+        : null,
+      parishName: company.parishId
+        ? (geoMap.get(company.parishId) ?? null)
+        : null,
+      positions: companyPositions,
+    };
   }
 
   async create(dto: CreateCompanyDto) {
-    // Verificar que el RIF no esté ya registrado
     const [existing] = await this.db
       .select()
       .from(companies)
@@ -91,7 +149,6 @@ export class CompaniesService {
   async update(id: string, dto: UpdateCompanyDto): Promise<Company> {
     await this.findOne(id);
 
-    // Si se intenta cambiar el RIF, verificar que no exista otro con ese RIF
     if (dto.rif) {
       const [existing] = await this.db
         .select()

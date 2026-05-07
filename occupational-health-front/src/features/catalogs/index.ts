@@ -6,4 +6,5 @@ export { DiseasesPanel } from './components/DiseasesPanel';
 export { AllergiesPanel } from './components/AllergiesPanel';
 export { BodySystemsPanel } from './components/BodySystemsPanel';
 export { DiseaseCategoriesPanel } from './components/DiseaseCategoriesPanel';
+export { GeoCatalogPanel } from './components/GeoCatalogPanel';
 export type { CatalogTab } from './components/CatalogLayout';

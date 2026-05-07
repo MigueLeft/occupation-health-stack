@@ -160,7 +160,7 @@ export function ExpedientePage() {
                   </TableRow>
                 ) : (
                   patientConsultations.map((c) => {
-                    const result = c.type === 'Medica' ? c.consultationResult : c.psychologicalResult;
+                    const result = c.type === 'Psicologica' ? c.psychologicalResult : c.consultationResult;
                     return (
                       <TableRow key={c.id} sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
                         <TableCell><Typography variant="body2" color="text.secondary">{formatDate(c.requestDate)}</Typography></TableCell>

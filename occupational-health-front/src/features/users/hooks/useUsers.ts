@@ -22,7 +22,7 @@ export function useCreateUser() {
     onSuccess: ({ user }) => {
       queryClient.invalidateQueries({ queryKey: USERS_KEY });
       queryClient.invalidateQueries({ queryKey: ROLES_KEY });
-      toast.success(`Usuario "${user.name}" creado. Contraseña temporal: Salud@2025!`);
+      toast.success(`Usuario "${user.name}" creado exitosamente`);
     },
     onError: (error: { response?: { data?: { message?: string } } }) => {
       toast.error(error.response?.data?.message ?? 'Error al crear el usuario');
