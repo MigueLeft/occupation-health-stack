@@ -1,4 +1,5 @@
-import { Box, Typography, Paper, TextField, MenuItem, Chip } from '@mui/material';
+import { Box, Typography, Paper, Chip } from '@mui/material';
+import { SearchableSelect } from '@/components/SearchableSelect';
 
 interface Disease { id: string; name: string; isChronic?: boolean; }
 
@@ -17,20 +18,14 @@ export function ChronicDiseasesSection({ patientDiseases, allDiseases, onAdd, on
     <Paper variant="outlined" sx={{ p: 3, borderRadius: 2, mt: 2 }}>
       <Typography variant="h3" sx={{ mb: 2, fontSize: '1rem' }}>Enfermedades Crónicas</Typography>
 
-      <TextField
-        select
-        size="small"
-        label="Agregar enfermedad crónica"
+      <SearchableSelect
+        options={available}
         value=""
-        onChange={(e) => { if (e.target.value) onAdd(e.target.value); }}
-        fullWidth
+        onChange={(id) => { if (id) onAdd(id); }}
+        label="Agregar enfermedad crónica"
         disabled={available.length === 0}
-      >
-        {available.length === 0
-          ? <MenuItem value="" disabled>Sin enfermedades disponibles</MenuItem>
-          : available.map((d) => <MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>)
-        }
-      </TextField>
+        noOptionsText="Sin enfermedades disponibles"
+      />
 
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 1.5 }}>
         {patientDiseases.length === 0

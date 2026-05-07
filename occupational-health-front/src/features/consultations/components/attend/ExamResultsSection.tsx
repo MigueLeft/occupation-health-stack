@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Box, Typography, Paper, TextField, MenuItem, Button, Stack, IconButton, Divider } from '@mui/material';
 import { AddOutlined, DeleteOutlined } from '@mui/icons-material';
+import { SearchableSelect } from '@/components/SearchableSelect';
 import type { ExamResult } from '../../services/sub-entities.service';
 
 interface Exam { id: string; name: string; category: string; }
@@ -33,9 +34,13 @@ export function ExamResultsSection({ examResults, exams, onAdd, onRemove }: Prop
 
       <Stack spacing={1.5} sx={{ mb: 2 }}>
         <Stack direction="row" spacing={1}>
-          <TextField select size="small" label="Examen" value={examId} onChange={(e) => setExamId(e.target.value)} sx={{ flex: 1.5 }}>
-            {exams.map((e) => <MenuItem key={e.id} value={e.id}>{e.name} ({e.category})</MenuItem>)}
-          </TextField>
+          <SearchableSelect
+            options={exams.map((e) => ({ id: e.id, name: `${e.name} (${e.category})` }))}
+            value={examId}
+            onChange={setExamId}
+            label="Examen"
+            sx={{ flex: 1.5 }}
+          />
           <TextField size="small" label="Valor resultado" value={resultValue} onChange={(e) => setResultValue(e.target.value)} sx={{ flex: 1 }} />
           <TextField select size="small" label="Resultado" value={result} onChange={(e) => setResult(e.target.value as 'Normal' | 'Anormal' | '')} sx={{ flex: 0.8 }}>
             <MenuItem value="">—</MenuItem>

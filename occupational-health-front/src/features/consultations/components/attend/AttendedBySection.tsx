@@ -1,4 +1,5 @@
-import { Box, Typography, TextField, MenuItem, Paper } from '@mui/material';
+import { Box, Typography, Paper } from '@mui/material';
+import { SearchableSelect } from '@/components/SearchableSelect';
 import type { AppUser } from '@/features/users/types';
 
 interface Props {
@@ -21,22 +22,20 @@ export function AttendedBySection({ systemAttendedByName, medicalAttendedById, p
           <Typography variant="body2" sx={{ fontWeight: 500 }}>{systemAttendedByName ?? '—'}</Typography>
         </Box>
         {tab === 'medica' && (
-          <TextField select size="small" fullWidth label="Atendido presencialmente (Médica)"
+          <SearchableSelect
+            options={users.map((u) => ({ id: u.id, name: u.name }))}
             value={medicalAttendedById}
-            onChange={(e) => onMedicalChange(e.target.value)}
-          >
-            <MenuItem value="">—</MenuItem>
-            {users.map((u) => <MenuItem key={u.id} value={u.id}>{u.name}</MenuItem>)}
-          </TextField>
+            onChange={onMedicalChange}
+            label="Atendido presencialmente (Médica)"
+          />
         )}
         {tab === 'psicologica' && (
-          <TextField select size="small" fullWidth label="Atendido presencialmente (Psicológica)"
+          <SearchableSelect
+            options={users.map((u) => ({ id: u.id, name: u.name }))}
             value={psychologicalAttendedById}
-            onChange={(e) => onPsychologicalChange(e.target.value)}
-          >
-            <MenuItem value="">—</MenuItem>
-            {users.map((u) => <MenuItem key={u.id} value={u.id}>{u.name}</MenuItem>)}
-          </TextField>
+            onChange={onPsychologicalChange}
+            label="Atendido presencialmente (Psicológica)"
+          />
         )}
       </Box>
     </Paper>

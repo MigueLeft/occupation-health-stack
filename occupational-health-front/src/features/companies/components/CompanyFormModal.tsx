@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
-  Button, IconButton, Stack, TextField, Box, Typography,
-  MenuItem, Avatar,
+  Button, IconButton, Stack, TextField, Box, Typography, Avatar,
 } from '@mui/material';
+import { SearchableSelect } from '@/components/SearchableSelect';
 import { CloseOutlined, CameraAltOutlined } from '@mui/icons-material';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -240,20 +240,28 @@ export function CompanyFormModal({ open, onClose, company }: CompanyFormModalPro
                 name="stateId"
                 control={control}
                 render={({ field }) => (
-                  <TextField {...field} select label="Estado" fullWidth>
-                    <MenuItem value="">— Sin seleccionar —</MenuItem>
-                    {states.map((s) => <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>)}
-                  </TextField>
+                  <SearchableSelect
+                    ref={field.ref}
+                    options={states}
+                    value={field.value ?? ''}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    label="Estado"
+                  />
                 )}
               />
               <Controller
                 name="cityId"
                 control={control}
                 render={({ field }) => (
-                  <TextField {...field} select label="Ciudad" fullWidth>
-                    <MenuItem value="">— Sin seleccionar —</MenuItem>
-                    {cities.map((c) => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
-                  </TextField>
+                  <SearchableSelect
+                    ref={field.ref}
+                    options={cities}
+                    value={field.value ?? ''}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    label="Ciudad"
+                  />
                 )}
               />
             </Stack>
@@ -262,20 +270,28 @@ export function CompanyFormModal({ open, onClose, company }: CompanyFormModalPro
                 name="municipalityId"
                 control={control}
                 render={({ field }) => (
-                  <TextField {...field} select label="Municipio" fullWidth>
-                    <MenuItem value="">— Sin seleccionar —</MenuItem>
-                    {municipalities.map((m) => <MenuItem key={m.id} value={m.id}>{m.name}</MenuItem>)}
-                  </TextField>
+                  <SearchableSelect
+                    ref={field.ref}
+                    options={municipalities}
+                    value={field.value ?? ''}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    label="Municipio"
+                  />
                 )}
               />
               <Controller
                 name="parishId"
                 control={control}
                 render={({ field }) => (
-                  <TextField {...field} select label="Parroquia" fullWidth>
-                    <MenuItem value="">— Sin seleccionar —</MenuItem>
-                    {parishes.map((p) => <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>)}
-                  </TextField>
+                  <SearchableSelect
+                    ref={field.ref}
+                    options={parishes}
+                    value={field.value ?? ''}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    label="Parroquia"
+                  />
                 )}
               />
             </Stack>

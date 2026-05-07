@@ -88,6 +88,7 @@ export function DiagnosticSection({
             renderInput={(params) => <TextField {...params} label="Categoría" placeholder="Buscar categoría..." />}
             fullWidth
             noOptionsText="Sin resultados"
+            slotProps={{ listbox: { style: { maxHeight: 7 * 36 } } }}
           />
           <Autocomplete
             size="small"
@@ -98,6 +99,7 @@ export function DiagnosticSection({
             renderInput={(params) => <TextField {...params} label="Enfermedad" placeholder="Buscar enfermedad..." />}
             fullWidth
             noOptionsText="Sin resultados"
+            slotProps={{ listbox: { style: { maxHeight: 7 * 36 } } }}
           />
           <Autocomplete
             size="small"
@@ -108,6 +110,7 @@ export function DiagnosticSection({
             renderInput={(params) => <TextField {...params} label="Aparato/Sistema (opcional)" placeholder="Buscar aparato o sistema..." />}
             fullWidth
             noOptionsText="Sin resultados"
+            slotProps={{ listbox: { style: { maxHeight: 7 * 36 } } }}
           />
           <Button variant="outlined" startIcon={<AddOutlined />} onClick={handleAdd} disabled={!cat || !disease} fullWidth>
             Agregar

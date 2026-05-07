@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, Box, Typography, IconButton,
-  Stack, Chip, Divider, TextField, MenuItem, Button,
+  Stack, Chip, Divider, Button,
 } from '@mui/material';
 import { CloseOutlined, AddOutlined, DeleteOutlined } from '@mui/icons-material';
 import { useAddPositionRisk, useRemovePositionRisk } from '../hooks/usePositions';
 import { useRisks } from '@/features/catalogs/hooks/useRisks';
+import { SearchableSelect } from '@/components/SearchableSelect';
 import type { Position } from '../types';
 
 const RISK_TYPE_COLOR: Record<string, 'error' | 'warning' | 'info' | 'success' | 'secondary' | 'default'> = {
@@ -16,6 +17,8 @@ const RISK_TYPE_COLOR: Record<string, 'error' | 'warning' | 'info' | 'success' |
   Disergonomicos: 'secondary',
   Psicosocial: 'default',
 };
+
+interface Risk { id: string; name: string; type: string; }
 
 interface Props {
   open: boolean;
@@ -56,28 +59,25 @@ export function PositionRisksModal({ open, onClose, position }: Props) {
           <Box>
             <Typography variant="subtitle2" sx={{ mb: 1 }}>Agregar riesgo</Typography>
             <Stack direction="row" spacing={1}>
-              <TextField
-                select
-                size="small"
-                label="Seleccionar riesgo"
+              <SearchableSelect
+                options={availableRisks}
                 value={selectedRiskId}
-                onChange={(e) => setSelectedRiskId(e.target.value)}
-                sx={{ flex: 1 }}
+                onChange={setSelectedRiskId}
+                label="Seleccionar riesgo"
                 disabled={availableRisks.length === 0}
-              >
-                {availableRisks.length === 0 ? (
-                  <MenuItem disabled value="">Todos los riesgos ya están agregados</MenuItem>
-                ) : (
-                  availableRisks.map((r) => (
-                    <MenuItem key={r.id} value={r.id}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Chip label={r.type} size="small" color={RISK_TYPE_COLOR[r.type] ?? 'default'} sx={{ fontSize: '0.7rem' }} />
-                        {r.name}
-                      </Box>
-                    </MenuItem>
-                  ))
-                )}
-              </TextField>
+                noOptionsText="Todos los riesgos ya están agregados"
+                sx={{ flex: 1 }}
+                getOptionLabel={(o) => `${(o as unknown as Risk).type}: ${o.name}`}
+                renderOptionContent={(o) => {
+                  const r = o as unknown as Risk;
+                  return (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Chip label={r.type} size="small" color={RISK_TYPE_COLOR[r.type] ?? 'default'} sx={{ fontSize: '0.7rem' }} />
+                      {r.name}
+                    </Box>
+                  );
+                }}
+              />
               <Button
                 variant="contained"
                 startIcon={<AddOutlined />}

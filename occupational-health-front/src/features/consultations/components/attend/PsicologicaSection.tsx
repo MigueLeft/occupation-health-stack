@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Box, Typography, Paper, TextField, MenuItem, Button, Stack, FormControlLabel, Checkbox, IconButton, Divider } from '@mui/material';
+import { Box, Typography, Paper, TextField, Button, Stack, FormControlLabel, Checkbox, IconButton, Divider } from '@mui/material';
 import { AddOutlined, DeleteOutlined } from '@mui/icons-material';
+import { SearchableSelect } from '@/components/SearchableSelect';
 import { PSYCHOLOGICAL_RESULTS, PSYCHOLOGICAL_APTITUDES } from '../../types';
 import type { PsychologicalResult, PsychologicalAptitude } from '../../types';
 import type { PsychometricTestResult } from '../../services/sub-entities.service';
@@ -79,9 +80,13 @@ export function PsicologicaSection({
         <Box>
           <Typography variant="subtitle2" sx={{ mb: 1 }}>Tests Psicométricos</Typography>
           <Stack direction="row" spacing={1} sx={{ mb: 1.5 }}>
-            <TextField select size="small" label="Test" value={testId} onChange={(e) => setTestId(e.target.value)} sx={{ flex: 1 }}>
-              {catalogTests.map((t) => <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>)}
-            </TextField>
+            <SearchableSelect
+              options={catalogTests}
+              value={testId}
+              onChange={setTestId}
+              label="Test psicométrico"
+              sx={{ flex: 1 }}
+            />
             <Button variant="outlined" startIcon={<AddOutlined />} onClick={handleAdd} disabled={!testId} sx={{ flexShrink: 0 }}>Agregar</Button>
           </Stack>
           <Stack spacing={1}>
