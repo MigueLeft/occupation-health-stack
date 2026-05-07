@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Box, Typography, Paper, Chip } from '@mui/material';
 import { SearchableSelect } from '@/components/SearchableSelect';
 
@@ -11,17 +12,27 @@ interface Props {
 }
 
 export function ChronicDiseasesSection({ patientDiseases, allDiseases, onAdd, onRemove }: Props) {
-  const chronicDiseases = allDiseases.filter((d) => d.isChronic);
-  const available = chronicDiseases.filter((d) => !patientDiseases.some((pd) => pd.id === d.id));
+  const [selectorKey, setSelectorKey] = useState(0);
+
+  const available = allDiseases.filter(
+    (d) => d.isChronic && !patientDiseases.some((pd) => pd.id === d.id),
+  );
+
+  const handleAdd = (id: string) => {
+    if (!id) return;
+    onAdd(id);
+    setSelectorKey((k) => k + 1);
+  };
 
   return (
     <Paper variant="outlined" sx={{ p: 3, borderRadius: 2, mt: 2 }}>
       <Typography variant="h3" sx={{ mb: 2, fontSize: '1rem' }}>Enfermedades Crónicas</Typography>
 
       <SearchableSelect
+        key={selectorKey}
         options={available}
         value=""
-        onChange={(id) => { if (id) onAdd(id); }}
+        onChange={handleAdd}
         label="Agregar enfermedad crónica"
         disabled={available.length === 0}
         noOptionsText="Sin enfermedades disponibles"
