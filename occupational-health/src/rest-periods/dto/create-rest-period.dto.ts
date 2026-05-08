@@ -5,10 +5,8 @@ import {
   IsOptional,
   IsInt,
   IsDateString,
-  IsIn,
   Min,
 } from 'class-validator';
-import { REST_PERIOD_REASONS } from '../rest-periods.schema';
 
 export class CreateRestPeriodDto {
   @IsUUID('4', { message: 'El ID de la consulta debe ser un UUID válido.' })
@@ -40,12 +38,14 @@ export class CreateRestPeriodDto {
   endDate?: string;
 
   @IsOptional()
-  @IsIn(REST_PERIOD_REASONS, {
-    message: `El motivo del reposo debe ser uno de los siguientes: ${REST_PERIOD_REASONS.join(', ')}.`,
-  })
-  reason?: string;
-
-  @IsOptional()
   @IsUUID('4', { message: 'El ID de la enfermedad debe ser un UUID válido.' })
   diseaseId?: string;
+
+  @IsOptional()
+  @IsUUID('4', { message: 'El ID de la categoría debe ser un UUID válido.' })
+  categoryId?: string;
+
+  @IsOptional()
+  @IsUUID('4', { message: 'El ID del aparato/sistema debe ser un UUID válido.' })
+  bodySystemId?: string;
 }

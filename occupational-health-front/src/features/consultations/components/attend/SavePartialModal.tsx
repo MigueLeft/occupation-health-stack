@@ -10,25 +10,21 @@ interface Props {
   onCancel: () => void;
 }
 
-const LABELS: Record<'medica' | 'psicologica', string> = {
-  medica: 'médica',
-  psicologica: 'psicológica',
-};
-
 export function SavePartialModal({ open, emptySection, isSaving, onFinalize, onSavePartial, onCancel }: Props) {
-  const emptyLabel = LABELS[emptySection];
-  const filledLabel = emptySection === 'medica' ? 'psicológica' : 'médica';
+  const isMedicalEmpty = emptySection === 'medica';
+  const filledLabel = isMedicalEmpty ? 'psicológica' : 'médica';
+  const emptyLabel = isMedicalEmpty ? 'médica' : 'psicológica';
 
   return (
     <Dialog open={open} maxWidth="xs" fullWidth>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <WarningAmberOutlined color="warning" fontSize="small" />
-        Sección incompleta
+        Sección {emptyLabel} vacía
       </DialogTitle>
 
       <DialogContent>
         <Typography variant="body2">
-          La sección <strong>{emptyLabel}</strong> está vacía. ¿Cómo deseas continuar?
+          La sección <strong>{emptyLabel}</strong> no contiene información. ¿Cómo deseas continuar?
         </Typography>
       </DialogContent>
 
@@ -40,7 +36,7 @@ export function SavePartialModal({ open, emptySection, isSaving, onFinalize, onS
             disabled={isSaving}
             onClick={onFinalize}
           >
-            Finalizar sin sección {emptyLabel}
+            Finalizar con sección {filledLabel}
           </Button>
           <Button
             variant="outlined"
@@ -48,7 +44,7 @@ export function SavePartialModal({ open, emptySection, isSaving, onFinalize, onS
             disabled={isSaving}
             onClick={onSavePartial}
           >
-            Guardar solo sección {filledLabel}
+            Guardar sección {filledLabel} y mantener en proceso
           </Button>
           <Button
             variant="text"

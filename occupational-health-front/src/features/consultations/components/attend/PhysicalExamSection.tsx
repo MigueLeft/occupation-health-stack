@@ -19,7 +19,16 @@ function NumField({ label, field, value, onChange, placeholder }: {
   return (
     <TextField label={label} size="small" type="number" fullWidth placeholder={placeholder}
       value={value[field] ?? ''}
-      onChange={(e) => onChange({ ...value, [field]: e.target.value === '' ? undefined : Number(e.target.value) })}
+      slotProps={{ htmlInput: { min: 0, max: 1000 } }}
+      onChange={(e) => {
+        if (e.target.value === '') {
+          onChange({ ...value, [field]: undefined });
+          return;
+        }
+        const num = Number(e.target.value);
+        if (num < 0 || num > 1000) return;
+        onChange({ ...value, [field]: num });
+      }}
     />
   );
 }

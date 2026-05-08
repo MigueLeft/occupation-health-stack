@@ -62,7 +62,7 @@ export function useAttendConsultation(consultationId: string) {
     enabled: !!patient?.positionId,
   });
 
-  const isLoading = consultationQ.isLoading || requestsQ.isLoading || patientsQ.isLoading || psychometricQ.isLoading;
+  const isLoading = consultationQ.isLoading || requestsQ.isLoading || patientsQ.isLoading || psychometricQ.isLoading || referralQ.isLoading;
 
   const data: FullConsultation | null = (() => {
     if (!consultationQ.data || !requestsQ.data || !patientsQ.data) return null;
@@ -90,5 +90,5 @@ export function useAttendConsultation(consultationId: string) {
     };
   })();
 
-  return { data, isLoading, isPsychometricFetching: psychometricQ.isFetching, refetchPatient: patientsQ.refetch };
+  return { data, isLoading, isReferralLoading: referralQ.isLoading, isPsychometricFetching: psychometricQ.isFetching, refetchPatient: patientsQ.refetch };
 }

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, IconButton, Stack, TextField, MenuItem, Autocomplete,
@@ -37,6 +38,10 @@ export function RequestCreateModal({ open, onClose, isPending, onSubmit }: Props
     resolver: zodResolver(schema),
     defaultValues: { requestDate: undefined, evaluationReason: undefined, patientId: '', scheduledConsultationType: undefined },
   });
+
+  useEffect(() => {
+    if (!open) reset();
+  }, [open, reset]);
 
   const evaluationReason = useWatch({ control, name: 'evaluationReason' });
   const isConsulta = evaluationReason === 'Consulta';

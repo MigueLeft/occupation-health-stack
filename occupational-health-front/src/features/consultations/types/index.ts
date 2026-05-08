@@ -44,6 +44,8 @@ export interface RestPeriod {
   endDate?: string | null;
   reason?: string | null;
   diseaseId?: string | null;
+  categoryId?: string | null;
+  bodySystemId?: string | null;
 }
 
 export interface ConsultationReferral {

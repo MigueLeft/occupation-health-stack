@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import PDFDocument from 'pdfkit';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { and, gte, lte, eq, isNull, isNotNull, inArray, count, SQL } from 'drizzle-orm';
+import { and, gte, lte, eq, isNotNull, count, SQL } from 'drizzle-orm';
 import { DRIZZLE } from '../database/database.module';
 import { consultations } from '../consultations/consultations.schema';
 import { requests } from '../requests/requests.schema';
@@ -21,6 +21,7 @@ import { riskExposureCategories } from '../risk-exposure-categories/risk-exposur
 import { consultationDiagnostics } from '../consultation-diagnostics/consultation-diagnostics.schema';
 import { diseases } from '../diseases/diseases.schema';
 import { bodySystems } from '../body-systems/body-systems.schema';
+import { diseaseCategories } from '../disease-categories/disease-categories.schema';
 import type { ConsultationReportDto } from './dto/consultation-report.dto';
 import type { VigilanciaReportDto } from './dto/vigilancia-report.dto';
 import type { PathologiesReportDto } from './dto/pathologies-report.dto';
@@ -742,49 +743,36 @@ export class ReportsService {
     }));
   }
 
-  // Sección II: Accidentes laborales y enfermedades por sexo
+  // Sección II: Accidentes y enfermedades de consultas por sexo (usa categoría de diagnóstico)
   private async fetchAccidentsDiseaseBySex(
     filters: VigilanciaReportDto,
   ): Promise<SectionIIRow[]> {
     const conditions = this.buildVigilanciaConditions(filters);
-    // Filtrar solo motivos de reposo por accidente o enfermedad laboral
-    const laboralReasons = ['Accidente Laboral', 'Enfermedad Laboral'];
-
     const whereClause =
       conditions.length > 0 ? and(...conditions) : undefined;
 
+    // Obtener todos los diagnósticos con su categoría y el sexo del paciente
     const data = await this.db
       .select({
-        reason: restPeriods.reason,
+        categoryName: diseaseCategories.name,
         sex: patients.sex,
-        count: count(),
       })
-      .from(restPeriods)
-      .innerJoin(
-        consultations,
-        eq(restPeriods.consultationId, consultations.id),
-      )
+      .from(consultationDiagnostics)
+      .innerJoin(diseaseCategories, eq(consultationDiagnostics.categoryId, diseaseCategories.id))
+      .innerJoin(consultations, eq(consultationDiagnostics.consultationId, consultations.id))
       .innerJoin(requests, eq(consultations.requestId, requests.id))
       .innerJoin(patients, eq(requests.patientId, patients.cedula))
-      .where(
-        whereClause
-          ? and(whereClause, inArray(restPeriods.reason, laboralReasons))
-          : inArray(restPeriods.reason, laboralReasons),
-      )
-      .groupBy(restPeriods.reason, patients.sex);
+      .where(whereClause);
 
-    // Pivotear los datos por motivo
-    const map = new Map<
-      string,
-      { femenino: number; masculino: number }
-    >();
+    // Pivotear por nombre de categoría
+    const map = new Map<string, { femenino: number; masculino: number }>();
 
     for (const row of data) {
-      const key = row.reason ?? 'Sin especificar';
+      const key = row.categoryName ?? 'Sin especificar';
       if (!map.has(key)) map.set(key, { femenino: 0, masculino: 0 });
       const entry = map.get(key)!;
-      if (row.sex === 'Femenino') entry.femenino += Number(row.count);
-      else entry.masculino += Number(row.count);
+      if (row.sex === 'Femenino') entry.femenino += Number(1);
+      else entry.masculino += Number(1);
     }
 
     return Array.from(map.entries()).map(([category, vals]) => ({
@@ -839,7 +827,7 @@ export class ReportsService {
     }));
   }
 
-  // Sección IV: Motivos de reposo médico
+  // Sección IV: Motivos de reposo médico (usa categoría del diagnóstico o reason legacy)
   private async fetchRestPeriodReasons(
     filters: VigilanciaReportDto,
   ): Promise<SectionIVRow[]> {
@@ -849,24 +837,31 @@ export class ReportsService {
 
     const data = await this.db
       .select({
-        reason: restPeriods.reason,
+        categoryName: diseaseCategories.name,
+        legacyReason: restPeriods.reason,
         count: count(),
       })
       .from(restPeriods)
-      .innerJoin(
-        consultations,
-        eq(restPeriods.consultationId, consultations.id),
-      )
+      .innerJoin(consultations, eq(restPeriods.consultationId, consultations.id))
       .innerJoin(requests, eq(consultations.requestId, requests.id))
       .innerJoin(patients, eq(requests.patientId, patients.cedula))
-      .where(whereClause)
-      .groupBy(restPeriods.reason)
-      .orderBy(restPeriods.reason);
+      .leftJoin(diseaseCategories, eq(restPeriods.categoryId, diseaseCategories.id))
+      .where(
+        whereClause
+          ? and(whereClause, eq(restPeriods.requiresRest, true))
+          : eq(restPeriods.requiresRest, true),
+      )
+      .groupBy(diseaseCategories.name, restPeriods.reason)
+      .orderBy(diseaseCategories.name);
 
-    return data.map((r) => ({
-      reason: r.reason ?? 'Sin especificar',
-      count: Number(r.count),
-    }));
+    // Agregar en memoria usando nombre de categoría o motivo legacy
+    const map = new Map<string, number>();
+    for (const r of data) {
+      const key = r.categoryName ?? r.legacyReason ?? 'Sin especificar';
+      map.set(key, (map.get(key) ?? 0) + Number(r.count));
+    }
+
+    return Array.from(map.entries()).map(([reason, cnt]) => ({ reason, count: cnt }));
   }
 
   // Sección V: Referencias médicas por especialidad
@@ -954,7 +949,8 @@ export class ReportsService {
         diseaseName: diseases.name,
         sex: patients.sex,
         restDays: restPeriods.days,
-        restReason: restPeriods.reason,
+        restCategoryName: diseaseCategories.name,
+        legacyRestReason: restPeriods.reason,
       })
       .from(consultationDiagnostics)
       .innerJoin(diseases, eq(consultationDiagnostics.diseaseId, diseases.id))
@@ -962,10 +958,10 @@ export class ReportsService {
       .innerJoin(requests, eq(consultations.requestId, requests.id))
       .innerJoin(patients, eq(requests.patientId, patients.cedula))
       .leftJoin(restPeriods, eq(restPeriods.consultationId, consultations.id))
+      .leftJoin(diseaseCategories, eq(restPeriods.categoryId, diseaseCategories.id))
       .where(whereClause)
       .orderBy(diseases.name);
 
-    // Agregar por enfermedad
     const map = new Map<string, PathologyRow>();
     for (const r of rows) {
       if (!map.has(r.diseaseId)) {
@@ -985,9 +981,9 @@ export class ReportsService {
       if (r.restDays) entry.totalRestDays += r.restDays;
       if (r.sex === 'Masculino') entry.maleCases++;
       else if (r.sex === 'Femenino') entry.femaleCases++;
-      const reason = r.restReason ?? '';
-      if (reason === 'Enfermedad Comun' || reason === 'Accidente Comun') entry.commonOrigin++;
-      else if (reason === 'Enfermedad Laboral' || reason === 'Accidente Laboral') entry.laborOrigin++;
+      const effectiveReason = r.restCategoryName ?? r.legacyRestReason ?? '';
+      if (effectiveReason === 'Enfermedad Comun' || effectiveReason === 'Accidente Comun') entry.commonOrigin++;
+      else if (effectiveReason === 'Enfermedad Laboral' || effectiveReason === 'Accidente Laboral') entry.laborOrigin++;
     }
 
     return Array.from(map.values()).sort((a, b) => b.totalCases - a.totalCases);
@@ -1007,7 +1003,8 @@ export class ReportsService {
         systemName: bodySystems.name,
         sex: patients.sex,
         restDays: restPeriods.days,
-        restReason: restPeriods.reason,
+        restCategoryName: diseaseCategories.name,
+        legacyRestReason: restPeriods.reason,
       })
       .from(consultationDiagnostics)
       .innerJoin(bodySystems, eq(consultationDiagnostics.bodySystemId, bodySystems.id))
@@ -1015,6 +1012,7 @@ export class ReportsService {
       .innerJoin(requests, eq(consultations.requestId, requests.id))
       .innerJoin(patients, eq(requests.patientId, patients.cedula))
       .leftJoin(restPeriods, eq(restPeriods.consultationId, consultations.id))
+      .leftJoin(diseaseCategories, eq(restPeriods.categoryId, diseaseCategories.id))
       .where(
         conditions.length > 0
           ? and(and(...conditions), isNotNull(consultationDiagnostics.bodySystemId))
@@ -1022,7 +1020,6 @@ export class ReportsService {
       )
       .orderBy(bodySystems.name);
 
-    // Agregar por sistema corporal
     const map = new Map<string, BodySystemRow>();
     for (const r of rows) {
       if (!map.has(r.systemId)) {
@@ -1042,9 +1039,9 @@ export class ReportsService {
       if (r.restDays) entry.totalRestDays += r.restDays;
       if (r.sex === 'Masculino') entry.maleCases++;
       else if (r.sex === 'Femenino') entry.femaleCases++;
-      const reason = r.restReason ?? '';
-      if (reason === 'Enfermedad Comun' || reason === 'Accidente Comun') entry.commonOrigin++;
-      else if (reason === 'Enfermedad Laboral' || reason === 'Accidente Laboral') entry.laborOrigin++;
+      const effectiveReason = r.restCategoryName ?? r.legacyRestReason ?? '';
+      if (effectiveReason === 'Enfermedad Comun' || effectiveReason === 'Accidente Comun') entry.commonOrigin++;
+      else if (effectiveReason === 'Enfermedad Laboral' || effectiveReason === 'Accidente Laboral') entry.laborOrigin++;
     }
 
     return Array.from(map.values()).sort((a, b) => b.totalCases - a.totalCases);

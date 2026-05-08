@@ -1,6 +1,9 @@
 import { useState } from 'react';
-import { Box, Typography, Paper, TextField, Button, Chip, Stack, Autocomplete, FormControlLabel, Checkbox } from '@mui/material';
-import { AddOutlined, CheckCircleOutlined } from '@mui/icons-material';
+import {
+  Box, Typography, Paper, TextField, Button, Chip, Stack,
+  Autocomplete, FormControlLabel, Checkbox,
+} from '@mui/material';
+import { AddOutlined, CheckCircleOutlined, HotelOutlined } from '@mui/icons-material';
 import { CONSULTATION_RESULTS } from '../../types';
 import type { ConsultationResult } from '../../types';
 import type { ConsultationDiagnostic } from '../../services/sub-entities.service';
@@ -12,7 +15,7 @@ interface BodySystem { id: string; name: string; }
 
 interface Props {
   diagnostics: ConsultationDiagnostic[];
-  onAddDiagnostic: (row: DiagRow) => void;
+  onAddDiagnostic: (row: DiagRow, isRest: boolean, restDays: number | '') => void;
   onRemoveDiagnostic: (id: string) => void;
   categories: Cat[];
   diseases: Disease[];
@@ -23,6 +26,10 @@ interface Props {
   onDescriptionChange: (v: string) => void;
   isHealthy: boolean;
   onIsHealthyChange: (v: boolean) => void;
+  restCategoryId: string;
+  restDiseaseId: string;
+  restBodySystemId: string;
+  restDays: number | '';
 }
 
 export function DiagnosticSection({
@@ -31,18 +38,35 @@ export function DiagnosticSection({
   result, onResultChange,
   description, onDescriptionChange,
   isHealthy, onIsHealthyChange,
+  restCategoryId, restDiseaseId, restBodySystemId, restDays,
 }: Props) {
   const [cat, setCat] = useState<Cat | null>(null);
   const [disease, setDisease] = useState<Disease | null>(null);
   const [sys, setSys] = useState<BodySystem | null>(null);
+  const [isRest, setIsRest] = useState(false);
+  const [localRestDays, setLocalRestDays] = useState<number | ''>('');
 
   const handleAdd = () => {
     if (!cat || !disease) return;
-    onAddDiagnostic({ categoryId: cat.id, diseaseId: disease.id, bodySystemId: sys?.id });
-    setCat(null); setDisease(null); setSys(null);
+    onAddDiagnostic(
+      { categoryId: cat.id, diseaseId: disease.id, bodySystemId: sys?.id },
+      isRest,
+      localRestDays,
+    );
+    setCat(null);
+    setDisease(null);
+    setSys(null);
+    setIsRest(false);
+    setLocalRestDays('');
   };
 
   const getName = (list: Cat[], id: string) => list.find((x) => x.id === id)?.name ?? id;
+
+  const isRestDiagnostic = (d: ConsultationDiagnostic) =>
+    !!restCategoryId &&
+    d.categoryId === restCategoryId &&
+    d.diseaseId === restDiseaseId &&
+    (d.bodySystemId ?? '') === restBodySystemId;
 
   return (
     <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
@@ -112,18 +136,67 @@ export function DiagnosticSection({
             noOptionsText="Sin resultados"
             slotProps={{ listbox: { style: { maxHeight: 7 * 36 } } }}
           />
+
+          {/* Reposo médico inline */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={isRest}
+                  onChange={(e) => {
+                    setIsRest(e.target.checked);
+                    if (!e.target.checked) setLocalRestDays('');
+                  }}
+                  icon={<HotelOutlined />}
+                  checkedIcon={<HotelOutlined />}
+                  color="primary"
+                />
+              }
+              label={<Typography variant="body2">Reposo médico</Typography>}
+              sx={{ m: 0 }}
+            />
+            {isRest && (
+              <TextField
+                label="Días de reposo"
+                type="number"
+                size="small"
+                value={localRestDays}
+                onChange={(e) => {
+                  if (e.target.value === '') { setLocalRestDays(''); return; }
+                  const val = parseInt(e.target.value, 10);
+                  setLocalRestDays(isNaN(val) || val < 1 ? '' : val);
+                }}
+                slotProps={{ htmlInput: { min: 1, max: 365 } }}
+                placeholder="Ej: 7"
+                sx={{ width: 160 }}
+              />
+            )}
+          </Box>
+
           <Button variant="outlined" startIcon={<AddOutlined />} onClick={handleAdd} disabled={!cat || !disease} fullWidth>
             Agregar
           </Button>
+
           {diagnostics.length > 0 && (
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-              {diagnostics.map((d) => (
-                <Chip key={d.id} size="small" onDelete={() => onRemoveDiagnostic(d.id)}
-                  label={`${getName(categories, d.categoryId)} · ${getName(diseases, d.diseaseId)}`}
-                />
-              ))}
+              {diagnostics.map((d) => {
+                const hasRest = isRestDiagnostic(d);
+                const label = `${getName(categories, d.categoryId)} · ${getName(diseases, d.diseaseId)}${hasRest ? ` · Reposo: ${restDays} día(s)` : ''}`;
+                return (
+                  <Chip
+                    key={d.id}
+                    size="small"
+                    onDelete={() => onRemoveDiagnostic(d.id)}
+                    icon={hasRest ? <HotelOutlined fontSize="inherit" /> : undefined}
+                    label={label}
+                    color={hasRest ? 'primary' : 'default'}
+                    variant={hasRest ? 'outlined' : 'filled'}
+                  />
+                );
+              })}
             </Box>
           )}
+
           <Box>
             <Typography variant="subtitle2" sx={{ mb: 1 }}>Resultado</Typography>
             <Stack direction="row" spacing={1}>

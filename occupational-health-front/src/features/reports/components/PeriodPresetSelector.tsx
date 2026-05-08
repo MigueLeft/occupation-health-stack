@@ -48,7 +48,11 @@ export function PeriodPresetSelector({ value, onChange }: Props) {
         <Stack direction="row" spacing={2}>
           {periodType === 'monthly' && (
             <TextField select label="Mes" size="small" fullWidth value={month}
-              onChange={(e) => onChange({ month: e.target.value })}>
+              onChange={(e) => {
+                const updates: Partial<PeriodState> = { month: e.target.value };
+                if (e.target.value && !year) updates.year = String(new Date().getFullYear());
+                onChange(updates);
+              }}>
               <MenuItem value=""><em>Seleccionar mes</em></MenuItem>
               {MONTH_OPTIONS.map((m) => (
                 <MenuItem key={m.value} value={m.value}>{m.label}</MenuItem>

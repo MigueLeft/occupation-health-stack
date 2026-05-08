@@ -27,7 +27,6 @@ import { PsicologicaSection } from '@/features/consultations/components/attend/P
 import { ChronicDiseasesSection } from '@/features/consultations/components/attend/ChronicDiseasesSection';
 import { PatientInitialDataSection } from '@/features/consultations/components/attend/PatientInitialDataSection';
 import { AttendedBySection } from '@/features/consultations/components/attend/AttendedBySection';
-import { RestPeriodSection } from '@/features/consultations/components/attend/RestPeriodSection';
 import { ReferralSection } from '@/features/consultations/components/attend/ReferralSection';
 import { ExposureRisksBar } from '@/features/consultations/components/attend/ExposureRisksBar';
 import { useMedicalSpecialties } from '@/features/catalogs/hooks/useMedicalSpecialties';
@@ -46,7 +45,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
-  const { data, isLoading, isPsychometricFetching, refetchPatient } = useAttendConsultation(id);
+  const { data, isLoading, isReferralLoading, isPsychometricFetching, refetchPatient } = useAttendConsultation(id);
 
   const [activeTab, setActiveTab] = useState<'medica' | 'psicologica'>('medica');
   const [isSaving, setIsSaving] = useState(false);
@@ -67,10 +66,14 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   const [medicalAttendedById, setMedicalAttendedById] = useState('');
   const [psychologicalAttendedById, setPsychologicalAttendedById] = useState('');
   const [isHealthy, setIsHealthy] = useState(false);
+
+  // Estado del reposo médico (vinculado al diagnóstico)
   const [requiresRest, setRequiresRest] = useState(false);
   const [restDays, setRestDays] = useState<number | ''>('');
-  const [restReason, setRestReason] = useState('');
+  const [restCategoryId, setRestCategoryId] = useState('');
   const [restDiseaseId, setRestDiseaseId] = useState('');
+  const [restBodySystemId, setRestBodySystemId] = useState('');
+
   const [requiresReferral, setRequiresReferral] = useState(false);
   const [referralSpecialtyId, setReferralSpecialtyId] = useState('');
 
@@ -104,8 +107,9 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data?.id, currentUser?.id]);
 
+  // Espera a que todos los datos —incluida la referencia— estén cargados antes de inicializar
   useEffect(() => {
-    if (!data || isPsychometricFetching || initialized) return;
+    if (!data || isPsychometricFetching || isReferralLoading || initialized) return;
     setConsultResult((data.consultationResult ?? '') as ConsultationResult | '');
     setPsychResult((data.psychologicalResult ?? '') as PsychologicalResult | '');
     setPsychAptitude((data.psychologicalAptitude ?? '') as PsychologicalAptitude | '');
@@ -130,8 +134,9 @@ export function AttendConsultationPage({ editMode = false }: Props) {
     if (data.restPeriod) {
       setRequiresRest(data.restPeriod.requiresRest);
       setRestDays(data.restPeriod.days ?? '');
-      setRestReason(data.restPeriod.reason ?? '');
+      setRestCategoryId(data.restPeriod.categoryId ?? '');
       setRestDiseaseId(data.restPeriod.diseaseId ?? '');
+      setRestBodySystemId(data.restPeriod.bodySystemId ?? '');
     }
     if (data.referral) {
       setRequiresReferral(data.referral.requiresReferral);
@@ -142,7 +147,6 @@ export function AttendConsultationPage({ editMode = false }: Props) {
     setLocalPsychTests(data.psychometricTests);
     setLocalDiseases(data.patientDiseases);
 
-    // Auto-switch to incomplete tab on partial save reopen
     if (data.status === 'En Proceso' && data.type === 'Medica' && data.consultationResult) {
       setActiveTab('psicologica');
     } else if (data.status === 'En Proceso' && data.type === 'Psicologica' && data.psychologicalResult) {
@@ -151,16 +155,35 @@ export function AttendConsultationPage({ editMode = false }: Props) {
 
     setInitialized(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data?.id, isPsychometricFetching]);
+  }, [data?.id, isPsychometricFetching, isReferralLoading]);
 
-  const handleAddDiagnostic = ({ categoryId, diseaseId, bodySystemId }: { categoryId: string; diseaseId: string; bodySystemId?: string }) => {
+  const handleAddDiagnostic = (
+    { categoryId, diseaseId, bodySystemId }: { categoryId: string; diseaseId: string; bodySystemId?: string },
+    isRest: boolean,
+    days: number | '',
+  ) => {
     const tempId = `new-${Date.now()}`;
     setLocalDiagnostics((prev) => [...prev, { id: tempId, consultationId: id, categoryId, diseaseId, bodySystemId: bodySystemId ?? null, _isNew: true }]);
+    if (isRest) {
+      setRequiresRest(true);
+      setRestDays(days);
+      setRestCategoryId(categoryId);
+      setRestDiseaseId(diseaseId);
+      setRestBodySystemId(bodySystemId ?? '');
+    }
   };
 
   const handleRemoveDiagnostic = (itemId: string) => {
     const item = localDiagnostics.find((d) => d.id === itemId);
     if (item && !item._isNew) setRemovedDiagnosticIds((prev) => [...prev, itemId]);
+    // Si se elimina el diagnóstico de reposo, limpiar el estado
+    if (item && item.categoryId === restCategoryId && item.diseaseId === restDiseaseId && (item.bodySystemId ?? '') === restBodySystemId) {
+      setRequiresRest(false);
+      setRestDays('');
+      setRestCategoryId('');
+      setRestDiseaseId('');
+      setRestBodySystemId('');
+    }
     setLocalDiagnostics((prev) => prev.filter((d) => d.id !== itemId));
   };
 
@@ -237,16 +260,18 @@ export function AttendConsultationPage({ editMode = false }: Props) {
         await restPeriodsService.update(data.restPeriod.id, {
           requiresRest,
           days: requiresRest && restDays !== '' ? Number(restDays) : null,
-          reason: requiresRest && restReason ? restReason : null,
+          categoryId: requiresRest && restCategoryId ? restCategoryId : null,
           diseaseId: requiresRest && restDiseaseId ? restDiseaseId : null,
+          bodySystemId: requiresRest && restBodySystemId ? restBodySystemId : null,
         });
       } else if (requiresRest) {
         await restPeriodsService.create({
           consultationId: id,
           requiresRest: true,
           days: restDays !== '' ? Number(restDays) : undefined,
-          reason: restReason || undefined,
+          categoryId: restCategoryId || undefined,
           diseaseId: restDiseaseId || undefined,
+          bodySystemId: restBodySystemId || undefined,
         });
       }
 
@@ -306,21 +331,31 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   const handleSave = async () => {
     if (!data) return;
 
-    const medicalDone = !!consultResult;
-    const psychDone = !!psychResult;
-
-    // Determine if we're in a "first save" context (no tab is already completed)
     const isPartialSave = data.status === 'En Proceso' &&
       ((data.type === 'Medica' && !!data.consultationResult) ||
        (data.type === 'Psicologica' && !!data.psychologicalResult));
 
-    // Show modal only for Medica/Psicologica consultations on first save with one section empty
-    if (data.type === 'Medica/Psicologica' && !isPartialSave && medicalDone !== psychDone) {
-      setSaveEmptySection(medicalDone ? 'psicologica' : 'medica');
-      setShowSaveModal(true);
-      return;
+    if (data.type === 'Medica/Psicologica' && !isPartialSave) {
+      const hasMedicalData = !!consultResult || isHealthy ||
+        Object.values(physExam).some((v) => v !== null && v !== undefined && v !== '') ||
+        localDiagnostics.length > 0 || localExamResults.length > 0 || !!treatment;
+
+      const hasPsychData = !!psychResult || !!psychAptitude || interviewDone || localPsychTests.length > 0;
+
+      if (hasMedicalData && !hasPsychData) {
+        setSaveEmptySection('psicologica');
+        setShowSaveModal(true);
+        return;
+      }
+      if (!hasMedicalData && hasPsychData) {
+        setSaveEmptySection('medica');
+        setShowSaveModal(true);
+        return;
+      }
     }
 
+    const medicalDone = !!consultResult || isHealthy;
+    const psychDone = !!psychResult;
     const type: ConsultationType =
       medicalDone && psychDone ? 'Medica/Psicologica'
       : medicalDone ? 'Medica'
@@ -332,7 +367,6 @@ export function AttendConsultationPage({ editMode = false }: Props) {
 
   const systemAttendedByName = users.find((u) => u.id === data?.systemAttendedById)?.name;
 
-  // Determines which tab to hide when the consultation was partially saved (one section done)
   const hiddenTab: 'medica' | 'psicologica' | undefined =
     data?.status === 'En Proceso' && data.type === 'Medica' && !!data.consultationResult
       ? 'medica'
@@ -377,7 +411,6 @@ export function AttendConsultationPage({ editMode = false }: Props) {
         />
 
         <Box sx={{ flex: 1, overflow: 'auto', p: 3 }}>
-          {/* Riesgos de exposición del cargo */}
           {data.positionRisks.length > 0 && (
             <Box sx={{ mb: 3 }}>
               <ExposureRisksBar risks={data.positionRisks} />
@@ -422,24 +455,11 @@ export function AttendConsultationPage({ editMode = false }: Props) {
                   result={consultResult} onResultChange={setConsultResult}
                   description={diagDescription} onDescriptionChange={setDiagDescription}
                   isHealthy={isHealthy} onIsHealthyChange={setIsHealthy}
+                  restCategoryId={restCategoryId}
+                  restDiseaseId={restDiseaseId}
+                  restBodySystemId={restBodySystemId}
+                  restDays={restDays}
                 />
-                <Box sx={{ mt: 3 }}>
-                  <RestPeriodSection
-                    requiresRest={requiresRest}
-                    onRequiresRestChange={setRequiresRest}
-                    days={restDays}
-                    onDaysChange={setRestDays}
-                    reason={restReason}
-                    onReasonChange={setRestReason}
-                    diseaseId={restDiseaseId}
-                    onDiseaseIdChange={setRestDiseaseId}
-                    diagnosedDiseases={localDiagnostics
-                      .map((d) => diseases.find((dis) => dis.id === d.diseaseId))
-                      .filter((d): d is NonNullable<typeof d> => !!d)
-                      .map((d) => ({ id: d.id, name: d.name }))
-                      .filter((d, i, arr) => arr.findIndex((x) => x.id === d.id) === i)}
-                  />
-                </Box>
                 <Box sx={{ mt: 3 }}>
                   <ReferralSection
                     requiresReferral={requiresReferral}

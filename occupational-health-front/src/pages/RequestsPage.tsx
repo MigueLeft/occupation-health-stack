@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Box, Typography, Button,
-  Table, TableHead, TableBody, TableRow, TableCell,
+  Table, TableHead, TableBody, TableRow, TableCell, TablePagination,
   CircularProgress,
 } from '@mui/material';
 import { AddOutlined } from '@mui/icons-material';
@@ -15,6 +15,7 @@ import type { AppRequestWithPatient, RequestFilters } from '@/features/requests'
 import { usePermissions } from '@/features/auth';
 
 const TABLE_HEADERS = ['Paciente', 'Fecha', 'Motivo', 'Consulta', 'Estatus', 'Acciones'];
+const ROWS_PER_PAGE_OPTIONS = [10, 25, 50];
 
 const DEFAULT_FILTERS: RequestFilters = { search: '', dateFilter: 'all', motivo: 'all', status: 'Pendiente' };
 
@@ -31,12 +32,24 @@ function isInDateRange(dateStr: string, filter: RequestFilters['dateFilter']): b
   return true;
 }
 
+function sortRequests(list: AppRequestWithPatient[]): AppRequestWithPatient[] {
+  return [...list].sort((a, b) => {
+    const statusOrder = { Pendiente: 0, 'En Proceso': 1, Finalizada: 2, 'No asistio': 3 };
+    const sa = statusOrder[a.status as keyof typeof statusOrder] ?? 4;
+    const sb = statusOrder[b.status as keyof typeof statusOrder] ?? 4;
+    if (sa !== sb) return sa - sb;
+    return b.requestDate.localeCompare(a.requestDate);
+  });
+}
+
 export function RequestsPage() {
   const { can, isLoading: isPermLoading } = usePermissions();
   const [filters, setFilters] = useState<RequestFilters>(DEFAULT_FILTERS);
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<AppRequestWithPatient | null>(null);
   const [noAsistioTarget, setNoAsistioTarget] = useState<AppRequestWithPatient | null>(null);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(ROWS_PER_PAGE_OPTIONS[0]);
 
   const { data: requests = [], isLoading } = useRequests();
   const createMutation = useCreateRequest();
@@ -45,20 +58,23 @@ export function RequestsPage() {
   if (isPermLoading) return null;
   if (!can('requests', 'view')) return <Navigate to="/" />;
 
-  const filtered = requests
-    .filter((r) => {
+  const filtered = sortRequests(
+    requests.filter((r) => {
       const name = r.patientName.toLowerCase();
       if (filters.search && !name.includes(filters.search.toLowerCase())) return false;
       if (filters.motivo !== 'all' && r.evaluationReason !== filters.motivo) return false;
       if (filters.status !== 'all' && r.status !== filters.status) return false;
       if (filters.dateFilter !== 'all' && !isInDateRange(r.requestDate, filters.dateFilter)) return false;
       return true;
-    })
-    .sort((a, b) => {
-      if (a.status === 'Pendiente' && b.status !== 'Pendiente') return -1;
-      if (b.status === 'Pendiente' && a.status !== 'Pendiente') return 1;
-      return b.requestDate.localeCompare(a.requestDate);
-    });
+    }),
+  );
+
+  const paginated = filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+
+  const handleFiltersChange = (next: RequestFilters) => {
+    setFilters(next);
+    setPage(0);
+  };
 
   const handleCreate = (payload: Parameters<typeof createMutation.mutate>[0]) => {
     createMutation.mutate(payload, { onSuccess: () => setCreateOpen(false) });
@@ -87,7 +103,7 @@ export function RequestsPage() {
         </Box>
 
         <Box sx={{ px: 4, py: 2.5 }}>
-          <RequestsFilters filters={filters} onChange={setFilters} />
+          <RequestsFilters filters={filters} onChange={handleFiltersChange} />
         </Box>
 
         <Box sx={{ px: 4, flex: 1, overflow: 'auto' }}>
@@ -106,10 +122,10 @@ export function RequestsPage() {
               <TableBody>
                 {isLoading ? (
                   <TableRow><TableCell colSpan={6} align="center" sx={{ py: 6 }}><CircularProgress size={32} /></TableCell></TableRow>
-                ) : filtered.length === 0 ? (
+                ) : paginated.length === 0 ? (
                   <TableRow><TableCell colSpan={6} align="center" sx={{ py: 6, color: 'text.secondary' }}>No hay solicitudes</TableCell></TableRow>
                 ) : (
-                  filtered.map((r) => (
+                  paginated.map((r) => (
                     <RequestRow key={r.id} request={r}
                       onEdit={setEditTarget}
                       onNoAsistio={setNoAsistioTarget}
@@ -118,6 +134,19 @@ export function RequestsPage() {
                 )}
               </TableBody>
             </Table>
+            {filtered.length > ROWS_PER_PAGE_OPTIONS[0] && (
+              <TablePagination
+                component="div"
+                count={filtered.length}
+                page={page}
+                onPageChange={(_, p) => setPage(p)}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
+                rowsPerPageOptions={ROWS_PER_PAGE_OPTIONS}
+                labelRowsPerPage="Filas por página:"
+                labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count}`}
+              />
+            )}
           </Box>
         </Box>
       </Box>

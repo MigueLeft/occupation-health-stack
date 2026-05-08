@@ -35,11 +35,18 @@ export function PsicologicaSection({
 }: Props) {
   const [testId, setTestId] = useState('');
 
+  const alreadyAdded = psychometricTests.some((pt) => pt.catalogTestId === testId);
+
   const handleAdd = () => {
-    if (!testId) return;
+    if (!testId || alreadyAdded) return;
     onAddTest(testId);
     setTestId('');
   };
+
+  // Excluir de las opciones los tests ya agregados
+  const availableTests = catalogTests.filter(
+    (t) => !psychometricTests.some((pt) => pt.catalogTestId === t.id),
+  );
 
   return (
     <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
@@ -94,13 +101,13 @@ export function PsicologicaSection({
           <Typography variant="subtitle2" sx={{ mb: 1 }}>Tests Psicométricos</Typography>
           <Stack direction="row" spacing={1} sx={{ mb: 1.5 }}>
             <SearchableSelect
-              options={catalogTests}
+              options={availableTests}
               value={testId}
               onChange={setTestId}
               label="Test psicométrico"
               sx={{ flex: 1 }}
             />
-            <Button variant="outlined" startIcon={<AddOutlined />} onClick={handleAdd} disabled={!testId} sx={{ flexShrink: 0 }}>Agregar</Button>
+            <Button variant="outlined" startIcon={<AddOutlined />} onClick={handleAdd} disabled={!testId || alreadyAdded} sx={{ flexShrink: 0 }}>Agregar</Button>
           </Stack>
           <Stack spacing={1}>
             {psychometricTests.map((pt) => {

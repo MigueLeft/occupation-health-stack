@@ -9,17 +9,8 @@ import {
 } from 'drizzle-orm/pg-core';
 import { consultations } from '../consultations/consultations.schema';
 import { diseases } from '../diseases/diseases.schema';
-
-// Motivos de reposo médico
-export const REST_PERIOD_REASONS = [
-  'Accidente Comun',
-  'Accidente Laboral',
-  'Enfermedad Comun',
-  'Enfermedad Laboral',
-  'Maternidad',
-  'Otro',
-] as const;
-export type RestPeriodReason = (typeof REST_PERIOD_REASONS)[number];
+import { diseaseCategories } from '../disease-categories/disease-categories.schema';
+import { bodySystems } from '../body-systems/body-systems.schema';
 
 export const restPeriods = pgTable(
   'rest_periods',
@@ -34,8 +25,12 @@ export const restPeriods = pgTable(
     days: integer('days'),
     startDate: date('start_date'),
     endDate: date('end_date'),
+    // Mantenido por compatibilidad con datos anteriores
     reason: varchar('reason', { length: 50 }),
     diseaseId: uuid('disease_id').references(() => diseases.id, { onDelete: 'set null' }),
+    // Categoría y aparato/sistema del diagnóstico asociado al reposo
+    categoryId: uuid('category_id').references(() => diseaseCategories.id, { onDelete: 'set null' }),
+    bodySystemId: uuid('body_system_id').references(() => bodySystems.id, { onDelete: 'set null' }),
   },
   (t) => [unique('uq_rest_period_consultation').on(t.consultationId)],
 );
