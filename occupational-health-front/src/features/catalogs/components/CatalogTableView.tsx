@@ -9,13 +9,14 @@ interface CatalogTableViewProps {
   title: string;
   headers: string[];
   isLoading: boolean;
-  onAdd: () => void;
+  onAdd?: () => void;
+  showAddButton?: boolean;
   children: ReactNode;
   emptyLabel?: string;
 }
 
 export function CatalogTableView({
-  title, headers, isLoading, onAdd, children, emptyLabel = 'Sin registros',
+  title, headers, isLoading, onAdd, showAddButton = true, children, emptyLabel = 'Sin registros',
 }: CatalogTableViewProps) {
   const colSpan = headers.length + 1; // +1 for Acciones
 
@@ -23,9 +24,11 @@ export function CatalogTableView({
     <Box>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
         <Typography variant="h2">{title}</Typography>
-        <Button variant="contained" startIcon={<AddOutlined />} onClick={onAdd}>
-          Agregar
-        </Button>
+        {showAddButton && onAdd && (
+          <Button variant="contained" startIcon={<AddOutlined />} onClick={onAdd}>
+            Agregar
+          </Button>
+        )}
       </Box>
 
       <Paper variant="outlined" sx={{ borderRadius: 2, overflow: 'hidden' }}>

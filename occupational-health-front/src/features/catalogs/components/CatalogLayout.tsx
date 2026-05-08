@@ -16,7 +16,7 @@ export type CatalogTab =
 const NAV_ITEMS: { id: CatalogTab; label: string }[] = [
   { id: 'exams', label: 'Exámenes' },
   { id: 'risks', label: 'Riesgo de Exposición' },
-  { id: 'exposure-categories', label: 'Categorías de Exposición' },
+  { id: 'exposure-categories', label: 'Tipos de Riesgo' },
   { id: 'medical-specialties', label: 'Especialidades Médicas' },
   { id: 'psychometric', label: 'Tests Psicométricos' },
   { id: 'diseases', label: 'Enfermedades' },

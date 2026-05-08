@@ -227,12 +227,23 @@ export function ConsultationDetailPage() {
                   {/* Reposo médico */}
                   {data.restPeriod?.requiresRest && (
                     <SectionCard title="Reposo Médico">
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <HotelOutlined sx={{ color: 'primary.main' }} />
-                        <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                          {data.restPeriod.days ? `${data.restPeriod.days} días de reposo` : 'Reposo indicado'}
-                        </Typography>
-                      </Box>
+                      <Stack spacing={1.5}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <HotelOutlined sx={{ color: 'primary.main' }} />
+                          <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                            {data.restPeriod.days ? `${data.restPeriod.days} días de reposo` : 'Reposo indicado'}
+                          </Typography>
+                        </Box>
+                        {data.restPeriod.categoryId && (
+                          <ReadField label="Categoría" value={getName(categories, data.restPeriod.categoryId)} />
+                        )}
+                        {data.restPeriod.diseaseId && (
+                          <ReadField label="Enfermedad" value={getName(diseases, data.restPeriod.diseaseId)} />
+                        )}
+                        {data.restPeriod.bodySystemId && (
+                          <ReadField label="Aparato / Sistema" value={getName(bodySystems, data.restPeriod.bodySystemId)} />
+                        )}
+                      </Stack>
                     </SectionCard>
                   )}
 

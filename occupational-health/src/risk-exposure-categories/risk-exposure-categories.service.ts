@@ -4,6 +4,7 @@ import {
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
+// ConflictException se mantiene para la validación en create()
 import { eq } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DRIZZLE } from '../database/database.module';
@@ -70,23 +71,9 @@ export class RiskExposureCategoriesService {
   ): Promise<RiskExposureCategory> {
     await this.findOne(id);
 
-    // Si se está actualizando el tipo de riesgo, verificar que no esté ya en uso
-    if (dto.riskType) {
-      const [conflict] = await this.db
-        .select()
-        .from(riskExposureCategories)
-        .where(eq(riskExposureCategories.riskType, dto.riskType));
-
-      if (conflict && conflict.id !== id) {
-        throw new ConflictException(
-          `Ya existe otra categoría con el tipo de riesgo "${dto.riskType}".`,
-        );
-      }
-    }
-
     const [updated] = await this.db
       .update(riskExposureCategories)
-      .set(dto)
+      .set({ healthEffects: dto.healthEffects ?? null })
       .where(eq(riskExposureCategories.id, id))
       .returning();
 

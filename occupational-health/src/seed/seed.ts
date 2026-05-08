@@ -10,7 +10,7 @@ import { roles, type PermissionsMatrix } from '../roles/roles.schema';
 import { user } from '../auth/auth.schema';
 import { auth } from '../auth/auth';
 import { SYSTEM_MODULES } from '../roles/constants';
-import { risks } from '../risks/risks.schema';
+import { risks, RISK_TYPES } from '../risks/risks.schema';
 import { exams } from '../exams/exams.schema';
 import { psychometricTestCatalog } from '../psychometric-test-catalog/psychometric-test-catalog.schema';
 import { bodySystems } from '../body-systems/body-systems.schema';
@@ -19,6 +19,7 @@ import { diseases } from '../diseases/diseases.schema';
 import { companies } from '../companies/companies.schema';
 import { positions } from '../positions/positions.schema';
 import { patients } from '../patients/patients.schema';
+import { riskExposureCategories } from '../risk-exposure-categories/risk-exposure-categories.schema';
 
 const MODULES = SYSTEM_MODULES.map((m) => m.key);
 
@@ -1131,6 +1132,16 @@ async function main() {
     console.log(`  ✓ Pacientes insertados: ${insertedCount}, omitidos (duplicados): ${skippedCount}`);
   }
   // ── FIN BLOQUE WORKERS ─────────────────────────────────────────────────────
+
+  // Crear tipos de riesgo (uno por cada tipo, usando riskType como nombre)
+  console.log('\n⚠️  Creando tipos de riesgo...');
+  for (const riskType of RISK_TYPES) {
+    await db
+      .insert(riskExposureCategories)
+      .values({ riskType, name: riskType })
+      .onConflictDoNothing({ target: riskExposureCategories.riskType });
+    console.log(`  ✓ ${riskType}`);
+  }
 
   console.log('\n✅ Seed completado exitosamente!\n');
   console.log('='.repeat(50));

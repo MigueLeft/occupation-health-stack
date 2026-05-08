@@ -196,23 +196,23 @@ export function DiagnosticSection({
               })}
             </Box>
           )}
-
-          <Box>
-            <Typography variant="subtitle2" sx={{ mb: 1 }}>Resultado</Typography>
-            <Stack direction="row" spacing={1}>
-              {CONSULTATION_RESULTS.map((r) => {
-                const color = r === 'Apto' ? 'success' : r === 'No Apto' ? 'error' : 'warning';
-                return (
-                  <Button key={r} size="small" color={color}
-                    variant={result === r ? 'contained' : 'outlined'}
-                    onClick={() => onResultChange(result === r ? '' : r)}
-                  >{r}</Button>
-                );
-              })}
-            </Stack>
-          </Box>
         </Stack>
       )}
+
+      <Box sx={{ mt: isHealthy ? 2 : 0 }}>
+        <Typography variant="subtitle2" sx={{ mb: 1 }}>Resultado</Typography>
+        <Stack direction="row" spacing={1}>
+          {CONSULTATION_RESULTS.map((r) => {
+            const color = r === 'Apto' ? 'success' : r === 'No Apto' ? 'error' : 'warning';
+            return (
+              <Button key={r} size="small" color={color}
+                variant={result === r ? 'contained' : 'outlined'}
+                onClick={() => onResultChange(result === r ? '' : r)}
+              >{r}</Button>
+            );
+          })}
+        </Stack>
+      </Box>
 
       {!isHealthy && (
         <TextField label="Descripción del diagnóstico" size="small" fullWidth multiline rows={3} sx={{ mt: 1.5 }}
