@@ -33,13 +33,7 @@ function isInDateRange(dateStr: string, filter: RequestFilters['dateFilter']): b
 }
 
 function sortRequests(list: AppRequestWithPatient[]): AppRequestWithPatient[] {
-  return [...list].sort((a, b) => {
-    const statusOrder = { Pendiente: 0, 'En Proceso': 1, Finalizada: 2, 'No asistio': 3 };
-    const sa = statusOrder[a.status as keyof typeof statusOrder] ?? 4;
-    const sb = statusOrder[b.status as keyof typeof statusOrder] ?? 4;
-    if (sa !== sb) return sa - sb;
-    return b.requestDate.localeCompare(a.requestDate);
-  });
+  return [...list].sort((a, b) => b.requestDate.localeCompare(a.requestDate));
 }
 
 export function RequestsPage() {

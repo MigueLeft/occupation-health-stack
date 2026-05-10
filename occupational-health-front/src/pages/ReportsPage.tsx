@@ -16,13 +16,6 @@ export function ReportsPage() {
 
         <Stack spacing={3}>
           <ReportCard
-            title="Reporte de Consultas"
-            headerColor="#1565C0"
-            companies={companies}
-            downloadFn={reportsService.downloadConsultationsReport}
-            successMsg="Reporte de consultas generado exitosamente."
-          />
-          <ReportCard
             title="Reporte de Vigilancia Epidemiológica"
             subtitle="Trabajadores por motivo, accidentes, exámenes, reposos, referencias y riesgos"
             headerColor="#6A5ACD"

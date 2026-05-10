@@ -147,10 +147,12 @@ export function AttendConsultationPage({ editMode = false }: Props) {
     setLocalPsychTests(data.psychometricTests);
     setLocalDiseases(data.patientDiseases);
 
-    if (data.status === 'En Proceso' && data.type === 'Medica' && data.consultationResult) {
-      setActiveTab('psicologica');
-    } else if (data.status === 'En Proceso' && data.type === 'Psicologica' && data.psychologicalResult) {
-      setActiveTab('medica');
+    if (!editMode) {
+      if (data.status === 'En Proceso' && data.type === 'Medica' && data.consultationResult) {
+        setActiveTab('psicologica');
+      } else if (data.status === 'En Proceso' && data.type === 'Psicologica' && data.psychologicalResult) {
+        setActiveTab('medica');
+      }
     }
 
     setInitialized(true);
@@ -309,6 +311,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
         queryClient.refetchQueries({ queryKey: ['consultations'] }),
         queryClient.refetchQueries({ queryKey: ['consultation', id] }),
         queryClient.refetchQueries({ queryKey: ['consultation-diagnostics', id] }),
+        queryClient.refetchQueries({ queryKey: ['consultation-referral', id] }),
         queryClient.refetchQueries({ queryKey: ['requests'] }),
         queryClient.refetchQueries({ queryKey: ['patients'] }),
         queryClient.refetchQueries({ queryKey: ['patient', data.patientId] }),
@@ -367,12 +370,13 @@ export function AttendConsultationPage({ editMode = false }: Props) {
 
   const systemAttendedByName = users.find((u) => u.id === data?.systemAttendedById)?.name;
 
-  const hiddenTab: 'medica' | 'psicologica' | undefined =
-    data?.status === 'En Proceso' && data.type === 'Medica' && !!data.consultationResult
-      ? 'medica'
-      : data?.status === 'En Proceso' && data.type === 'Psicologica' && !!data.psychologicalResult
-      ? 'psicologica'
-      : undefined;
+  const hiddenTab: 'medica' | 'psicologica' | undefined = editMode
+    ? undefined
+    : data?.status === 'En Proceso' && data.type === 'Medica' && !!data.consultationResult
+    ? 'medica'
+    : data?.status === 'En Proceso' && data.type === 'Psicologica' && !!data.psychologicalResult
+    ? 'psicologica'
+    : undefined;
 
   if (isLoading || !data) {
     return <AppLayout><Box sx={{ display: 'flex', justifyContent: 'center', pt: 10 }}><CircularProgress /></Box></AppLayout>;

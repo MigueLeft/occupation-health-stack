@@ -15,13 +15,7 @@ const DEFAULT_FILTERS: ConsultationFiltersState = { search: '', tipo: 'all', res
 const ROWS_PER_PAGE_OPTIONS = [10, 25, 50];
 
 function sortConsultations(list: ConsultationWithDetails[]): ConsultationWithDetails[] {
-  return [...list].sort((a, b) => {
-    const statusOrder = { Pendiente: 0, 'En Proceso': 1, Finalizada: 2 };
-    const sa = statusOrder[a.status as keyof typeof statusOrder] ?? 3;
-    const sb = statusOrder[b.status as keyof typeof statusOrder] ?? 3;
-    if (sa !== sb) return sa - sb;
-    return b.requestDate.localeCompare(a.requestDate);
-  });
+  return [...list].sort((a, b) => b.requestDate.localeCompare(a.requestDate));
 }
 
 export function ConsultasPage() {
