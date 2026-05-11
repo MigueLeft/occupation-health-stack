@@ -47,6 +47,14 @@ export function ReportsPage() {
             downloadFn={reportsService.downloadMorbidityReport}
             successMsg="Reporte de morbilidad generado exitosamente."
           />
+          <ReportCard
+            title="Consolidación Epidemiológica"
+            subtitle="Patologías por mes (Ene–Dic): total, distribución mensual y resumen de origen"
+            headerColor="#455A64"
+            companies={companies}
+            downloadFn={reportsService.downloadConsolidacionReport}
+            successMsg="Reporte de consolidación epidemiológica generado exitosamente."
+          />
         </Stack>
       </Box>
     </AppLayout>

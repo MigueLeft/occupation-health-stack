@@ -27,6 +27,7 @@ import type { VigilanciaReportDto } from './dto/vigilancia-report.dto';
 import type { PathologiesReportDto } from './dto/pathologies-report.dto';
 import type { BodySystemsReportDto } from './dto/body-systems-report.dto';
 import type { MorbidityReportDto } from './dto/morbidity-report.dto';
+import type { ConsolidacionReportDto } from './dto/consolidacion-report.dto';
 
 const LOGO_PATH = path.join(__dirname, 'assets', 'LogoCAPMIL.jpg');
 
@@ -88,6 +89,18 @@ type BodySystemRow = {
   femaleCases: number;
   commonOrigin: number;
   laborOrigin: number;
+};
+
+type ConsolidacionRow = {
+  diseaseId: string;
+  diseaseName: string;
+  total: number;
+  months: number[];
+  maleCases: number;
+  femaleCases: number;
+  commonOrigin: number;
+  laborOrigin: number;
+  totalRestDays: number;
 };
 
 type MorbidityRow = {
@@ -1579,6 +1592,267 @@ export class ReportsService {
     doc.fillColor('#000000');
     y += ROW_HEIGHT;
     doc.y = y + 12;
+  }
+
+  // ─── Consolidación Epidemiológica ────────────────────────────────────────────
+
+  private async fetchConsolidacionData(filters: ConsolidacionReportDto): Promise<ConsolidacionRow[]> {
+    const conditions: SQL[] = [];
+    if (filters.dateFrom) conditions.push(gte(requests.requestDate, filters.dateFrom));
+    if (filters.dateTo) conditions.push(lte(requests.requestDate, filters.dateTo));
+    if (filters.companyId) conditions.push(eq(patients.companyId, filters.companyId));
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const rows = await this.db
+      .select({
+        diseaseId: diseases.id,
+        diseaseName: diseases.name,
+        sex: patients.sex,
+        requestDate: requests.requestDate,
+        restDays: restPeriods.days,
+        restCategoryName: diseaseCategories.name,
+        legacyRestReason: restPeriods.reason,
+      })
+      .from(consultationDiagnostics)
+      .innerJoin(diseases, eq(consultationDiagnostics.diseaseId, diseases.id))
+      .innerJoin(consultations, eq(consultationDiagnostics.consultationId, consultations.id))
+      .innerJoin(requests, eq(consultations.requestId, requests.id))
+      .innerJoin(patients, eq(requests.patientId, patients.cedula))
+      .leftJoin(restPeriods, eq(restPeriods.consultationId, consultations.id))
+      .leftJoin(diseaseCategories, eq(restPeriods.categoryId, diseaseCategories.id))
+      .where(whereClause)
+      .orderBy(diseases.name);
+
+    const map = new Map<string, ConsolidacionRow>();
+    for (const r of rows) {
+      if (!map.has(r.diseaseId)) {
+        map.set(r.diseaseId, {
+          diseaseId: r.diseaseId,
+          diseaseName: r.diseaseName,
+          total: 0,
+          months: new Array(12).fill(0),
+          maleCases: 0,
+          femaleCases: 0,
+          commonOrigin: 0,
+          laborOrigin: 0,
+          totalRestDays: 0,
+        });
+      }
+      const entry = map.get(r.diseaseId)!;
+      entry.total++;
+
+      if (r.requestDate) {
+        const monthIdx = parseInt(r.requestDate.split('-')[1], 10) - 1;
+        if (monthIdx >= 0 && monthIdx < 12) entry.months[monthIdx]++;
+      }
+
+      if (r.sex === 'Masculino') entry.maleCases++;
+      else if (r.sex === 'Femenino') entry.femaleCases++;
+
+      if (r.restDays) entry.totalRestDays += r.restDays;
+
+      const origin = r.restCategoryName ?? r.legacyRestReason ?? '';
+      if (origin === 'Enfermedad Comun' || origin === 'Accidente Comun') entry.commonOrigin++;
+      else if (origin === 'Enfermedad Laboral' || origin === 'Accidente Laboral') entry.laborOrigin++;
+    }
+
+    return Array.from(map.values()).sort((a, b) => b.total - a.total);
+  }
+
+  private drawConsolidacionTable(doc: PDFKit.PDFDocument, rows: ConsolidacionRow[]) {
+    const MONTH_ABBRS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    // Widths: 125 + 30 + 12×30 = 515
+    const W_NAME = 125;
+    const W_TOTAL = 30;
+    const W_MONTH = 30;
+    const widths = [W_NAME, W_TOTAL, ...Array(12).fill(W_MONTH)];
+    const headers = ['Patología', 'Total', ...MONTH_ABBRS];
+
+    let y = doc.y + 4;
+
+    // Header row
+    doc.rect(MARGIN, y, USABLE_WIDTH, HEADER_ROW_HEIGHT).fill(PRIMARY_COLOR);
+    doc.font('Helvetica-Bold').fontSize(7).fillColor('#FFFFFF');
+    let x = MARGIN;
+    for (let i = 0; i < headers.length; i++) {
+      doc.text(headers[i], x + 2, y + 7, {
+        width: widths[i] - 4,
+        align: i === 0 ? 'left' : 'center',
+        lineBreak: false,
+      });
+      x += widths[i];
+    }
+    y += HEADER_ROW_HEIGHT;
+
+    if (rows.length === 0) {
+      doc.font('Helvetica-Oblique').fontSize(8).fillColor('#888888')
+        .text('Sin datos para el período seleccionado.', MARGIN, y + 6, { width: USABLE_WIDTH, align: 'center' });
+      doc.fillColor('#000000');
+      doc.moveDown(1);
+      return;
+    }
+
+    doc.font('Helvetica').fontSize(7).fillColor('#000000');
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const isAlt = i % 2 === 1;
+
+      if (y + ROW_HEIGHT > doc.page.height - FOOTER_HEIGHT - 20) {
+        doc.addPage();
+        y = HEADER_HEIGHT + 14;
+        doc.rect(MARGIN, y, USABLE_WIDTH, HEADER_ROW_HEIGHT).fill(PRIMARY_COLOR);
+        doc.font('Helvetica-Bold').fontSize(7).fillColor('#FFFFFF');
+        x = MARGIN;
+        for (let h = 0; h < headers.length; h++) {
+          doc.text(headers[h], x + 2, y + 7, { width: widths[h] - 4, align: h === 0 ? 'left' : 'center', lineBreak: false });
+          x += widths[h];
+        }
+        y += HEADER_ROW_HEIGHT;
+        doc.font('Helvetica').fontSize(7).fillColor('#000000');
+      }
+
+      if (isAlt) doc.rect(MARGIN, y, USABLE_WIDTH, ROW_HEIGHT).fill(ALT_ROW_COLOR);
+
+      x = MARGIN;
+      doc.fillColor('#1A1A1A');
+      doc.text(row.diseaseName, x + 2, y + 6, { width: W_NAME - 4, lineBreak: false });
+      x += W_NAME;
+      doc.text(String(row.total), x + 2, y + 6, { width: W_TOTAL - 4, align: 'center', lineBreak: false });
+      x += W_TOTAL;
+      for (let m = 0; m < 12; m++) {
+        const v = row.months[m];
+        doc.text(v > 0 ? String(v) : '—', x + 2, y + 6, { width: W_MONTH - 4, align: 'center', lineBreak: false });
+        x += W_MONTH;
+      }
+
+      doc.moveTo(MARGIN, y + ROW_HEIGHT).lineTo(MARGIN + USABLE_WIDTH, y + ROW_HEIGHT)
+        .strokeColor('#E0E0E0').lineWidth(0.5).stroke();
+      y += ROW_HEIGHT;
+    }
+
+    // Totals row
+    if (y + ROW_HEIGHT > doc.page.height - FOOTER_HEIGHT - 20) {
+      doc.addPage();
+      y = HEADER_HEIGHT + 14;
+    }
+    doc.rect(MARGIN, y, USABLE_WIDTH, ROW_HEIGHT).fill('#C8D8F0');
+    const grandTotal = rows.reduce((s, r) => s + r.total, 0);
+    const monthTotals = Array(12).fill(0) as number[];
+    rows.forEach((r) => r.months.forEach((v, mi) => { monthTotals[mi] += v; }));
+
+    doc.font('Helvetica-Bold').fontSize(7).fillColor('#1A1A1A');
+    x = MARGIN;
+    doc.text('TOTAL', x + 2, y + 6, { width: W_NAME - 4, lineBreak: false });
+    x += W_NAME;
+    doc.text(String(grandTotal), x + 2, y + 6, { width: W_TOTAL - 4, align: 'center', lineBreak: false });
+    x += W_TOTAL;
+    for (let m = 0; m < 12; m++) {
+      doc.text(monthTotals[m] > 0 ? String(monthTotals[m]) : '—', x + 2, y + 6, { width: W_MONTH - 4, align: 'center', lineBreak: false });
+      x += W_MONTH;
+    }
+
+    doc.fillColor('#000000');
+    doc.y = y + ROW_HEIGHT + 12;
+  }
+
+  private drawConsolidacionSummary(
+    doc: PDFKit.PDFDocument,
+    nroPatologias: number,
+    nroPatMasc: number,
+    nroPatFem: number,
+    totalRestDays: number,
+    origenComun: number,
+    origenLaboral: number,
+  ) {
+    this.ensureSpace(doc, 100);
+    const y = doc.y + 6;
+    const boxHeight = 84;
+    const colW = USABLE_WIDTH / 3;
+
+    doc.rect(MARGIN, y, USABLE_WIDTH, boxHeight).fill('#EEF4FB');
+    doc.font('Helvetica-Bold').fontSize(8.5).fillColor(PRIMARY_COLOR)
+      .text('Resumen del Reporte', MARGIN + 8, y + 8, { width: USABLE_WIDTH - 16 });
+
+    const items: [string, string][] = [
+      ['Nro. de patologías (total > 1):', String(nroPatologias)],
+      ['Nro. patologías masculinas (> 1):', String(nroPatMasc)],
+      ['Nro. patologías femeninas (> 1):', String(nroPatFem)],
+      ['Días de reposo:', String(totalRestDays)],
+      ['Posible origen común:', String(origenComun)],
+      ['Posible origen laboral:', String(origenLaboral)],
+    ];
+
+    for (let i = 0; i < items.length; i++) {
+      const col = i % 3;
+      const row = Math.floor(i / 3);
+      const ix = MARGIN + 8 + col * colW;
+      const iy = y + 28 + row * 22;
+      doc.font('Helvetica').fontSize(7.5).fillColor('#555555')
+        .text(items[i][0], ix, iy, { width: colW - 12, lineBreak: false });
+      doc.font('Helvetica-Bold').fontSize(8).fillColor('#1A1A1A')
+        .text(items[i][1], ix, iy + 10, { width: colW - 12, lineBreak: false });
+    }
+
+    doc.fillColor('#000000');
+    doc.y = y + boxHeight + 10;
+  }
+
+  async generateConsolidacionReport(filters: ConsolidacionReportDto): Promise<Buffer> {
+    const [data, companyInfo] = await Promise.all([
+      this.fetchConsolidacionData(filters),
+      filters.companyId ? this.fetchCompanyInfo(filters.companyId) : Promise.resolve(null),
+    ]);
+
+    const nroPatologias = data.filter((r) => r.total > 1).length;
+    const nroPatMasc = data.filter((r) => r.maleCases > 1).length;
+    const nroPatFem = data.filter((r) => r.femaleCases > 1).length;
+    const totalRestDays = data.reduce((s, r) => s + r.totalRestDays, 0);
+    const origenComun = data.filter((r) => r.commonOrigin > 0).length;
+    const origenLaboral = data.filter((r) => r.laborOrigin > 0).length;
+
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({
+        size: 'A4',
+        margins: { top: HEADER_HEIGHT + 10, bottom: FOOTER_HEIGHT + 10, left: MARGIN, right: MARGIN },
+        bufferPages: true,
+      });
+
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      this.drawHeader(doc);
+      doc.on('pageAdded', () => this.drawHeader(doc));
+
+      if (companyInfo) this.drawCompanyInfoBlock(doc, companyInfo);
+      const titleY = Math.max(doc.y, HEADER_HEIGHT + 14);
+      doc.font('Helvetica-Bold').fontSize(13).fillColor(PRIMARY_COLOR)
+        .text('Reporte de Consolidación Epidemiológica', MARGIN, titleY, { width: USABLE_WIDTH, align: 'center' });
+
+      const parts: string[] = [];
+      if (filters.dateFrom) parts.push(`Desde: ${filters.dateFrom}`);
+      if (filters.dateTo) parts.push(`Hasta: ${filters.dateTo}`);
+      if (!parts.length) parts.push('Todas las fechas');
+
+      doc.font('Helvetica').fontSize(9).fillColor('#555555')
+        .text(parts.join('   ·   '), MARGIN, titleY + 18, { width: USABLE_WIDTH, align: 'center' });
+      doc.fillColor('#000000');
+      doc.moveDown(0.8);
+
+      this.drawConsolidacionTable(doc, data);
+      this.drawConsolidacionSummary(doc, nroPatologias, nroPatMasc, nroPatFem, totalRestDays, origenComun, origenLaboral);
+
+      const range = doc.bufferedPageRange();
+      for (let i = 0; i < range.count; i++) {
+        doc.switchToPage(range.start + i);
+        this.drawFooter(doc, i + 1, range.count);
+      }
+
+      doc.flushPages();
+      doc.end();
+    });
   }
 
   async generateMorbidityReport(filters: MorbidityReportDto): Promise<Buffer> {

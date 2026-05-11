@@ -98,11 +98,8 @@ export function AttendConsultationPage({ editMode = false }: Props) {
 
   useEffect(() => {
     if (!data || !currentUser?.id) return;
-    const patch: Parameters<typeof consultationsService.update>[1] = {};
-    if (!data.systemAttendedById) patch.systemAttendedById = currentUser.id;
-    if (data.status === 'Pendiente') patch.status = 'En Proceso';
-    if (Object.keys(patch).length > 0) {
-      consultationsService.update(id, patch).catch(() => {});
+    if (!data.systemAttendedById) {
+      consultationsService.update(id, { systemAttendedById: currentUser.id }).catch(() => {});
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data?.id, currentUser?.id]);
@@ -308,13 +305,13 @@ export function AttendConsultationPage({ editMode = false }: Props) {
       });
 
       await Promise.all([
-        queryClient.refetchQueries({ queryKey: ['consultations'] }),
-        queryClient.refetchQueries({ queryKey: ['consultation', id] }),
-        queryClient.refetchQueries({ queryKey: ['consultation-diagnostics', id] }),
-        queryClient.refetchQueries({ queryKey: ['consultation-referral', id] }),
-        queryClient.refetchQueries({ queryKey: ['requests'] }),
-        queryClient.refetchQueries({ queryKey: ['patients'] }),
-        queryClient.refetchQueries({ queryKey: ['patient', data.patientId] }),
+        queryClient.invalidateQueries({ queryKey: ['consultations'] }),
+        queryClient.invalidateQueries({ queryKey: ['consultation', id] }),
+        queryClient.invalidateQueries({ queryKey: ['consultation-diagnostics', id] }),
+        queryClient.invalidateQueries({ queryKey: ['consultation-referral', id] }),
+        queryClient.invalidateQueries({ queryKey: ['requests'] }),
+        queryClient.invalidateQueries({ queryKey: ['patients'] }),
+        queryClient.invalidateQueries({ queryKey: ['patient', data.patientId] }),
         queryClient.invalidateQueries({ queryKey: ['psychometric-tests', id] }),
       ]);
 
