@@ -84,7 +84,9 @@ export function useAttendConsultation(consultationId: string) {
       psychometricTests: psychometricQ.data ?? [],
       patientDiseases: pat?.diseases ?? [],
       patient: pat ?? null,
-      positionRisks: positionRisksQ.data ?? [],
+      positionRisks: (c.status === 'Finalizada' && c.positionRisksSnapshot?.length)
+        ? c.positionRisksSnapshot
+        : positionRisksQ.data ?? [],
       restPeriod: c.restPeriod ?? null,
       referral: referralQ.data ?? null,
     };

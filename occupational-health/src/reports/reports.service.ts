@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import PDFDocument from 'pdfkit';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { and, gte, lte, eq, isNotNull, count, SQL } from 'drizzle-orm';
+import { and, gte, lte, eq, isNotNull, isNull, count, SQL } from 'drizzle-orm';
 import { DRIZZLE } from '../database/database.module';
 import { consultations } from '../consultations/consultations.schema';
 import { requests } from '../requests/requests.schema';
@@ -114,7 +114,6 @@ type SectionIVRow = { reason: string; count: number };
 type SectionVRow = { specialty: string; count: number; percentage: string };
 type SectionVIIRow = {
   riskType: string;
-  name: string;
   conditions: string;
   healthEffects: string;
 };
@@ -274,14 +273,9 @@ export class ReportsService {
       this.drawSectionHeader(doc, 'VII. Factores de Riesgo y Efectos en la Salud');
       this.drawVigilanciaTable(
         doc,
-        ['Tipo', 'Nombre', 'Condiciones', 'Efectos en Salud'],
-        [70, 100, 160, 185],
-        sectionVII.map((r) => [
-          r.riskType,
-          r.name,
-          r.conditions,
-          r.healthEffects,
-        ]),
+        ['Tipo', 'Condiciones', 'Efectos en la Salud'],
+        [80, 200, 235],
+        sectionVII.map((r) => [r.riskType, r.conditions, r.healthEffects]),
       );
 
       // Agregar footer a cada página
@@ -951,25 +945,32 @@ export class ReportsService {
     }));
   }
 
-  // Sección VII: Factores de riesgo con efectos en la salud
+  // Sección VII: Tipos de riesgo presentes en los cargos de los pacientes evaluados en el período
   private async fetchRiskFactors(
     filters: VigilanciaReportDto,
   ): Promise<SectionVIIRow[]> {
-    // Los factores de riesgo no están filtrados por fecha/empresa,
-    // sino que muestran el catálogo completo de categorías de exposición
+    const conditions = this.buildVigilanciaConditions(filters);
+    const whereClause = conditions.length > 0
+      ? and(...conditions, isNull(positionRisks.removedAt))
+      : isNull(positionRisks.removedAt);
+
     const data = await this.db
-      .select({
+      .selectDistinct({
         riskType: riskExposureCategories.riskType,
-        name: riskExposureCategories.name,
         conditions: riskExposureCategories.conditions,
         healthEffects: riskExposureCategories.healthEffects,
       })
-      .from(riskExposureCategories)
+      .from(consultations)
+      .innerJoin(requests, eq(consultations.requestId, requests.id))
+      .innerJoin(patients, eq(requests.patientId, patients.cedula))
+      .innerJoin(positionRisks, eq(positionRisks.positionId, patients.positionId))
+      .innerJoin(risks, eq(positionRisks.riskId, risks.id))
+      .innerJoin(riskExposureCategories, eq(riskExposureCategories.riskType, risks.type))
+      .where(whereClause)
       .orderBy(riskExposureCategories.riskType);
 
     return data.map((r) => ({
       riskType: r.riskType,
-      name: r.name,
       conditions: r.conditions ?? '-',
       healthEffects: r.healthEffects ?? '-',
     }));

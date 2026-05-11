@@ -85,6 +85,7 @@ export const consultations = pgTable(
       () => user.id,
       { onDelete: 'set null' },
     ),
+    positionRisksSnapshot: jsonb('position_risks_snapshot').$type<Array<{ id: string; name: string; type: string }>>(),
   },
   (t) => [unique('uq_consultation_request').on(t.requestId)],
 );

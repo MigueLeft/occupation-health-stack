@@ -1,0 +1,1 @@
+ALTER TABLE "consultations" ADD COLUMN "position_risks_snapshot" jsonb;

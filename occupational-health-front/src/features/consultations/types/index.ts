@@ -56,6 +56,12 @@ export interface ConsultationReferral {
   specialtyName?: string | null;
 }
 
+export interface PositionRiskSnapshot {
+  id: string;
+  name: string;
+  type: string;
+}
+
 export interface Consultation {
   id: string;
   requestId: string;
@@ -74,6 +80,7 @@ export interface Consultation {
   medicalAttendedById?: string | null;
   psychologicalAttendedById?: string | null;
   restPeriod?: RestPeriod | null;
+  positionRisksSnapshot?: PositionRiskSnapshot[] | null;
 }
 
 export interface ConsultationWithDetails extends Consultation {

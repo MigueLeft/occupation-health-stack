@@ -5,7 +5,7 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { eq, isNull, and } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DRIZZLE } from '../database/database.module';
 import { consultations, Consultation } from './consultations.schema';
@@ -13,6 +13,9 @@ import { requests, Request } from '../requests/requests.schema';
 import { physicalExams } from '../physical-exams/physical-exams.schema';
 import { restPeriods } from '../rest-periods/rest-periods.schema';
 import { examResults } from '../exam-results/exam-results.schema';
+import { patients } from '../patients/patients.schema';
+import { positionRisks } from '../positions/positions.schema';
+import { risks as risksTable } from '../risks/risks.schema';
 import { CreateConsultationDto } from './dto/create-consultation.dto';
 import { UpdateConsultationDto } from './dto/update-consultation.dto';
 
@@ -146,6 +149,29 @@ export class ConsultationsService {
       updatePayload.medicalAttendedById = dto.medicalAttendedById;
     if (dto.psychologicalAttendedById !== undefined)
       updatePayload.psychologicalAttendedById = dto.psychologicalAttendedById;
+
+    if (dto.status === 'Finalizada' && existing.status !== 'Finalizada') {
+      const [request] = await this.db
+        .select()
+        .from(requests)
+        .where(eq(requests.id, existing.requestId))
+        .limit(1);
+      if (request) {
+        const [patient] = await this.db
+          .select()
+          .from(patients)
+          .where(eq(patients.cedula, request.patientId))
+          .limit(1);
+        if (patient?.positionId) {
+          const riskRows = await this.db
+            .select({ id: risksTable.id, name: risksTable.name, type: risksTable.type })
+            .from(positionRisks)
+            .innerJoin(risksTable, eq(positionRisks.riskId, risksTable.id))
+            .where(and(eq(positionRisks.positionId, patient.positionId), isNull(positionRisks.removedAt)));
+          updatePayload.positionRisksSnapshot = riskRows;
+        }
+      }
+    }
 
     const [updated] = await this.db
       .update(consultations)
