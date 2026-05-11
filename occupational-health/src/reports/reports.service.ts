@@ -126,62 +126,9 @@ export class ReportsService {
   async generateConsultationsReport(
     filters: ConsultationReportDto,
   ): Promise<Buffer> {
-    const rows = await this.fetchConsultationRows(filters);
-
-    return new Promise((resolve, reject) => {
-      const doc = new PDFDocument({
-        size: 'A4',
-        margins: {
-          top: HEADER_HEIGHT + 10,
-          bottom: FOOTER_HEIGHT + 10,
-          left: MARGIN,
-          right: MARGIN,
-        },
-        bufferPages: true,
-      });
-
-      const chunks: Buffer[] = [];
-      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
-      doc.on('end', () => resolve(Buffer.concat(chunks)));
-      doc.on('error', reject);
-
-      // Dibujar header en la primera página (pageAdded se dispara para las siguientes)
-      this.drawHeader(doc);
-      doc.on('pageAdded', () => this.drawHeader(doc));
-
-      this.drawTitle(doc, filters);
-      this.drawTable(doc, rows);
-
-      // Agregar footer a cada página en el buffer
-      const range = doc.bufferedPageRange();
-      for (let i = 0; i < range.count; i++) {
-        doc.switchToPage(range.start + i);
-        this.drawFooter(doc, i + 1, range.count);
-      }
-
-      doc.flushPages();
-      doc.end();
-    });
-  }
-
-  async generateVigilanciaReport(
-    filters: VigilanciaReportDto,
-  ): Promise<Buffer> {
-    // Recopilar datos de todas las secciones en paralelo
-    const [
-      sectionI,
-      sectionII,
-      sectionIII,
-      sectionIV,
-      sectionV,
-      sectionVII,
-    ] = await Promise.all([
-      this.fetchWorkersByReason(filters),
-      this.fetchAccidentsDiseaseBySex(filters),
-      this.fetchExamResults(filters),
-      this.fetchRestPeriodReasons(filters),
-      this.fetchReferrals(filters),
-      this.fetchRiskFactors(filters),
+    const [rows, companyInfo] = await Promise.all([
+      this.fetchConsultationRows(filters),
+      filters.companyId ? this.fetchCompanyInfo(filters.companyId) : Promise.resolve(null),
     ]);
 
     return new Promise((resolve, reject) => {
@@ -204,7 +151,64 @@ export class ReportsService {
       this.drawHeader(doc);
       doc.on('pageAdded', () => this.drawHeader(doc));
 
-      // Título del reporte
+      if (companyInfo) this.drawCompanyInfoBlock(doc, companyInfo);
+      this.drawTitle(doc, filters);
+      this.drawTable(doc, rows);
+
+      // Agregar footer a cada página en el buffer
+      const range = doc.bufferedPageRange();
+      for (let i = 0; i < range.count; i++) {
+        doc.switchToPage(range.start + i);
+        this.drawFooter(doc, i + 1, range.count);
+      }
+
+      doc.flushPages();
+      doc.end();
+    });
+  }
+
+  async generateVigilanciaReport(
+    filters: VigilanciaReportDto,
+  ): Promise<Buffer> {
+    const [
+      sectionI,
+      sectionII,
+      sectionIII,
+      sectionIV,
+      sectionV,
+      sectionVII,
+      companyInfo,
+    ] = await Promise.all([
+      this.fetchWorkersByReason(filters),
+      this.fetchAccidentsDiseaseBySex(filters),
+      this.fetchExamResults(filters),
+      this.fetchRestPeriodReasons(filters),
+      this.fetchReferrals(filters),
+      this.fetchRiskFactors(filters),
+      filters.companyId ? this.fetchCompanyInfo(filters.companyId) : Promise.resolve(null),
+    ]);
+
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({
+        size: 'A4',
+        margins: {
+          top: HEADER_HEIGHT + 10,
+          bottom: FOOTER_HEIGHT + 10,
+          left: MARGIN,
+          right: MARGIN,
+        },
+        bufferPages: true,
+      });
+
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      this.drawHeader(doc);
+      doc.on('pageAdded', () => this.drawHeader(doc));
+
+      if (companyInfo) this.drawCompanyInfoBlock(doc, companyInfo);
       this.drawVigilanciaTitle(doc, filters);
 
       // Sección I: Trabajadores por motivo de evaluación
@@ -294,6 +298,45 @@ export class ReportsService {
 
   // ─── Helpers privados ────────────────────────────────────────────────────────
 
+  private async fetchCompanyInfo(companyId: string): Promise<{ name: string; rif: string; address: string; contact: string } | null> {
+    const result = await this.db
+      .select({ name: companies.name, rif: companies.rif, address: companies.address, contact: companies.contact })
+      .from(companies)
+      .where(eq(companies.id, companyId))
+      .limit(1);
+    return result[0] ?? null;
+  }
+
+  private drawCompanyInfoBlock(doc: PDFKit.PDFDocument, company: { name: string; rif: string; address: string; contact: string }) {
+    const y = HEADER_HEIGHT + 14;
+    const blockHeight = 52;
+
+    doc.rect(MARGIN, y, USABLE_WIDTH, blockHeight).fill('#EEF4FB');
+
+    // Círculo con inicial
+    const cx = MARGIN + 28;
+    const cy = y + blockHeight / 2;
+    doc.circle(cx, cy, 18).fill(PRIMARY_COLOR);
+    const initial = company.name.charAt(0).toUpperCase();
+    doc.font('Helvetica-Bold').fontSize(16).fillColor('#FFFFFF')
+      .text(initial, cx - 16, cy - 9, { width: 32, align: 'center', lineBreak: false });
+
+    // Información a la derecha
+    const textX = MARGIN + 56;
+    const textW = USABLE_WIDTH - 56;
+    doc.font('Helvetica-Bold').fontSize(11).fillColor('#1A1A1A')
+      .text(company.name, textX, y + 7, { width: textW, lineBreak: false });
+    doc.font('Helvetica').fontSize(8).fillColor('#555555')
+      .text(`RIF: ${company.rif}   ·   ${company.address}`, textX, y + 23, { width: textW, lineBreak: false });
+    if (company.contact) {
+      doc.font('Helvetica').fontSize(8).fillColor('#555555')
+        .text(`Contacto: ${company.contact}`, textX, y + 37, { width: textW, lineBreak: false });
+    }
+
+    doc.fillColor('#000000');
+    doc.y = y + blockHeight + 10;
+  }
+
   private drawHeader(doc: PDFKit.PDFDocument) {
     const topY = 15;
 
@@ -325,7 +368,7 @@ export class ReportsService {
   }
 
   private drawTitle(doc: PDFKit.PDFDocument, filters: ConsultationReportDto) {
-    const titleY = HEADER_HEIGHT + 14;
+    const titleY = Math.max(doc.y, HEADER_HEIGHT + 14);
     doc
       .font('Helvetica-Bold')
       .fontSize(13)
@@ -357,7 +400,7 @@ export class ReportsService {
     doc: PDFKit.PDFDocument,
     filters: VigilanciaReportDto,
   ) {
-    const titleY = HEADER_HEIGHT + 14;
+    const titleY = Math.max(doc.y, HEADER_HEIGHT + 14);
     doc
       .font('Helvetica-Bold')
       .fontSize(13)
@@ -1180,7 +1223,10 @@ export class ReportsService {
   async generatePathologiesReport(
     filters: PathologiesReportDto,
   ): Promise<Buffer> {
-    const data = await this.fetchPathologyData(filters);
+    const [data, companyInfo] = await Promise.all([
+      this.fetchPathologyData(filters),
+      filters.companyId ? this.fetchCompanyInfo(filters.companyId) : Promise.resolve(null),
+    ]);
     const grandTotal = data.reduce((s, r) => s + r.totalCases, 0);
     const totalRestDays = data.reduce((s, r) => s + r.totalRestDays, 0);
     const maleCases = data.reduce((s, r) => s + r.maleCases, 0);
@@ -1208,8 +1254,8 @@ export class ReportsService {
       this.drawHeader(doc);
       doc.on('pageAdded', () => this.drawHeader(doc));
 
-      // Título
-      const titleY = HEADER_HEIGHT + 14;
+      if (companyInfo) this.drawCompanyInfoBlock(doc, companyInfo);
+      const titleY = Math.max(doc.y, HEADER_HEIGHT + 14);
       doc
         .font('Helvetica-Bold')
         .fontSize(13)
@@ -1260,7 +1306,10 @@ export class ReportsService {
   async generateBodySystemsReport(
     filters: BodySystemsReportDto,
   ): Promise<Buffer> {
-    const data = await this.fetchBodySystemData(filters);
+    const [data, companyInfo] = await Promise.all([
+      this.fetchBodySystemData(filters),
+      filters.companyId ? this.fetchCompanyInfo(filters.companyId) : Promise.resolve(null),
+    ]);
     const grandTotal = data.reduce((s, r) => s + r.totalCases, 0);
     const totalRestDays = data.reduce((s, r) => s + r.totalRestDays, 0);
     const maleCases = data.reduce((s, r) => s + r.maleCases, 0);
@@ -1288,8 +1337,8 @@ export class ReportsService {
       this.drawHeader(doc);
       doc.on('pageAdded', () => this.drawHeader(doc));
 
-      // Título
-      const titleY = HEADER_HEIGHT + 14;
+      if (companyInfo) this.drawCompanyInfoBlock(doc, companyInfo);
+      const titleY = Math.max(doc.y, HEADER_HEIGHT + 14);
       doc
         .font('Helvetica-Bold')
         .fontSize(13)
@@ -1532,7 +1581,10 @@ export class ReportsService {
   }
 
   async generateMorbidityReport(filters: MorbidityReportDto): Promise<Buffer> {
-    const data = await this.fetchMorbidityData(filters);
+    const [data, companyInfo] = await Promise.all([
+      this.fetchMorbidityData(filters),
+      filters.companyId ? this.fetchCompanyInfo(filters.companyId) : Promise.resolve(null),
+    ]);
     const grandTotal = data.reduce((s, r) => s + r.total, 0);
 
     return new Promise((resolve, reject) => {
@@ -1555,7 +1607,8 @@ export class ReportsService {
       this.drawHeader(doc);
       doc.on('pageAdded', () => this.drawHeader(doc));
 
-      const titleY = HEADER_HEIGHT + 14;
+      if (companyInfo) this.drawCompanyInfoBlock(doc, companyInfo);
+      const titleY = Math.max(doc.y, HEADER_HEIGHT + 14);
       doc
         .font('Helvetica-Bold')
         .fontSize(13)

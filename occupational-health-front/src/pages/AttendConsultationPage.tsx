@@ -339,18 +339,15 @@ export function AttendConsultationPage({ editMode = false }: Props) {
        (data.type === 'Psicologica' && !!data.psychologicalResult));
 
     if (data.type === 'Medica/Psicologica' && !isPartialSave) {
-      const hasMedicalData = !!consultResult || isHealthy ||
-        Object.values(physExam).some((v) => v !== null && v !== undefined && v !== '') ||
-        localDiagnostics.length > 0 || localExamResults.length > 0 || !!treatment;
+      const hasMedResult = !!consultResult || isHealthy;
+      const hasPsychAptitude = !!psychAptitude;
 
-      const hasPsychData = !!psychResult || !!psychAptitude || interviewDone || localPsychTests.length > 0;
-
-      if (hasMedicalData && !hasPsychData) {
+      if (hasMedResult && !hasPsychAptitude) {
         setSaveEmptySection('psicologica');
         setShowSaveModal(true);
         return;
       }
-      if (!hasMedicalData && hasPsychData) {
+      if (!hasMedResult && hasPsychAptitude) {
         setSaveEmptySection('medica');
         setShowSaveModal(true);
         return;

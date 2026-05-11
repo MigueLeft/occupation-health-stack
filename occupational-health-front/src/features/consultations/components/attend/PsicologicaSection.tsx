@@ -73,12 +73,15 @@ export function PsicologicaSection({
           <Typography variant="subtitle2" sx={{ mb: 1 }}>Aptitud Psicológica</Typography>
           <Stack direction="row" spacing={1} sx={{ mb: 1.5 }}>
             {PSYCHOLOGICAL_APTITUDES.map((r) => {
-              const color = r === 'Apto' ? 'success' : r === 'No Apto' ? 'error' : 'warning';
+              const isSelected = psychologicalAptitude === r;
+              const color = isSelected
+                ? (r === 'Apto' ? 'success' : r === 'No Apto' ? 'error' : 'warning')
+                : 'inherit';
               return (
                 <Button key={r} size="small"
                   color={color}
-                  variant={psychologicalAptitude === r ? 'contained' : 'outlined'}
-                  onClick={() => onAptitudeChange(psychologicalAptitude === r ? '' : r)}
+                  variant={isSelected ? 'contained' : 'outlined'}
+                  onClick={() => onAptitudeChange(isSelected ? '' : r)}
                 >{r}</Button>
               );
             })}

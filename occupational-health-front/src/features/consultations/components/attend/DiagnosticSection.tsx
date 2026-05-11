@@ -203,11 +203,14 @@ export function DiagnosticSection({
         <Typography variant="subtitle2" sx={{ mb: 1 }}>Resultado</Typography>
         <Stack direction="row" spacing={1}>
           {CONSULTATION_RESULTS.map((r) => {
-            const color = r === 'Apto' ? 'success' : r === 'No Apto' ? 'error' : 'warning';
+            const isSelected = result === r;
+            const color = isSelected
+              ? (r === 'Apto' ? 'success' : r === 'No Apto' ? 'error' : 'warning')
+              : 'inherit';
             return (
               <Button key={r} size="small" color={color}
-                variant={result === r ? 'contained' : 'outlined'}
-                onClick={() => onResultChange(result === r ? '' : r)}
+                variant={isSelected ? 'contained' : 'outlined'}
+                onClick={() => onResultChange(isSelected ? '' : r)}
               >{r}</Button>
             );
           })}
