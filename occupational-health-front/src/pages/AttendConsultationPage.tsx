@@ -48,7 +48,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
-  const { data, isLoading, isReferralLoading, isDisabilitiesLoading, isPsychometricFetching, refetchPatient } = useAttendConsultation(id);
+  const { data, isLoading, isReferralLoading, isDisabilitiesLoading, isPsychometricFetching, refetchPatient, patientDisabilities } = useAttendConsultation(id);
 
   const [activeTab, setActiveTab] = useState<'medica' | 'psicologica'>('medica');
   const [isSaving, setIsSaving] = useState(false);
@@ -342,6 +342,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
         queryClient.invalidateQueries({ queryKey: ['consultation-diagnostics', id] }),
         queryClient.invalidateQueries({ queryKey: ['consultation-referral', id] }),
         queryClient.invalidateQueries({ queryKey: ['consultation-disability', id] }),
+        queryClient.invalidateQueries({ queryKey: ['patient-disabilities', data.patientId] }),
         queryClient.invalidateQueries({ queryKey: ['requests'] }),
         queryClient.invalidateQueries({ queryKey: ['patients'] }),
         queryClient.invalidateQueries({ queryKey: ['patient', data.patientId] }),
@@ -396,6 +397,10 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   };
 
   const systemAttendedByName = users.find((u) => u.id === data?.systemAttendedById)?.name;
+
+  const previousPatientDisabilities = patientDisabilities.filter(
+    (pd) => !localDisabilities.some((ld) => ld.disabilityId === pd.id),
+  );
 
   const hiddenTab: 'medica' | 'psicologica' | undefined = editMode
     ? undefined
@@ -506,6 +511,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
                     allDisabilities={disabilities}
                     onAdd={handleAddDisability}
                     onRemove={handleRemoveDisability}
+                    previousPatientDisabilities={previousPatientDisabilities}
                   />
                 </Box>
                 <Paper variant="outlined" sx={{ p: 3, borderRadius: 2, mt: 3 }}>

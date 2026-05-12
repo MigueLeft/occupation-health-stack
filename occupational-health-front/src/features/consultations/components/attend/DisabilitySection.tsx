@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Typography, Paper, Chip } from '@mui/material';
+import { Box, Typography, Paper, Chip, Divider } from '@mui/material';
 import { AccessibilityNewOutlined } from '@mui/icons-material';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import type { Disability } from '@/features/catalogs/types';
@@ -11,9 +11,10 @@ interface Props {
   allDisabilities: Disability[];
   onAdd: (disabilityId: string) => void;
   onRemove: (recordId: string) => void;
+  previousPatientDisabilities?: { id: string; name: string }[];
 }
 
-export function DisabilitySection({ localDisabilities, allDisabilities, onAdd, onRemove }: Props) {
+export function DisabilitySection({ localDisabilities, allDisabilities, onAdd, onRemove, previousPatientDisabilities = [] }: Props) {
   const [selectorKey, setSelectorKey] = useState(0);
 
   const available = allDisabilities.filter(
@@ -32,6 +33,22 @@ export function DisabilitySection({ localDisabilities, allDisabilities, onAdd, o
         <AccessibilityNewOutlined sx={{ color: 'primary.main' }} />
         <Typography variant="h3" sx={{ fontSize: '1rem' }}>Discapacidad</Typography>
       </Box>
+
+      {previousPatientDisabilities.length > 0 && (
+        <>
+          <Box sx={{ mb: 1.5 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em', fontSize: '0.68rem' }}>
+              Registradas en consultas anteriores
+            </Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 0.75 }}>
+              {previousPatientDisabilities.map((d) => (
+                <Chip key={d.id} label={d.name} size="small" variant="outlined" />
+              ))}
+            </Box>
+          </Box>
+          <Divider sx={{ mb: 1.5 }} />
+        </>
+      )}
 
       <SearchableSelect
         key={selectorKey}

@@ -65,6 +65,12 @@ export function useAttendConsultation(consultationId: string) {
     enabled: !!patient?.positionId,
   });
 
+  const patientDisabilitiesQ = useQuery({
+    queryKey: ['patient-disabilities', patient?.cedula],
+    queryFn: () => consultationDisabilitiesService.getByPatient(patient!.cedula),
+    enabled: !!patient?.cedula,
+  });
+
   const isLoading = consultationQ.isLoading || requestsQ.isLoading || patientsQ.isLoading || psychometricQ.isLoading || referralQ.isLoading || disabilitiesQ.isLoading;
 
   const data: FullConsultation | null = (() => {
@@ -96,5 +102,5 @@ export function useAttendConsultation(consultationId: string) {
     };
   })();
 
-  return { data, isLoading, isReferralLoading: referralQ.isLoading, isDisabilitiesLoading: disabilitiesQ.isLoading, isPsychometricFetching: psychometricQ.isFetching, refetchPatient: patientsQ.refetch };
+  return { data, isLoading, isReferralLoading: referralQ.isLoading, isDisabilitiesLoading: disabilitiesQ.isLoading, isPsychometricFetching: psychometricQ.isFetching, refetchPatient: patientsQ.refetch, patientDisabilities: patientDisabilitiesQ.data ?? [] };
 }
