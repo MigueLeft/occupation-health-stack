@@ -32,6 +32,7 @@ function formatBirthDate(dateStr: string): string {
 }
 
 const HAND_LABELS: Record<string, string> = { right: 'Derecha', left: 'Izquierda', both: 'Ambas' };
+const SEX_LABELS: Record<string, string> = { M: 'Masculino (M)', Masculino: 'Masculino (M)', F: 'Femenino (F)', Femenino: 'Femenino (F)' };
 
 function InfoField({ label, value }: { label: string; value: React.ReactNode }) {
   const isString = typeof value === 'string';
@@ -112,7 +113,7 @@ export function ExpedientePage() {
             <InfoField label="Empresa" value={patient.company?.name ?? '—'} />
             <InfoField label="Cargo" value={patient.position?.name ?? '—'} />
             <InfoField label="Fecha de Nacimiento" value={patient.birthDate ? `${formatBirthDate(patient.birthDate)}${age !== null ? `  (${age} años)` : ''}` : '—'} />
-            <InfoField label="Sexo" value={patient.sex ?? '—'} />
+            <InfoField label="Sexo" value={patient.sex ? (SEX_LABELS[patient.sex] ?? patient.sex) : '—'} />
             <InfoField label="Grupo Sanguíneo / Mano Dom." value={`${patient.bloodType ?? '—'} / ${HAND_LABELS[patient.dominantHand ?? ''] ?? patient.dominantHand ?? '—'}`} />
             <InfoField label="Usa lentes" value={patient.usesGlasses == null ? '—' : patient.usesGlasses ? 'Sí' : 'No'} />
             <InfoField label="Contacto de Emergencia" value={

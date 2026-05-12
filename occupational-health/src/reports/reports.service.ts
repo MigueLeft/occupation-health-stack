@@ -1664,16 +1664,16 @@ export class ReportsService {
         sex: patients.sex,
         requestDate: requests.requestDate,
         restDays: restPeriods.days,
-        restCategoryName: diseaseCategories.name,
-        legacyRestReason: restPeriods.reason,
+        // Categoría del diagnóstico (origen: Enfermedad Comun / Laboral)
+        diagnosticCategoryName: diseaseCategories.name,
       })
       .from(consultationDiagnostics)
       .innerJoin(diseases, eq(consultationDiagnostics.diseaseId, diseases.id))
+      .innerJoin(diseaseCategories, eq(consultationDiagnostics.categoryId, diseaseCategories.id))
       .innerJoin(consultations, eq(consultationDiagnostics.consultationId, consultations.id))
       .innerJoin(requests, eq(consultations.requestId, requests.id))
       .innerJoin(patients, eq(requests.patientId, patients.cedula))
       .leftJoin(restPeriods, eq(restPeriods.consultationId, consultations.id))
-      .leftJoin(diseaseCategories, eq(restPeriods.categoryId, diseaseCategories.id))
       .where(whereClause)
       .orderBy(diseases.name);
 
@@ -1700,12 +1700,14 @@ export class ReportsService {
         if (monthIdx >= 0 && monthIdx < 12) entry.months[monthIdx]++;
       }
 
-      if (r.sex === 'Masculino') entry.maleCases++;
-      else if (r.sex === 'Femenino') entry.femaleCases++;
+      // Acepta tanto 'M'/'F' (seed) como 'Masculino'/'Femenino' (API)
+      if (r.sex === 'M' || r.sex === 'Masculino') entry.maleCases++;
+      else if (r.sex === 'F' || r.sex === 'Femenino') entry.femaleCases++;
 
       if (r.restDays) entry.totalRestDays += r.restDays;
 
-      const origin = r.restCategoryName ?? r.legacyRestReason ?? '';
+      // El origen se lee de la categoría del diagnóstico, no del reposo
+      const origin = r.diagnosticCategoryName ?? '';
       if (origin === 'Enfermedad Comun' || origin === 'Accidente Comun') entry.commonOrigin++;
       else if (origin === 'Enfermedad Laboral' || origin === 'Accidente Laboral') entry.laborOrigin++;
     }
