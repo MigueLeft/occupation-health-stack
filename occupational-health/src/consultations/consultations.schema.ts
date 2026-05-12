@@ -88,6 +88,7 @@ export const consultations = pgTable(
     ),
     psychologicalAttendedByFreeText: varchar('psychological_attended_by_free_text', { length: 255 }),
     positionRisksSnapshot: jsonb('position_risks_snapshot').$type<Array<{ id: string; name: string; type: string }>>(),
+    chronicDiseasesSnapshot: jsonb('chronic_diseases_snapshot').$type<Array<{ id: string; name: string }>>(),
   },
   (t) => [unique('uq_consultation_request').on(t.requestId)],
 );

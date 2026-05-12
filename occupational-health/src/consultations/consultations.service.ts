@@ -147,8 +147,14 @@ export class ConsultationsService {
       updatePayload.systemAttendedById = dto.systemAttendedById;
     if (dto.medicalAttendedById !== undefined)
       updatePayload.medicalAttendedById = dto.medicalAttendedById;
+    if (dto.medicalAttendedByFreeText !== undefined)
+      updatePayload.medicalAttendedByFreeText = dto.medicalAttendedByFreeText;
     if (dto.psychologicalAttendedById !== undefined)
       updatePayload.psychologicalAttendedById = dto.psychologicalAttendedById;
+    if (dto.psychologicalAttendedByFreeText !== undefined)
+      updatePayload.psychologicalAttendedByFreeText = dto.psychologicalAttendedByFreeText;
+    if (dto.chronicDiseasesSnapshot !== undefined)
+      updatePayload.chronicDiseasesSnapshot = dto.chronicDiseasesSnapshot;
 
     if (dto.status === 'Finalizada' && existing.status !== 'Finalizada') {
       const [request] = await this.db

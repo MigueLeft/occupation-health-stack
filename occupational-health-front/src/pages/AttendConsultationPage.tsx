@@ -334,6 +334,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
         medicalAttendedByFreeText: medicalAttendedByFreeText || undefined,
         psychologicalAttendedById: psychologicalAttendedById || undefined,
         psychologicalAttendedByFreeText: psychologicalAttendedByFreeText || undefined,
+        chronicDiseasesSnapshot: localDiseases,
       });
 
       await Promise.all([
@@ -398,9 +399,10 @@ export function AttendConsultationPage({ editMode = false }: Props) {
 
   const systemAttendedByName = users.find((u) => u.id === data?.systemAttendedById)?.name;
 
-  const previousPatientDisabilities = patientDisabilities.filter(
-    (pd) => !localDisabilities.some((ld) => ld.disabilityId === pd.id),
-  );
+  // En modo edición solo se muestran las discapacidades de esta consulta; en modo atender se muestra el historial del paciente como referencia
+  const previousPatientDisabilities = !editMode
+    ? patientDisabilities.filter((pd) => !localDisabilities.some((ld) => ld.disabilityId === pd.id))
+    : [];
 
   const hiddenTab: 'medica' | 'psicologica' | undefined = editMode
     ? undefined

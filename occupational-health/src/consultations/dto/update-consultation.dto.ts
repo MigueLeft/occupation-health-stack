@@ -95,4 +95,7 @@ export class UpdateConsultationDto {
   @IsOptional()
   @IsString({ message: 'El nombre libre (psicológica) debe ser texto.' })
   psychologicalAttendedByFreeText?: string;
+
+  @IsOptional()
+  chronicDiseasesSnapshot?: { id: string; name: string }[];
 }

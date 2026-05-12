@@ -89,6 +89,7 @@ export interface Consultation {
   psychologicalAttendedByFreeText?: string | null;
   restPeriod?: RestPeriod | null;
   positionRisksSnapshot?: PositionRiskSnapshot[] | null;
+  chronicDiseasesSnapshot?: { id: string; name: string }[] | null;
 }
 
 export interface ConsultationWithDetails extends Consultation {
@@ -121,4 +122,5 @@ export interface CreateConsultationPayload {
 export type UpdateConsultationPayload = Omit<CreateConsultationPayload, 'requestId' | 'type'> & {
   status?: ConsultationStatus;
   type?: ConsultationType;
+  chronicDiseasesSnapshot?: { id: string; name: string }[];
 };
