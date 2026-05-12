@@ -1829,9 +1829,9 @@ export class ReportsService {
       .text('Resumen del Reporte', MARGIN + 8, y + 8, { width: USABLE_WIDTH - 16 });
 
     const items: [string, string][] = [
-      ['Nro. de patologías (total > 1):', String(nroPatologias)],
-      ['Nro. patologías masculinas (> 1):', String(nroPatMasc)],
-      ['Nro. patologías femeninas (> 1):', String(nroPatFem)],
+      ['Nro. de patologías:', String(nroPatologias)],
+      ['Nro. patologías masculinas:', String(nroPatMasc)],
+      ['Nro. patologías femeninas:', String(nroPatFem)],
       ['Días de reposo:', String(totalRestDays)],
       ['Posible origen común:', String(origenComun)],
       ['Posible origen laboral:', String(origenLaboral)],
@@ -1858,9 +1858,9 @@ export class ReportsService {
       filters.companyId ? this.fetchCompanyInfo(filters.companyId) : Promise.resolve(null),
     ]);
 
-    const nroPatologias = data.filter((r) => r.total > 1).length;
-    const nroPatMasc = data.filter((r) => r.maleCases > 1).length;
-    const nroPatFem = data.filter((r) => r.femaleCases > 1).length;
+    const nroPatologias = data.length;
+    const nroPatMasc = data.filter((r) => r.maleCases > 0).length;
+    const nroPatFem = data.filter((r) => r.femaleCases > 0).length;
     const totalRestDays = data.reduce((s, r) => s + r.totalRestDays, 0);
     const origenComun = data.filter((r) => r.commonOrigin > 0).length;
     const origenLaboral = data.filter((r) => r.laborOrigin > 0).length;
