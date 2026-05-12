@@ -32,6 +32,7 @@ export function useDeleteRisk() {
   return useMutation({
     mutationFn: risksService.remove,
     onSuccess: () => { qc.invalidateQueries({ queryKey: KEY }); toast.success('Riesgo eliminado.'); },
-    onError: () => toast.error('Error al eliminar el riesgo'),
+    onError: (e: { response?: { data?: { message?: string } } }) =>
+      toast.error(e.response?.data?.message ?? 'Error al eliminar el riesgo'),
   });
 }

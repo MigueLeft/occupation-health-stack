@@ -8,6 +8,7 @@ import { eq } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DRIZZLE } from '../database/database.module';
 import { risks, Risk } from './risks.schema';
+import { positionRisks } from '../positions/positions.schema';
 import { CreateRiskDto } from './dto/create-risk.dto';
 import { UpdateRiskDto } from './dto/update-risk.dto';
 
@@ -65,6 +66,18 @@ export class RisksService {
 
   async remove(id: string): Promise<Risk> {
     await this.findOne(id);
+
+    const [inUse] = await this.db
+      .select()
+      .from(positionRisks)
+      .where(eq(positionRisks.riskId, id))
+      .limit(1);
+
+    if (inUse) {
+      throw new ConflictException(
+        'No se puede eliminar este riesgo porque está asociado a uno o más cargos.',
+      );
+    }
 
     const [deleted] = await this.db
       .delete(risks)
