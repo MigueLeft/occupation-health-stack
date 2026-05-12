@@ -28,8 +28,11 @@ import { ChronicDiseasesSection } from '@/features/consultations/components/atte
 import { PatientInitialDataSection } from '@/features/consultations/components/attend/PatientInitialDataSection';
 import { AttendedBySection } from '@/features/consultations/components/attend/AttendedBySection';
 import { ReferralSection } from '@/features/consultations/components/attend/ReferralSection';
+import { DisabilitySection } from '@/features/consultations/components/attend/DisabilitySection';
 import { ExposureRisksBar } from '@/features/consultations/components/attend/ExposureRisksBar';
 import { useMedicalSpecialties } from '@/features/catalogs/hooks/useMedicalSpecialties';
+import { useDisabilities } from '@/features/catalogs/hooks/useDisabilities';
+import { consultationDisabilitiesService } from '@/features/consultations/services/disabilities.service';
 import { SavePartialModal } from '@/features/consultations/components/attend/SavePartialModal';
 import type { PhysicalExamPayload, ConsultationDiagnostic, ExamResult, PsychometricTestResult } from '@/features/consultations/services/sub-entities.service';
 import type { ConsultationResult, ConsultationType, PsychologicalResult, PsychologicalAptitude } from '@/features/consultations/types';
@@ -45,7 +48,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
-  const { data, isLoading, isReferralLoading, isPsychometricFetching, refetchPatient } = useAttendConsultation(id);
+  const { data, isLoading, isReferralLoading, isDisabilityLoading, isPsychometricFetching, refetchPatient } = useAttendConsultation(id);
 
   const [activeTab, setActiveTab] = useState<'medica' | 'psicologica'>('medica');
   const [isSaving, setIsSaving] = useState(false);
@@ -77,6 +80,9 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   const [requiresReferral, setRequiresReferral] = useState(false);
   const [referralSpecialtyId, setReferralSpecialtyId] = useState('');
 
+  const [hasDisability, setHasDisability] = useState(false);
+  const [disabilityId, setDisabilityId] = useState('');
+
   const [localDiagnostics, setLocalDiagnostics] = useState<LocalDiagnostic[]>([]);
   const [localExamResults, setLocalExamResults] = useState<LocalExamResult[]>([]);
   const [localPsychTests, setLocalPsychTests] = useState<LocalPsychTest[]>([]);
@@ -95,6 +101,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   const { data: allergies = [] } = useAllergies();
   const { data: users = [] } = useUsers();
   const { data: medicalSpecialties = [] } = useMedicalSpecialties();
+  const { data: disabilities = [] } = useDisabilities();
 
   useEffect(() => {
     if (!data || !currentUser?.id) return;
@@ -104,9 +111,9 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data?.id, currentUser?.id]);
 
-  // Espera a que todos los datos —incluida la referencia— estén cargados antes de inicializar
+  // Espera a que todos los datos —incluida la referencia y discapacidad— estén cargados antes de inicializar
   useEffect(() => {
-    if (!data || isPsychometricFetching || isReferralLoading || initialized) return;
+    if (!data || isPsychometricFetching || isReferralLoading || isDisabilityLoading || initialized) return;
     setConsultResult((data.consultationResult ?? '') as ConsultationResult | '');
     setPsychResult((data.psychologicalResult ?? '') as PsychologicalResult | '');
     setPsychAptitude((data.psychologicalAptitude ?? '') as PsychologicalAptitude | '');
@@ -139,6 +146,10 @@ export function AttendConsultationPage({ editMode = false }: Props) {
       setRequiresReferral(data.referral.requiresReferral);
       setReferralSpecialtyId(data.referral.specialtyId ?? '');
     }
+    if (data.disability) {
+      setHasDisability(data.disability.hasDisability);
+      setDisabilityId(data.disability.disabilityId ?? '');
+    }
     setLocalDiagnostics(data.consultationDiagnostics);
     setLocalExamResults(data.examResults);
     setLocalPsychTests(data.psychometricTests);
@@ -154,7 +165,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
 
     setInitialized(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data?.id, isPsychometricFetching, isReferralLoading]);
+  }, [data?.id, isPsychometricFetching, isReferralLoading, isDisabilityLoading]);
 
   const handleAddDiagnostic = (
     { categoryId, diseaseId, bodySystemId }: { categoryId: string; diseaseId: string; bodySystemId?: string },
@@ -280,6 +291,12 @@ export function AttendConsultationPage({ editMode = false }: Props) {
         specialtyId: requiresReferral && referralSpecialtyId ? referralSpecialtyId : undefined,
       });
 
+      await consultationDisabilitiesService.upsert({
+        consultationId: id,
+        hasDisability,
+        disabilityId: hasDisability && disabilityId ? disabilityId : undefined,
+      });
+
       await consultationsService.update(id, {
         type,
         status,
@@ -309,6 +326,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
         queryClient.invalidateQueries({ queryKey: ['consultation', id] }),
         queryClient.invalidateQueries({ queryKey: ['consultation-diagnostics', id] }),
         queryClient.invalidateQueries({ queryKey: ['consultation-referral', id] }),
+        queryClient.invalidateQueries({ queryKey: ['consultation-disability', id] }),
         queryClient.invalidateQueries({ queryKey: ['requests'] }),
         queryClient.invalidateQueries({ queryKey: ['patients'] }),
         queryClient.invalidateQueries({ queryKey: ['patient', data.patientId] }),
@@ -465,6 +483,15 @@ export function AttendConsultationPage({ editMode = false }: Props) {
                     specialtyId={referralSpecialtyId}
                     onSpecialtyIdChange={setReferralSpecialtyId}
                     specialties={medicalSpecialties}
+                  />
+                </Box>
+                <Box sx={{ mt: 3 }}>
+                  <DisabilitySection
+                    hasDisability={hasDisability}
+                    onHasDisabilityChange={setHasDisability}
+                    disabilityId={disabilityId}
+                    onDisabilityIdChange={setDisabilityId}
+                    disabilities={disabilities}
                   />
                 </Box>
                 <Paper variant="outlined" sx={{ p: 3, borderRadius: 2, mt: 3 }}>

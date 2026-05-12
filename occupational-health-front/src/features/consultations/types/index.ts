@@ -56,6 +56,13 @@ export interface ConsultationReferral {
   specialtyName?: string | null;
 }
 
+export interface ConsultationDisability {
+  id: string;
+  consultationId: string;
+  hasDisability: boolean;
+  disabilityId?: string | null;
+}
+
 export interface PositionRiskSnapshot {
   id: string;
   name: string;

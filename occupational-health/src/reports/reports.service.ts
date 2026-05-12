@@ -17,6 +17,8 @@ import { positionRisks } from '../positions/positions.schema';
 import { risks } from '../risks/risks.schema';
 import { consultationReferrals } from '../consultation-referrals/consultation-referrals.schema';
 import { medicalSpecialties } from '../medical-specialties/medical-specialties.schema';
+import { consultationDisabilities } from '../consultation-disabilities/consultation-disabilities.schema';
+import { disabilities } from '../disabilities/disabilities.schema';
 import { riskExposureCategories } from '../risk-exposure-categories/risk-exposure-categories.schema';
 import { consultationDiagnostics } from '../consultation-diagnostics/consultation-diagnostics.schema';
 import { diseases } from '../diseases/diseases.schema';
@@ -125,6 +127,8 @@ type SectionIIRow = {
 type SectionIIIRow = { examName: string; normales: number; anormales: number };
 type SectionIVRow = { reason: string; count: number };
 type SectionVRow = { specialty: string; count: number; percentage: string };
+type SectionVIRow = { disabilityName: string; count: number };
+
 type SectionVIIRow = {
   riskType: string;
   conditions: string;
@@ -188,6 +192,7 @@ export class ReportsService {
       sectionIII,
       sectionIV,
       sectionV,
+      sectionVI,
       sectionVII,
       companyInfo,
     ] = await Promise.all([
@@ -196,6 +201,7 @@ export class ReportsService {
       this.fetchExamResults(filters),
       this.fetchRestPeriodReasons(filters),
       this.fetchReferrals(filters),
+      this.fetchDisabilities(filters),
       this.fetchRiskFactors(filters),
       filters.companyId ? this.fetchCompanyInfo(filters.companyId) : Promise.resolve(null),
     ]);
@@ -279,6 +285,16 @@ export class ReportsService {
         ['Especialidad', 'Cantidad', '%'],
         [200, 80, 80],
         sectionV.map((r) => [r.specialty, String(r.count), r.percentage]),
+      );
+
+      // Sección VI: Trabajadores con discapacidad
+      this.ensureSpace(doc, 80);
+      this.drawSectionHeader(doc, 'VI. Trabajadores con Discapacidad');
+      this.drawVigilanciaTable(
+        doc,
+        ['Tipo de Discapacidad', 'Cantidad'],
+        [350, 165],
+        sectionVI.map((r) => [r.disabilityName, String(r.count)]),
       );
 
       // Sección VII: Factores de riesgo con efectos en la salud
@@ -958,6 +974,36 @@ export class ReportsService {
     }));
   }
 
+  // Sección VI: Trabajadores con discapacidad registrada en el período
+  private async fetchDisabilities(
+    filters: VigilanciaReportDto,
+  ): Promise<SectionVIRow[]> {
+    const conditions = this.buildVigilanciaConditions(filters);
+    const baseWhere =
+      conditions.length > 0
+        ? and(...conditions, eq(consultationDisabilities.hasDisability, true))
+        : eq(consultationDisabilities.hasDisability, true);
+
+    const data = await this.db
+      .select({
+        disabilityName: disabilities.name,
+        count: count(),
+      })
+      .from(consultationDisabilities)
+      .innerJoin(consultations, eq(consultationDisabilities.consultationId, consultations.id))
+      .innerJoin(requests, eq(consultations.requestId, requests.id))
+      .innerJoin(patients, eq(requests.patientId, patients.cedula))
+      .leftJoin(disabilities, eq(consultationDisabilities.disabilityId, disabilities.id))
+      .where(baseWhere)
+      .groupBy(disabilities.name)
+      .orderBy(disabilities.name);
+
+    return data.map((r) => ({
+      disabilityName: r.disabilityName ?? 'Sin especificar',
+      count: Number(r.count),
+    }));
+  }
+
   // Sección VII: Tipos de riesgo presentes en los cargos de los pacientes evaluados en el período
   private async fetchRiskFactors(
     filters: VigilanciaReportDto,
@@ -968,9 +1014,9 @@ export class ReportsService {
       : isNull(positionRisks.removedAt);
 
     const data = await this.db
-      .selectDistinct({
-        riskType: riskExposureCategories.riskType,
-        conditions: riskExposureCategories.conditions,
+      .select({
+        riskType: risks.type,
+        riskName: risks.name,
         healthEffects: riskExposureCategories.healthEffects,
       })
       .from(consultations)
@@ -980,13 +1026,24 @@ export class ReportsService {
       .innerJoin(risks, eq(positionRisks.riskId, risks.id))
       .innerJoin(riskExposureCategories, eq(riskExposureCategories.riskType, risks.type))
       .where(whereClause)
-      .orderBy(riskExposureCategories.riskType);
+      .orderBy(risks.type, risks.name);
 
-    return data.map((r) => ({
-      riskType: r.riskType,
-      conditions: r.conditions ?? '-',
-      healthEffects: r.healthEffects ?? '-',
-    }));
+    // Aggregate distinct risk names per type in memory
+    const map = new Map<string, { names: Set<string>; healthEffects: string }>();
+    for (const r of data) {
+      if (!map.has(r.riskType)) {
+        map.set(r.riskType, { names: new Set(), healthEffects: r.healthEffects ?? '' });
+      }
+      map.get(r.riskType)!.names.add(r.riskName);
+    }
+
+    return Array.from(map.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([riskType, { names, healthEffects }]) => ({
+        riskType,
+        conditions: Array.from(names).sort().join(', '),
+        healthEffects: healthEffects || '-',
+      }));
   }
 
   // ─── Patologías: fetch y generación de PDF ───────────────────────────────────

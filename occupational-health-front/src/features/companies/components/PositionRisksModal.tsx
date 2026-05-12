@@ -33,7 +33,9 @@ export function PositionRisksModal({ open, onClose, position }: Props) {
   const { mutate: removeRisk, isPending: isRemoving } = useRemovePositionRisk();
 
   const currentRiskIds = new Set((position.risks ?? []).map((r) => r.id));
-  const availableRisks = allRisks.filter((r) => !currentRiskIds.has(r.id));
+  const availableRisks = allRisks
+    .filter((r) => !currentRiskIds.has(r.id))
+    .sort((a, b) => a.type.localeCompare(b.type) || a.name.localeCompare(b.name));
 
   const sorted = [...(position.risks ?? [])].sort((a, b) => a.type.localeCompare(b.type));
 

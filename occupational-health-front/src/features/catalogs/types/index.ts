@@ -50,6 +50,11 @@ export interface RiskExposureCategory {
   healthEffects?: string | null;
 }
 
+export interface Disability {
+  id: string;
+  name: string;
+}
+
 export const EXAM_CATEGORIES = ['Laboratorio', 'Estudio de Imagenes', 'Pruebas Especiales'] as const;
 export type ExamCategory = (typeof EXAM_CATEGORIES)[number];
 

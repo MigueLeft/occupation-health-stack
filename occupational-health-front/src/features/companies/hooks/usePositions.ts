@@ -59,9 +59,9 @@ export function useAddPositionRisk() {
   return useMutation({
     mutationFn: ({ positionId, riskId }: { positionId: string; riskId: string }) =>
       positionsService.addRisk(positionId, riskId),
-    onSuccess: (_, { positionId }) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: COMPANIES_KEY });
-      queryClient.invalidateQueries({ queryKey: ['position-risks', positionId] });
+      queryClient.invalidateQueries({ queryKey: ['position-risks'] });
       toast.success('Riesgo agregado al cargo.');
     },
     onError: (error: { response?: { data?: { message?: string } } }) => {
@@ -76,9 +76,9 @@ export function useRemovePositionRisk() {
   return useMutation({
     mutationFn: ({ positionId, riskId }: { positionId: string; riskId: string }) =>
       positionsService.removeRisk(positionId, riskId),
-    onSuccess: (_, { positionId }) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: COMPANIES_KEY });
-      queryClient.invalidateQueries({ queryKey: ['position-risks', positionId] });
+      queryClient.invalidateQueries({ queryKey: ['position-risks'] });
       toast.success('Riesgo eliminado del cargo.');
     },
     onError: (error: { response?: { data?: { message?: string } } }) => {

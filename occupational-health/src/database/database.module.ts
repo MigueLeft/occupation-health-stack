@@ -22,6 +22,8 @@ import * as psychometricTestsSchema from '../psychometric-tests/psychometric-tes
 import * as consultationDiagnosticsSchema from '../consultation-diagnostics/consultation-diagnostics.schema';
 import * as authSchema from '../auth/auth.schema';
 import * as rolesSchema from '../roles/roles.schema';
+import * as disabilitiesSchema from '../disabilities/disabilities.schema';
+import * as consultationDisabilitiesSchema from '../consultation-disabilities/consultation-disabilities.schema';
 
 // Token de inyección para el cliente de Drizzle
 export const DRIZZLE = Symbol('DRIZZLE');
@@ -62,6 +64,8 @@ export const DRIZZLE = Symbol('DRIZZLE');
             ...consultationDiagnosticsSchema,
             ...authSchema,
             ...rolesSchema,
+            ...disabilitiesSchema,
+            ...consultationDisabilitiesSchema,
           },
         });
       },

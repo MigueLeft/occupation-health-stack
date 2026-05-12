@@ -30,6 +30,8 @@ import { GeoCatalogModule } from './geo-catalog/geo-catalog.module';
 import { MedicalSpecialtiesModule } from './medical-specialties/medical-specialties.module';
 import { RiskExposureCategoriesModule } from './risk-exposure-categories/risk-exposure-categories.module';
 import { ConsultationReferralsModule } from './consultation-referrals/consultation-referrals.module';
+import { DisabilitiesModule } from './disabilities/disabilities.module';
+import { ConsultationDisabilitiesModule } from './consultation-disabilities/consultation-disabilities.module';
 
 @Module({
   imports: [
@@ -47,6 +49,7 @@ import { ConsultationReferralsModule } from './consultation-referrals/consultati
     GeoCatalogModule,
     MedicalSpecialtiesModule,
     RiskExposureCategoriesModule,
+    DisabilitiesModule,
     // Estructura de empresa
     CompaniesModule,
     PositionsModule,
@@ -61,6 +64,7 @@ import { ConsultationReferralsModule } from './consultation-referrals/consultati
     PsychometricTestsModule,
     ConsultationDiagnosticsModule,
     ConsultationReferralsModule,
+    ConsultationDisabilitiesModule,
     RolesModule,
     UsersModule,
     AuthUtilsModule,

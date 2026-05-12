@@ -9,4 +9,5 @@ export { DiseaseCategoriesPanel } from './components/DiseaseCategoriesPanel';
 export { GeoCatalogPanel } from './components/GeoCatalogPanel';
 export { MedicalSpecialtiesPanel } from './components/MedicalSpecialtiesPanel';
 export { RiskExposureCategoriesPanel } from './components/RiskExposureCategoriesPanel';
+export { DisabilitiesPanel } from './components/DisabilitiesPanel';
 export type { CatalogTab } from './components/CatalogLayout';

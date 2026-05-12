@@ -4,6 +4,7 @@ import { EditOutlined, CheckCircleOutlined, HotelOutlined, WarningAmberOutlined 
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { AppLayout } from '@/components/AppLayout';
 import { useAttendConsultation } from '@/features/consultations/hooks/useAttendConsultation';
+import { useDisabilities } from '@/features/catalogs/hooks/useDisabilities';
 import { useUsers } from '@/features/users/hooks/useUsers';
 import { useDiseaseCategories } from '@/features/catalogs/hooks/useDiseaseCategories';
 import { useDiseases } from '@/features/catalogs/hooks/useDiseases';
@@ -12,6 +13,7 @@ import { useExams } from '@/features/catalogs/hooks/useExams';
 import { usePsychometricTests as usePsychometricCatalog } from '@/features/catalogs/hooks/usePsychometricTests';
 import { EVALUATION_REASON_LABELS } from '@/features/requests/types';
 import { ConsultationResultChip } from '@/features/consultations/components/ConsultationResultChip';
+import { AccessibilityNewOutlined } from '@mui/icons-material';
 
 const RISK_TYPE_COLOR: Record<string, 'error' | 'warning' | 'info' | 'success' | 'secondary' | 'default'> = {
   Fisico: 'error', Quimico: 'warning', Biologico: 'success',
@@ -58,6 +60,7 @@ export function ConsultationDetailPage() {
   const { data: bodySystems = [] } = useBodySystems();
   const { data: exams = [] } = useExams();
   const { data: psychCatalog = [] } = usePsychometricCatalog();
+  const { data: disabilities = [] } = useDisabilities();
 
   const hasMedica = data?.type === 'Medica' || data?.type === 'Medica/Psicologica';
   const hasPsicologica = data?.type === 'Psicologica' || data?.type === 'Medica/Psicologica';
@@ -243,6 +246,19 @@ export function ConsultationDetailPage() {
                         {data.restPeriod.bodySystemId && (
                           <ReadField label="Aparato / Sistema" value={getName(bodySystems, data.restPeriod.bodySystemId)} />
                         )}
+                      </Stack>
+                    </SectionCard>
+                  )}
+
+                  {data.disability?.hasDisability && (
+                    <SectionCard title="Discapacidad">
+                      <Stack spacing={1.5}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <AccessibilityNewOutlined sx={{ color: 'primary.main' }} />
+                          <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                            {disabilities.find((d) => d.id === data.disability?.disabilityId)?.name ?? 'Discapacidad registrada'}
+                          </Typography>
+                        </Box>
                       </Stack>
                     </SectionCard>
                   )}
