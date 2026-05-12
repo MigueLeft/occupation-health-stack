@@ -73,7 +73,11 @@ export function ConsultationDetailPage() {
   }
 
   const getName = (list: { id: string; name: string }[], itemId: string) => list.find((x) => x.id === itemId)?.name ?? '—';
-  const getUserName = (uid?: string | null) => uid ? (users.find((u) => u.id === uid)?.name ?? uid) : '—';
+  const getUserName = (uid?: string | null, freeText?: string | null) => {
+    if (uid) return users.find((u) => u.id === uid)?.name ?? uid;
+    if (freeText) return freeText;
+    return '—';
+  };
 
   const physExam = data.physicalExam;
   const bmi = physExam?.weight && physExam?.height && physExam.height > 0
@@ -276,8 +280,8 @@ export function ConsultationDetailPage() {
                   <SectionCard title="Atendido por">
                     <Stack spacing={1.5} divider={<Divider />}>
                       <ReadField label="Registrado en sistema por" value={getUserName(data.systemAttendedById)} />
-                      <ReadField label="Atendido presencialmente (Médica)" value={getUserName(data.medicalAttendedById)} />
-                      <ReadField label="Atendido presencialmente (Psicológica)" value={getUserName(data.psychologicalAttendedById)} />
+                      <ReadField label="Atendido presencialmente (Médica)" value={getUserName(data.medicalAttendedById, data.medicalAttendedByFreeText)} />
+                      <ReadField label="Atendido presencialmente (Psicológica)" value={getUserName(data.psychologicalAttendedById, data.psychologicalAttendedByFreeText)} />
                     </Stack>
                   </SectionCard>
                 </Stack>

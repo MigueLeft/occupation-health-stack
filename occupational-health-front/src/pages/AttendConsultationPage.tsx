@@ -67,7 +67,9 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   const [interviewDone, setInterviewDone] = useState(false);
   const [psychObservations, setPsychObservations] = useState('');
   const [medicalAttendedById, setMedicalAttendedById] = useState('');
+  const [medicalAttendedByFreeText, setMedicalAttendedByFreeText] = useState('');
   const [psychologicalAttendedById, setPsychologicalAttendedById] = useState('');
+  const [psychologicalAttendedByFreeText, setPsychologicalAttendedByFreeText] = useState('');
   const [isHealthy, setIsHealthy] = useState(false);
 
   // Estado del reposo médico (vinculado al diagnóstico)
@@ -120,7 +122,9 @@ export function AttendConsultationPage({ editMode = false }: Props) {
     setIsHealthy(data.isHealthy ?? false);
     setInterviewDone(data.interviewConducted ?? false);
     setMedicalAttendedById(data.medicalAttendedById ?? '');
+    setMedicalAttendedByFreeText(data.medicalAttendedByFreeText ?? '');
     setPsychologicalAttendedById(data.psychologicalAttendedById ?? '');
+    setPsychologicalAttendedByFreeText(data.psychologicalAttendedByFreeText ?? '');
     setTreatment(data.currentTreatment ?? '');
     setDiagDescription(data.diagnosisDescription ?? '');
     setMedObservations((data.observations as { medica?: string } | null)?.medica ?? '');
@@ -318,7 +322,9 @@ export function AttendConsultationPage({ editMode = false }: Props) {
           aptitudeDetails: psychAptitudeDetails || undefined,
         },
         medicalAttendedById: medicalAttendedById || undefined,
+        medicalAttendedByFreeText: medicalAttendedByFreeText || undefined,
         psychologicalAttendedById: psychologicalAttendedById || undefined,
+        psychologicalAttendedByFreeText: psychologicalAttendedByFreeText || undefined,
       });
 
       await Promise.all([
@@ -503,7 +509,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
                   </Box>
                 </Paper>
                 <Box sx={{ mt: 3 }}>
-                  <AttendedBySection tab="medica" systemAttendedByName={systemAttendedByName} medicalAttendedById={medicalAttendedById} psychologicalAttendedById={psychologicalAttendedById} onMedicalChange={setMedicalAttendedById} onPsychologicalChange={setPsychologicalAttendedById} users={users} />
+                  <AttendedBySection tab="medica" systemAttendedByName={systemAttendedByName} medicalAttendedById={medicalAttendedById} medicalAttendedByFreeText={medicalAttendedByFreeText} psychologicalAttendedById={psychologicalAttendedById} psychologicalAttendedByFreeText={psychologicalAttendedByFreeText} onMedicalChange={setMedicalAttendedById} onMedicalFreeTextChange={setMedicalAttendedByFreeText} onPsychologicalChange={setPsychologicalAttendedById} onPsychologicalFreeTextChange={setPsychologicalAttendedByFreeText} users={users} />
                 </Box>
               </Grid>
             </Grid>
@@ -523,7 +529,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
                 />
               </Grid>
               <Grid size={4}>
-                <AttendedBySection tab="psicologica" systemAttendedByName={systemAttendedByName} medicalAttendedById={medicalAttendedById} psychologicalAttendedById={psychologicalAttendedById} onMedicalChange={setMedicalAttendedById} onPsychologicalChange={setPsychologicalAttendedById} users={users} />
+                <AttendedBySection tab="psicologica" systemAttendedByName={systemAttendedByName} medicalAttendedById={medicalAttendedById} medicalAttendedByFreeText={medicalAttendedByFreeText} psychologicalAttendedById={psychologicalAttendedById} psychologicalAttendedByFreeText={psychologicalAttendedByFreeText} onMedicalChange={setMedicalAttendedById} onMedicalFreeTextChange={setMedicalAttendedByFreeText} onPsychologicalChange={setPsychologicalAttendedById} onPsychologicalFreeTextChange={setPsychologicalAttendedByFreeText} users={users} />
               </Grid>
             </Grid>
           )}

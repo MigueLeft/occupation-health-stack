@@ -85,7 +85,9 @@ export interface Consultation {
   observations?: Observations | null;
   systemAttendedById?: string | null;
   medicalAttendedById?: string | null;
+  medicalAttendedByFreeText?: string | null;
   psychologicalAttendedById?: string | null;
+  psychologicalAttendedByFreeText?: string | null;
   restPeriod?: RestPeriod | null;
   positionRisksSnapshot?: PositionRiskSnapshot[] | null;
 }
@@ -112,7 +114,9 @@ export interface CreateConsultationPayload {
   observations?: Observations;
   systemAttendedById?: string;
   medicalAttendedById?: string;
+  medicalAttendedByFreeText?: string;
   psychologicalAttendedById?: string;
+  psychologicalAttendedByFreeText?: string;
 }
 
 export type UpdateConsultationPayload = Omit<CreateConsultationPayload, 'requestId' | 'type'> & {

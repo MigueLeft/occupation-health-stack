@@ -85,6 +85,14 @@ export class UpdateConsultationDto {
   medicalAttendedById?: string;
 
   @IsOptional()
+  @IsString({ message: 'El nombre libre (médica) debe ser texto.' })
+  medicalAttendedByFreeText?: string;
+
+  @IsOptional()
   @IsString()
   psychologicalAttendedById?: string;
+
+  @IsOptional()
+  @IsString({ message: 'El nombre libre (psicológica) debe ser texto.' })
+  psychologicalAttendedByFreeText?: string;
 }
