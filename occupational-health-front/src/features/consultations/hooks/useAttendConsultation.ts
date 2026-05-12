@@ -21,7 +21,7 @@ interface FullConsultation extends ConsultationWithDetails {
   positionRisks: PositionRisk[];
   restPeriod: RestPeriod | null;
   referral: ConsultationReferral | null;
-  disability: ConsultationDisability | null;
+  disabilities: ConsultationDisability[];
 }
 
 async function getConsultation(id: string): Promise<{ consultation: Consultation & { physicalExam: PhysicalExam | null; examResults: ExamResult[]; restPeriod: RestPeriod | null } }> {
@@ -51,7 +51,7 @@ export function useAttendConsultation(consultationId: string) {
   const diagnosticsQ = useQuery({ queryKey: ['consultation-diagnostics', consultationId], queryFn: () => getConsultationDiagnostics(consultationId) });
   const psychometricQ = useQuery({ queryKey: ['psychometric-tests', consultationId], queryFn: () => getPsychometricTests(consultationId) });
   const referralQ = useQuery({ queryKey: ['consultation-referral', consultationId], queryFn: () => referralsService.getByConsultation(consultationId) });
-  const disabilityQ = useQuery({ queryKey: ['consultation-disability', consultationId], queryFn: () => consultationDisabilitiesService.getByConsultation(consultationId) });
+  const disabilitiesQ = useQuery({ queryKey: ['consultation-disability', consultationId], queryFn: () => consultationDisabilitiesService.getByConsultation(consultationId) });
 
   const patient = (() => {
     if (!consultationQ.data || !requestsQ.data || !patientsQ.data) return null;
@@ -65,7 +65,7 @@ export function useAttendConsultation(consultationId: string) {
     enabled: !!patient?.positionId,
   });
 
-  const isLoading = consultationQ.isLoading || requestsQ.isLoading || patientsQ.isLoading || psychometricQ.isLoading || referralQ.isLoading || disabilityQ.isLoading;
+  const isLoading = consultationQ.isLoading || requestsQ.isLoading || patientsQ.isLoading || psychometricQ.isLoading || referralQ.isLoading || disabilitiesQ.isLoading;
 
   const data: FullConsultation | null = (() => {
     if (!consultationQ.data || !requestsQ.data || !patientsQ.data) return null;
@@ -92,9 +92,9 @@ export function useAttendConsultation(consultationId: string) {
         : positionRisksQ.data ?? [],
       restPeriod: c.restPeriod ?? null,
       referral: referralQ.data ?? null,
-      disability: disabilityQ.data ?? null,
+      disabilities: disabilitiesQ.data ?? [],
     };
   })();
 
-  return { data, isLoading, isReferralLoading: referralQ.isLoading, isDisabilityLoading: disabilityQ.isLoading, isPsychometricFetching: psychometricQ.isFetching, refetchPatient: patientsQ.refetch };
+  return { data, isLoading, isReferralLoading: referralQ.isLoading, isDisabilitiesLoading: disabilitiesQ.isLoading, isPsychometricFetching: psychometricQ.isFetching, refetchPatient: patientsQ.refetch };
 }

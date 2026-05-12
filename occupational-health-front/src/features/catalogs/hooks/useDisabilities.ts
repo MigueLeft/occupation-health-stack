@@ -32,6 +32,7 @@ export function useDeleteDisability() {
   return useMutation({
     mutationFn: disabilitiesService.remove,
     onSuccess: () => { qc.invalidateQueries({ queryKey: KEY }); toast.success('Discapacidad eliminada.'); },
-    onError: () => toast.error('Error al eliminar la discapacidad'),
+    onError: (e: { response?: { data?: { message?: string } } }) =>
+      toast.error(e.response?.data?.message ?? 'Error al eliminar la discapacidad'),
   });
 }

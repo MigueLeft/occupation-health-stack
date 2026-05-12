@@ -8,6 +8,7 @@ import { eq } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DRIZZLE } from '../database/database.module';
 import { disabilities, Disability } from './disabilities.schema';
+import { consultationDisabilities } from '../consultation-disabilities/consultation-disabilities.schema';
 import { CreateDisabilityDto } from './dto/create-disability.dto';
 import { UpdateDisabilityDto } from './dto/update-disability.dto';
 
@@ -67,6 +68,18 @@ export class DisabilitiesService {
 
   async remove(id: string): Promise<Disability> {
     await this.findOne(id);
+
+    const [inUse] = await this.db
+      .select()
+      .from(consultationDisabilities)
+      .where(eq(consultationDisabilities.disabilityId, id))
+      .limit(1);
+
+    if (inUse) {
+      throw new ConflictException(
+        'No se puede eliminar esta discapacidad porque está asociada a una o más consultas.',
+      );
+    }
 
     const [deleted] = await this.db
       .delete(disabilities)

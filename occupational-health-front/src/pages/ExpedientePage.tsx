@@ -1,9 +1,11 @@
 import { Box, Typography, Avatar, CircularProgress, Chip, Table, TableHead, TableBody, TableRow, TableCell, IconButton, Tooltip } from '@mui/material';
 import { VisibilityOutlined } from '@mui/icons-material';
 import { useParams, useNavigate } from '@tanstack/react-router';
+import { useQuery } from '@tanstack/react-query';
 import { AppLayout } from '@/components/AppLayout';
 import { usePatient } from '@/features/patients/hooks/usePatient';
 import { useConsultations } from '@/features/consultations/hooks/useConsultations';
+import { consultationDisabilitiesService } from '@/features/consultations/services/disabilities.service';
 import { ConsultationTypeChip } from '@/features/consultations/components/ConsultationTypeChip';
 import { ConsultationResultChip } from '@/features/consultations/components/ConsultationResultChip';
 import { RequestStatusChip } from '@/features/requests/components/RequestStatusChip';
@@ -56,6 +58,10 @@ export function ExpedientePage() {
   const navigate = useNavigate();
   const { data: patient, isLoading: patientLoading } = usePatient(cedula);
   const { data: consultations = [], isLoading: consultLoading } = useConsultations();
+  const { data: patientDisabilities = [] } = useQuery({
+    queryKey: ['patient-disabilities', cedula],
+    queryFn: () => consultationDisabilitiesService.getByPatient(cedula),
+  });
 
   const patientConsultations = consultations.filter((c) => c.patientId === cedula);
   const isLoading = patientLoading || consultLoading;
@@ -133,6 +139,16 @@ export function ExpedientePage() {
                 }
               </Box>
             </Box>
+            {patientDisabilities.length > 0 && (
+              <Box sx={{ px: 2.5, py: 2 }}>
+                <Typography variant="caption" sx={{ color: 'text.secondary', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.06em', fontSize: '0.68rem' }}>
+                  Discapacidades
+                </Typography>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                  {patientDisabilities.map((d) => <Chip key={d.id} label={d.name} size="small" />)}
+                </Box>
+              </Box>
+            )}
           </Box>
         </Box>
 

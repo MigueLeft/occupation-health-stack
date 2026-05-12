@@ -48,7 +48,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
-  const { data, isLoading, isReferralLoading, isDisabilityLoading, isPsychometricFetching, refetchPatient } = useAttendConsultation(id);
+  const { data, isLoading, isReferralLoading, isDisabilitiesLoading, isPsychometricFetching, refetchPatient } = useAttendConsultation(id);
 
   const [activeTab, setActiveTab] = useState<'medica' | 'psicologica'>('medica');
   const [isSaving, setIsSaving] = useState(false);
@@ -82,8 +82,8 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   const [requiresReferral, setRequiresReferral] = useState(false);
   const [referralSpecialtyId, setReferralSpecialtyId] = useState('');
 
-  const [hasDisability, setHasDisability] = useState(false);
-  const [disabilityId, setDisabilityId] = useState('');
+  const [localDisabilities, setLocalDisabilities] = useState<{ id: string; consultationId: string; disabilityId: string; _isNew?: boolean }[]>([]);
+  const [removedDisabilityIds, setRemovedDisabilityIds] = useState<string[]>([]);
 
   const [localDiagnostics, setLocalDiagnostics] = useState<LocalDiagnostic[]>([]);
   const [localExamResults, setLocalExamResults] = useState<LocalExamResult[]>([]);
@@ -113,9 +113,9 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data?.id, currentUser?.id]);
 
-  // Espera a que todos los datos —incluida la referencia y discapacidad— estén cargados antes de inicializar
+  // Espera a que todos los datos —incluida la referencia y discapacidades— estén cargados antes de inicializar
   useEffect(() => {
-    if (!data || isPsychometricFetching || isReferralLoading || isDisabilityLoading || initialized) return;
+    if (!data || isPsychometricFetching || isReferralLoading || isDisabilitiesLoading || initialized) return;
     setConsultResult((data.consultationResult ?? '') as ConsultationResult | '');
     setPsychResult((data.psychologicalResult ?? '') as PsychologicalResult | '');
     setPsychAptitude((data.psychologicalAptitude ?? '') as PsychologicalAptitude | '');
@@ -150,10 +150,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
       setRequiresReferral(data.referral.requiresReferral);
       setReferralSpecialtyId(data.referral.specialtyId ?? '');
     }
-    if (data.disability) {
-      setHasDisability(data.disability.hasDisability);
-      setDisabilityId(data.disability.disabilityId ?? '');
-    }
+    setLocalDisabilities(data.disabilities);
     setLocalDiagnostics(data.consultationDiagnostics);
     setLocalExamResults(data.examResults);
     setLocalPsychTests(data.psychometricTests);
@@ -169,7 +166,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
 
     setInitialized(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data?.id, isPsychometricFetching, isReferralLoading, isDisabilityLoading]);
+  }, [data?.id, isPsychometricFetching, isReferralLoading, isDisabilitiesLoading]);
 
   const handleAddDiagnostic = (
     { categoryId, diseaseId, bodySystemId }: { categoryId: string; diseaseId: string; bodySystemId?: string },
@@ -236,6 +233,17 @@ export function AttendConsultationPage({ editMode = false }: Props) {
     setLocalDiseases((prev) => prev.filter((d) => d.id !== diseaseId));
   };
 
+  const handleAddDisability = (disabilityId: string) => {
+    const tempId = `new-${Date.now()}`;
+    setLocalDisabilities((prev) => [...prev, { id: tempId, consultationId: id, disabilityId, _isNew: true }]);
+  };
+
+  const handleRemoveDisability = (recordId: string) => {
+    const item = localDisabilities.find((d) => d.id === recordId);
+    if (item && !item._isNew) setRemovedDisabilityIds((prev) => [...prev, recordId]);
+    setLocalDisabilities((prev) => prev.filter((d) => d.id !== recordId));
+  };
+
   const handleSavePatientInitialData = async (patch: { bloodType?: string; dominantHand?: string; usesGlasses?: boolean; allergyIds?: string[] }) => {
     if (!data) return;
     await patientsService.update(data.patientId, patch);
@@ -295,11 +303,12 @@ export function AttendConsultationPage({ editMode = false }: Props) {
         specialtyId: requiresReferral && referralSpecialtyId ? referralSpecialtyId : undefined,
       });
 
-      await consultationDisabilitiesService.upsert({
-        consultationId: id,
-        hasDisability,
-        disabilityId: hasDisability && disabilityId ? disabilityId : undefined,
-      });
+      await Promise.all([
+        ...localDisabilities.filter((d) => d._isNew).map((d) =>
+          consultationDisabilitiesService.add({ consultationId: id, disabilityId: d.disabilityId }),
+        ),
+        ...removedDisabilityIds.map((dId) => consultationDisabilitiesService.remove(dId)),
+      ]);
 
       await consultationsService.update(id, {
         type,
@@ -493,11 +502,10 @@ export function AttendConsultationPage({ editMode = false }: Props) {
                 </Box>
                 <Box sx={{ mt: 3 }}>
                   <DisabilitySection
-                    hasDisability={hasDisability}
-                    onHasDisabilityChange={setHasDisability}
-                    disabilityId={disabilityId}
-                    onDisabilityIdChange={setDisabilityId}
-                    disabilities={disabilities}
+                    localDisabilities={localDisabilities}
+                    allDisabilities={disabilities}
+                    onAdd={handleAddDisability}
+                    onRemove={handleRemoveDisability}
                   />
                 </Box>
                 <Paper variant="outlined" sx={{ p: 3, borderRadius: 2, mt: 3 }}>

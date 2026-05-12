@@ -254,16 +254,17 @@ export function ConsultationDetailPage() {
                     </SectionCard>
                   )}
 
-                  {data.disability?.hasDisability && (
+                  {data.disabilities.length > 0 && (
                     <SectionCard title="Discapacidad">
-                      <Stack spacing={1.5}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <AccessibilityNewOutlined sx={{ color: 'primary.main' }} />
-                          <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                            {disabilities.find((d) => d.id === data.disability?.disabilityId)?.name ?? 'Discapacidad registrada'}
-                          </Typography>
-                        </Box>
-                      </Stack>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                        <AccessibilityNewOutlined sx={{ color: 'primary.main' }} />
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary' }}>Discapacidades registradas</Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                        {data.disabilities.map((d) => (
+                          <Chip key={d.id} label={disabilities.find((cat) => cat.id === d.disabilityId)?.name ?? d.disabilityId} size="small" />
+                        ))}
+                      </Box>
                     </SectionCard>
                   )}
 

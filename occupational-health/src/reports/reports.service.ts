@@ -979,10 +979,7 @@ export class ReportsService {
     filters: VigilanciaReportDto,
   ): Promise<SectionVIRow[]> {
     const conditions = this.buildVigilanciaConditions(filters);
-    const baseWhere =
-      conditions.length > 0
-        ? and(...conditions, eq(consultationDisabilities.hasDisability, true))
-        : eq(consultationDisabilities.hasDisability, true);
+    const baseWhere = conditions.length > 0 ? and(...conditions) : undefined;
 
     const data = await this.db
       .select({

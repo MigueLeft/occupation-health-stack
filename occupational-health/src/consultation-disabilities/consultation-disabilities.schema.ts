@@ -1,4 +1,4 @@
-import { pgTable, uuid, boolean, unique } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, unique } from 'drizzle-orm/pg-core';
 import { consultations } from '../consultations/consultations.schema';
 import { disabilities } from '../disabilities/disabilities.schema';
 
@@ -9,12 +9,11 @@ export const consultationDisabilities = pgTable(
     consultationId: uuid('consultation_id')
       .notNull()
       .references(() => consultations.id, { onDelete: 'cascade' }),
-    hasDisability: boolean('has_disability').notNull().default(false),
-    disabilityId: uuid('disability_id').references(() => disabilities.id, {
-      onDelete: 'set null',
-    }),
+    disabilityId: uuid('disability_id')
+      .notNull()
+      .references(() => disabilities.id, { onDelete: 'cascade' }),
   },
-  (t) => [unique('uq_disability_consultation').on(t.consultationId)],
+  (t) => [unique('uq_cd_consultation_disability').on(t.consultationId, t.disabilityId)],
 );
 
 export type ConsultationDisability = typeof consultationDisabilities.$inferSelect;
