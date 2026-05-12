@@ -1862,8 +1862,8 @@ export class ReportsService {
     const nroPatMasc = data.filter((r) => r.maleCases > 0).length;
     const nroPatFem = data.filter((r) => r.femaleCases > 0).length;
     const totalRestDays = data.reduce((s, r) => s + r.totalRestDays, 0);
-    const origenComun = data.filter((r) => r.commonOrigin > 0).length;
-    const origenLaboral = data.filter((r) => r.laborOrigin > 0).length;
+    const origenComun = data.reduce((s, r) => s + r.commonOrigin, 0);
+    const origenLaboral = data.reduce((s, r) => s + r.laborOrigin, 0);
 
     return new Promise((resolve, reject) => {
       const doc = new PDFDocument({
