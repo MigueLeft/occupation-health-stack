@@ -21,6 +21,7 @@ import { EditConsultationPage } from '@/pages/EditConsultationPage';
 import { ExpedientePage } from '@/pages/ExpedientePage';
 import { ConsultationDetailPage } from '@/pages/ConsultationDetailPage';
 import { ReportsPage } from '@/pages/ReportsPage';
+import { BackupPage } from '@/pages/BackupPage';
 import { authClient } from '@/lib/auth-client';
 import { toast } from 'sonner';
 
@@ -165,6 +166,13 @@ const reportsRoute = createRoute({
   component: ReportsPage,
 });
 
+const backupRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/config/backup',
+  beforeLoad: requireAuth,
+  component: BackupPage,
+});
+
 const routeTree = rootRoute.addChildren([
   loginRoute,
   homeRoute,
@@ -180,6 +188,7 @@ const routeTree = rootRoute.addChildren([
   expedienteRoute,
   consultationDetailRoute,
   reportsRoute,
+  backupRoute,
 ]);
 
 export const router = createRouter({ routeTree });

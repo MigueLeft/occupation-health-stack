@@ -13,6 +13,7 @@ export const SYSTEM_MODULES = [
   { key: 'psychometric_tests', label: 'Pruebas Psicométricas' },
   { key: 'reports', label: 'Reportes' },
   { key: 'catalogs', label: 'Catálogos' },
+  { key: 'backup', label: 'Respaldos' },
 ] as const;
 
 export type SystemModuleKey = (typeof SYSTEM_MODULES)[number]['key'];

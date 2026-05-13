@@ -23,6 +23,7 @@ import {
   LocalHospitalOutlined,
   LogoutOutlined,
   AssessmentOutlined,
+  BackupOutlined,
 } from '@mui/icons-material';
 import { Link, useRouterState } from '@tanstack/react-router';
 import { useAuth } from '@/features/auth';
@@ -48,6 +49,7 @@ const MAIN_ITEMS: NavItem[] = [
 const CONFIG_ITEMS: NavItem[] = [
   { label: 'Usuarios', icon: <PeopleAltOutlined fontSize="small" />, to: '/usuarios', module: 'users' },
   { label: 'Roles y Permisos', icon: <AdminPanelSettingsOutlined fontSize="small" />, to: '/config/roles', module: 'roles' },
+  { label: 'Respaldos', icon: <BackupOutlined fontSize="small" />, to: '/config/backup', module: 'backup' },
 ];
 
 function NavButton({ item, isActive }: { item: NavItem; isActive: boolean }) {

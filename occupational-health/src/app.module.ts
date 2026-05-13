@@ -32,6 +32,7 @@ import { RiskExposureCategoriesModule } from './risk-exposure-categories/risk-ex
 import { ConsultationReferralsModule } from './consultation-referrals/consultation-referrals.module';
 import { DisabilitiesModule } from './disabilities/disabilities.module';
 import { ConsultationDisabilitiesModule } from './consultation-disabilities/consultation-disabilities.module';
+import { BackupModule } from './backup/backup.module';
 
 @Module({
   imports: [
@@ -69,6 +70,7 @@ import { ConsultationDisabilitiesModule } from './consultation-disabilities/cons
     UsersModule,
     AuthUtilsModule,
     ReportsModule,
+    BackupModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: AuthGuard },

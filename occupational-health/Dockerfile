@@ -20,6 +20,8 @@ RUN pnpm prune --prod
 
 FROM node:22-alpine AS production
 
+RUN apk add --no-cache postgresql-client
+
 WORKDIR /app
 
 COPY package.json ./
