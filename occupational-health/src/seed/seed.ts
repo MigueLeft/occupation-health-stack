@@ -5,7 +5,7 @@
  */
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, count } from 'drizzle-orm';
 import { roles, type PermissionsMatrix } from '../roles/roles.schema';
 import { user } from '../auth/auth.schema';
 import { auth } from '../auth/auth';
@@ -624,9 +624,18 @@ async function main() {
   }
 
   // ── INICIO BLOQUE WORKERS ──────────────────────────────────────────────────
-  // Comentar desde aquí hasta "FIN BLOQUE WORKERS" si no se desea cargar empresas/trabajadores
+  // Solo se ejecuta si LOAD_WORKERS=true Y la base de datos no tiene pacientes aún.
+  // Esto garantiza que la carga inicial se haga solo una vez, aunque el servidor
+  // se reinicie con LOAD_WORKERS=true en el docker-compose.
   if (process.env.LOAD_WORKERS === 'true') {
-    console.log('\n📦 Cargando empresas y trabajadores...');
+    const [{ value: patientCount }] = await db
+      .select({ value: count() })
+      .from(patients);
+
+    if (Number(patientCount) > 0) {
+      console.log(`\n📦 Workers ya cargados (${patientCount} pacientes en DB) — omitiendo bloque de trabajadores.`);
+    } else {
+    console.log('\n📦 Cargando empresas y trabajadores (primera instalación)...');
 
     const RAW_WORKERS: { cedula: string; nombre: string; empresa: string; cargo: string; sexo: string }[] = [
       { cedula: '21505821', nombre: 'Roengris Gallardo', empresa: 'El hechizo', cargo: 'Vendedor', sexo: 'F' },
@@ -1179,6 +1188,7 @@ async function main() {
       }
     }
     console.log(`  ✓ Pacientes insertados: ${insertedCount}, omitidos (duplicados): ${skippedCount}`);
+    } // fin else (DB vacía)
   }
   // ── FIN BLOQUE WORKERS ─────────────────────────────────────────────────────
 
