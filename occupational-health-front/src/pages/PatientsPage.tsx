@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate, Navigate } from '@tanstack/react-router';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import {
   Box,
   Typography,
@@ -37,6 +38,8 @@ import { usePermissions } from '@/features/auth';
 const TABLE_HEADERS = ['Cédula', 'Nombre Completo', 'Empresa', 'Cargo', 'Edad', 'Acciones'];
 
 export function PatientsPage() {
+  usePageTitle('Pacientes');
+
   const { can, isLoading: isPermLoading } = usePermissions();
   const { data: patients = [], isLoading } = usePatients();
   const { data: companies = [] } = useCompanies();

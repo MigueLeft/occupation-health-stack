@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import {
   Box, Typography, Button,
   Table, TableHead, TableBody, TableRow, TableCell, TablePagination,
@@ -37,6 +38,8 @@ function sortRequests(list: AppRequestWithPatient[]): AppRequestWithPatient[] {
 }
 
 export function RequestsPage() {
+  usePageTitle('Solicitudes');
+
   const { can, isLoading: isPermLoading } = usePermissions();
   const [filters, setFilters] = useState<RequestFilters>(DEFAULT_FILTERS);
   const [createOpen, setCreateOpen] = useState(false);

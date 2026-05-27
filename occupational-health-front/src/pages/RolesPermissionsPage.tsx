@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import {
   Box,
   Typography,
@@ -225,6 +226,8 @@ function MobileLayout({
 }
 
 export function RolesPermissionsPage() {
+  usePageTitle('Roles y Permisos');
+
   const { can, isLoading: isPermLoading } = usePermissions();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));

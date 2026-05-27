@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Box, Typography } from '@mui/material';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import { Navigate } from '@tanstack/react-router';
 import { AppLayout } from '@/components/AppLayout';
 import {
@@ -25,6 +26,8 @@ const PANEL_MAP: Record<CatalogTab, React.ReactNode> = {
 };
 
 export function CatalogsPage() {
+  usePageTitle('Catálogos');
+
   const { can, isLoading } = usePermissions();
   const [activeTab, setActiveTab] = useState<CatalogTab>('exams');
 

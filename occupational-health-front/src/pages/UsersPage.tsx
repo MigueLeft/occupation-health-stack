@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import {
   Box,
   Typography,
@@ -289,6 +290,8 @@ function MobileView({
 }
 
 export function UsersPage() {
+  usePageTitle('Usuarios');
+
   const { can, isLoading: isPermLoading } = usePermissions();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));

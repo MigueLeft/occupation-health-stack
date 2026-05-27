@@ -1,48 +1,84 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import { writeFile, unlink } from 'fs/promises';
-import { join } from 'path';
-import { tmpdir } from 'os';
-import { randomUUID } from 'crypto';
-
-const execAsync = promisify(exec);
+import { spawn } from 'child_process';
+import { PassThrough, Readable } from 'stream';
 
 @Injectable()
 export class BackupService {
   constructor(private readonly config: ConfigService) {}
 
-  async exportDatabase(): Promise<Buffer> {
+  exportDatabase(): Readable {
     const dbUrl = this.config.getOrThrow<string>('DATABASE_URL');
-    try {
-      const { stdout } = await execAsync(
-        `pg_dump --clean --if-exists "${dbUrl}"`,
-        { maxBuffer: 200 * 1024 * 1024 },
-      );
-      return Buffer.from(stdout, 'utf-8');
-    } catch (err: any) {
-      throw new InternalServerErrorException(
-        `Error al generar respaldo: ${err.stderr ?? err.message}`,
-      );
-    }
+    const pass = new PassThrough();
+    const errors: string[] = [];
+
+    // Custom format: pg_restore maneja la dependencia de FKs correctamente al restaurar
+    const child = spawn('pg_dump', [
+      '--format=custom',
+      '--no-acl',
+      '--no-owner',
+      dbUrl,
+    ]);
+
+    child.stderr.on('data', (chunk: Buffer) => errors.push(chunk.toString()));
+    child.stdout.pipe(pass);
+
+    child.on('error', (err) =>
+      pass.destroy(
+        new InternalServerErrorException(`pg_dump no encontrado: ${err.message}`),
+      ),
+    );
+
+    child.on('close', (code) => {
+      if (code !== 0) {
+        pass.destroy(
+          new InternalServerErrorException(
+            `Error al generar respaldo (código ${code}): ${errors.join('')}`,
+          ),
+        );
+      }
+    });
+
+    return pass;
   }
 
-  async restoreDatabase(sql: Buffer): Promise<void> {
+  restoreDatabase(data: Buffer): Promise<void> {
     const dbUrl = this.config.getOrThrow<string>('DATABASE_URL');
-    const tmpFile = join(tmpdir(), `restore-${randomUUID()}.sql`);
-    try {
-      await writeFile(tmpFile, sql);
-      await execAsync(
-        `psql --single-transaction "${dbUrl}" -f "${tmpFile}"`,
-        { maxBuffer: 10 * 1024 * 1024 },
+
+    return new Promise<void>((resolve, reject) => {
+      // pg_restore ordena correctamente los DROPs y CREATEs respetando FKs
+      const child = spawn('pg_restore', [
+        '--clean',
+        '--if-exists',
+        '--no-acl',
+        '--no-owner',
+        '--single-transaction',
+        '-d', dbUrl,
+      ]);
+
+      const errors: string[] = [];
+      child.stderr.on('data', (chunk: Buffer) => errors.push(chunk.toString()));
+
+      child.on('error', (err) =>
+        reject(
+          new InternalServerErrorException(`pg_restore no encontrado: ${err.message}`),
+        ),
       );
-    } catch (err: any) {
-      throw new InternalServerErrorException(
-        `Error al restaurar respaldo: ${err.stderr ?? err.message}`,
-      );
-    } finally {
-      await unlink(tmpFile).catch(() => null);
-    }
+
+      child.on('close', (code) => {
+        if (code !== 0) {
+          reject(
+            new InternalServerErrorException(
+              `Error al restaurar respaldo: ${errors.join('')}`,
+            ),
+          );
+        } else {
+          resolve();
+        }
+      });
+
+      child.stdin.write(data);
+      child.stdin.end();
+    });
   }
 }

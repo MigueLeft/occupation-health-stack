@@ -12,7 +12,6 @@ import {
   Tooltip,
 } from '@mui/material';
 import {
-  GridViewOutlined,
   MonitorHeart,
   AdminPanelSettingsOutlined,
   PeopleAltOutlined,
@@ -37,7 +36,6 @@ interface NavItem {
 }
 
 const MAIN_ITEMS: NavItem[] = [
-  { label: 'Dashboard', icon: <GridViewOutlined fontSize="small" />, to: '/' },
   { label: 'Pacientes', icon: <PersonOutlined fontSize="small" />, to: '/pacientes', module: 'patients' },
   { label: 'Empresas', icon: <BusinessOutlined fontSize="small" />, to: '/empresas', module: 'companies' },
   { label: 'Solicitudes', icon: <AssignmentOutlined fontSize="small" />, to: '/solicitudes', module: 'requests' },

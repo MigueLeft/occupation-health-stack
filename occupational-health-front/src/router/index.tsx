@@ -8,7 +8,6 @@ import {
 import { TanStackRouterDevtools } from '@tanstack/router-devtools';
 
 import { LoginPage } from '@/pages/LoginPage';
-import { DashboardPage } from '@/pages/DashboardPage';
 import { RolesPermissionsPage } from '@/pages/RolesPermissionsPage';
 import { UsersPage } from '@/pages/UsersPage';
 import { PatientsPage } from '@/pages/PatientsPage';
@@ -78,8 +77,11 @@ async function requireAuth() {
 const homeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
-  beforeLoad: requireAuth,
-  component: DashboardPage,
+  beforeLoad: async () => {
+    await requireAuth();
+    throw redirect({ to: '/solicitudes' });
+  },
+  component: () => null,
 });
 
 const usersRoute = createRoute({

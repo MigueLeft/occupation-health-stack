@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Box, Typography, Button, Grid, CircularProgress, Paper, TextField } from '@mui/material';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import { SaveOutlined } from '@mui/icons-material';
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
@@ -44,6 +45,8 @@ type LocalPsychTest = PsychometricTestResult & { _isNew?: true };
 interface Props { editMode?: boolean; }
 
 export function AttendConsultationPage({ editMode = false }: Props) {
+  usePageTitle(editMode ? 'Editar Consulta' : 'Atender Consulta');
+
   const { id } = useParams({ strict: false }) as { id: string };
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -352,7 +355,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
 
       toast.success(status === 'Finalizada' ? 'Consulta guardada exitosamente.' : 'Sección guardada. La consulta quedó En Proceso.');
       if (editMode && data) {
-        navigate({ to: '/expedientes/$cedula', params: { cedula: data.patientId } });
+        navigate({ to: '/expedientes/$cedula/consultas/$id', params: { cedula: data.patientId, id } });
       } else {
         navigate({ to: '/consultas' });
       }
@@ -370,16 +373,16 @@ export function AttendConsultationPage({ editMode = false }: Props) {
       ((data.type === 'Medica' && !!data.consultationResult) ||
        (data.type === 'Psicologica' && !!data.psychologicalResult));
 
-    if (data.type === 'Medica/Psicologica' && !isPartialSave) {
+    if (!isPartialSave) {
       const hasMedResult = !!consultResult || isHealthy;
-      const hasPsychAptitude = !!psychAptitude;
+      const hasPsychDone = !!psychResult || !!psychAptitude;
 
-      if (hasMedResult && !hasPsychAptitude) {
+      if (hasMedResult && !hasPsychDone) {
         setSaveEmptySection('psicologica');
         setShowSaveModal(true);
         return;
       }
-      if (!hasMedResult && hasPsychAptitude) {
+      if (!hasMedResult && hasPsychDone) {
         setSaveEmptySection('medica');
         setShowSaveModal(true);
         return;
@@ -422,14 +425,14 @@ export function AttendConsultationPage({ editMode = false }: Props) {
         <Box sx={{ px: 4, pt: 2.5, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid', borderColor: 'divider' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Typography variant="body2" color="text.secondary" sx={{ cursor: 'pointer', '&:hover': { color: 'primary.main' } }}
-              onClick={() => editMode && data ? navigate({ to: '/expedientes/$cedula', params: { cedula: data.patientId } }) : navigate({ to: '/consultas' })}>
+              onClick={() => editMode && data ? navigate({ to: '/expedientes/$cedula/consultas/$id', params: { cedula: data.patientId, id } }) : navigate({ to: '/consultas' })}>
               {editMode ? 'Expediente' : 'Consultas'}
             </Typography>
             <Typography variant="body2" color="text.secondary">›</Typography>
             <Typography variant="body2" sx={{ fontWeight: 600 }}>{editMode ? 'Editar Consulta' : 'Atender Consulta'}</Typography>
           </Box>
           <Box sx={{ display: 'flex', gap: 1.5 }}>
-            <Button variant="outlined" onClick={() => editMode && data ? navigate({ to: '/expedientes/$cedula', params: { cedula: data.patientId } }) : navigate({ to: '/consultas' })}>Cancelar</Button>
+            <Button variant="outlined" onClick={() => editMode && data ? navigate({ to: '/expedientes/$cedula/consultas/$id', params: { cedula: data.patientId, id } }) : navigate({ to: '/consultas' })}>Cancelar</Button>
             <Button variant="contained" startIcon={<SaveOutlined />} onClick={handleSave} disabled={isSaving}>
               {isSaving ? 'Guardando...' : 'Guardar Consulta'}
             </Button>
@@ -562,8 +565,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
         }}
         onSavePartial={() => {
           setShowSaveModal(false);
-          const type: ConsultationType = saveEmptySection === 'psicologica' ? 'Medica' : 'Psicologica';
-          performSave(type, 'En Proceso');
+          performSave('Medica/Psicologica', 'En Proceso');
         }}
         onCancel={() => setShowSaveModal(false)}
       />

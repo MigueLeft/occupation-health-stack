@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Box, Stack, Typography } from '@mui/material';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import {
   MonitorHeart,
   GroupOutlined,
@@ -104,6 +105,8 @@ function FormPanel() {
 }
 
 export function LoginPage() {
+  usePageTitle('Iniciar Sesión');
+
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', flexDirection: { xs: 'column', md: 'row' } }}>
       <BrandPanel />

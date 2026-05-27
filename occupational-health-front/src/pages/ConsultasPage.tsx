@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import {
   Box, Typography,
   Table, TableHead, TableBody, TableRow, TableCell, TablePagination,
@@ -19,6 +20,8 @@ function sortConsultations(list: ConsultationWithDetails[]): ConsultationWithDet
 }
 
 export function ConsultasPage() {
+  usePageTitle('Consultas');
+
   const { can, isLoading: isPermLoading } = usePermissions();
   const [filters, setFilters] = useState<ConsultationFiltersState>(DEFAULT_FILTERS);
   const [page, setPage] = useState(0);

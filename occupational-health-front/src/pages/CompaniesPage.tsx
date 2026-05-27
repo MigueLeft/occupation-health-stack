@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import {
   Box, Typography, Button, Paper,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
@@ -16,6 +17,8 @@ import { usePermissions } from '@/features/auth';
 const TABLE_HEADERS = ['Nombre', 'Dirección', 'RIF', 'Contacto', 'Cargos', 'Acciones'];
 
 export function CompaniesPage() {
+  usePageTitle('Empresas');
+
   const { can, isLoading: isPermLoading } = usePermissions();
   const { data: companies = [], isLoading } = useCompanies();
 

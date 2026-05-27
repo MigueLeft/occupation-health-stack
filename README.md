@@ -56,6 +56,7 @@ Las siguientes veces sin `--build` arranca en segundos.
 |---|---|
 | Email | `admin@salud-ocupacional.com` |
 | Contraseña | `Admin@2025!` |
+| Recuperacion contraseña | `fcmpecapmil2026` |
 | Rol | Admin (todos los permisos) |
 
 **Base de datos (acceso externo):**

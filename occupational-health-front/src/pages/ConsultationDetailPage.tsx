@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Box, Typography, Button, CircularProgress, Grid, Paper, Chip, Stack, Divider, Tooltip, Tab, Tabs } from '@mui/material';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import { EditOutlined, CheckCircleOutlined, HotelOutlined, WarningAmberOutlined } from '@mui/icons-material';
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { AppLayout } from '@/components/AppLayout';
@@ -51,6 +52,8 @@ function SectionCard({ title, children }: { title: string; children: React.React
 }
 
 export function ConsultationDetailPage() {
+  usePageTitle('Detalle de Consulta');
+
   const { cedula, id } = useParams({ strict: false }) as { cedula: string; id: string };
   const navigate = useNavigate();
   const { data, isLoading } = useAttendConsultation(id);
@@ -65,8 +68,7 @@ export function ConsultationDetailPage() {
   const hasMedica = data?.type === 'Medica' || data?.type === 'Medica/Psicologica';
   const hasPsicologica = data?.type === 'Psicologica' || data?.type === 'Medica/Psicologica';
 
-  const defaultTab = hasMedica ? 'medica' : 'psicologica';
-  const [activeTab, setActiveTab] = useState<'medica' | 'psicologica'>(defaultTab);
+  const [activeTab, setActiveTab] = useState<'medica' | 'psicologica'>('medica');
 
   if (isLoading || !data) {
     return <AppLayout><Box sx={{ display: 'flex', justifyContent: 'center', pt: 10 }}><CircularProgress /></Box></AppLayout>;
@@ -83,7 +85,6 @@ export function ConsultationDetailPage() {
   const bmi = physExam?.weight && physExam?.height && physExam.height > 0
     ? (physExam.weight / ((physExam.height / 100) ** 2)).toFixed(1) : null;
 
-  const result = data.type === 'Psicologica' ? data.psychologicalResult : data.consultationResult;
   const showTabs = hasMedica && hasPsicologica;
 
   return (
@@ -121,10 +122,24 @@ export function ConsultationDetailPage() {
             <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 700, fontSize: '0.68rem' }}>Tipo</Typography>
             <Typography variant="body2">{data.type === 'Medica' ? 'Médica' : data.type === 'Psicologica' ? 'Psicológica' : 'Médica / Psicológica'}</Typography>
           </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 700, fontSize: '0.68rem' }}>Resultado</Typography>
-            <ConsultationResultChip result={result} />
-          </Box>
+          {(data.consultationResult ?? data.isHealthy) && (
+            <Box>
+              <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 700, fontSize: '0.68rem' }}>Resultado M.</Typography>
+              <Box sx={{ mt: 0.25 }}><ConsultationResultChip result={data.consultationResult ?? null} /></Box>
+            </Box>
+          )}
+          {data.psychologicalAptitude && (
+            <Box>
+              <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 700, fontSize: '0.68rem' }}>Resultado P.</Typography>
+              <Box sx={{ mt: 0.25 }}><ConsultationResultChip result={data.psychologicalAptitude} /></Box>
+            </Box>
+          )}
+          {data.psychologicalResult && (
+            <Box>
+              <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 700, fontSize: '0.68rem' }}>Estado Ps.</Typography>
+              <Box sx={{ mt: 0.25 }}><ConsultationResultChip result={data.psychologicalResult} /></Box>
+            </Box>
+          )}
         </Box>
 
         {showTabs && (

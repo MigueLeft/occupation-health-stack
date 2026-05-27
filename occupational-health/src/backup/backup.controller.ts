@@ -6,6 +6,7 @@ import {
   UploadedFile,
   UseInterceptors,
   BadRequestException,
+  StreamableFile,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
@@ -25,15 +26,14 @@ export class BackupController {
 
   @Get('export')
   @RequirePermission('backup', 'view')
-  async exportDatabase(@Res() res: Response) {
-    const buffer = await this.backupService.exportDatabase();
-    const filename = `backup-${new Date().toISOString().slice(0, 10)}.sql`;
+  exportDatabase(@Res({ passthrough: true }) res: Response): StreamableFile {
+    const stream = this.backupService.exportDatabase();
+    const filename = `backup-${new Date().toISOString().slice(0, 10)}.pgdump`;
     res.set({
       'Content-Type': 'application/octet-stream',
       'Content-Disposition': `attachment; filename="${filename}"`,
-      'Content-Length': buffer.length,
     });
-    res.end(buffer);
+    return new StreamableFile(stream);
   }
 
   @Post('restore')

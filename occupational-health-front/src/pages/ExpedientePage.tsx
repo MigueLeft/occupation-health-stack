@@ -1,4 +1,5 @@
 import { Box, Typography, Avatar, CircularProgress, Chip, Table, TableHead, TableBody, TableRow, TableCell, IconButton, Tooltip } from '@mui/material';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import { VisibilityOutlined } from '@mui/icons-material';
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
@@ -55,6 +56,8 @@ function InfoField({ label, value }: { label: string; value: React.ReactNode }) 
 }
 
 export function ExpedientePage() {
+  usePageTitle('Expediente');
+
   const { cedula } = useParams({ strict: false }) as { cedula: string };
   const navigate = useNavigate();
   const { data: patient, isLoading: patientLoading } = usePatient(cedula);
@@ -184,9 +187,20 @@ export function ExpedientePage() {
                       <TableCell><ConsultationTypeChip type={c.type} /></TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                          <ConsultationResultChip result={c.consultationResult ?? null} />
+                          {c.consultationResult && (
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                              <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', minWidth: 18 }}>M:</Typography>
+                              <ConsultationResultChip result={c.consultationResult} />
+                            </Box>
+                          )}
                           {c.psychologicalAptitude && (
-                            <ConsultationResultChip result={c.psychologicalAptitude as import('@/features/consultations/types').ConsultationResultUnion} />
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                              <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', minWidth: 18 }}>P:</Typography>
+                              <ConsultationResultChip result={c.psychologicalAptitude as import('@/features/consultations/types').ConsultationResultUnion} />
+                            </Box>
+                          )}
+                          {!c.consultationResult && !c.psychologicalAptitude && (
+                            <Typography variant="body2" color="text.secondary">—</Typography>
                           )}
                         </Box>
                       </TableCell>
