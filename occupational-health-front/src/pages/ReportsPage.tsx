@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import { Box, Typography, Grid, Stack, TextField, MenuItem, Autocomplete } from '@mui/material';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import {
-  BarChartOutlined, CoronavirusOutlined, AccessibilityNewOutlined,
+  CoronavirusOutlined, AccessibilityNewOutlined,
   TrendingUpOutlined, SummarizeOutlined,
 } from '@mui/icons-material';
 import { AppLayout } from '@/components/AppLayout';
-import { reportsService } from '@/features/reports';
+import { reportsService, VigilanciaReportCard } from '@/features/reports';
 import { ReportCard } from '@/features/reports/components/ReportCard';
 import {
   type PeriodType, computeDateRange,
@@ -165,15 +165,7 @@ export function ReportsPage() {
       <Box sx={{ p: 3 }}>
         <Grid container spacing={2.5}>
           <Grid size={6}>
-            <ReportCard
-              title="Vigilancia Epidemiológica"
-              subtitle="Análisis de la distribución y frecuencia de enfermedades ocupacionales. Incluye tasas de incidencia, prevalencia y tendencias por período."
-              accentColor="#6A5ACD"
-              icon={<BarChartOutlined sx={{ color: '#6A5ACD', fontSize: 22 }} />}
-              downloadFn={reportsService.downloadVigilanciaReport}
-              successMsg="Reporte de vigilancia generado exitosamente."
-              {...sharedFilters}
-            />
+            <VigilanciaReportCard {...sharedFilters} />
           </Grid>
           <Grid size={6}>
             <ReportCard

@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Res } from '@nestjs/common';
+import { Controller, Get, Post, Query, Body, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { ReportsService } from './reports.service';
 import { ConsultationReportDto } from './dto/consultation-report.dto';
@@ -33,10 +33,10 @@ export class ReportsController {
     res.end(buffer);
   }
 
-  @Get('vigilancia')
+  @Post('vigilancia')
   @RequirePermission('reports', 'view')
   async vigilanciaReport(
-    @Query() filters: VigilanciaReportDto,
+    @Body() filters: VigilanciaReportDto,
     @Res() res: Response,
   ) {
     const buffer =

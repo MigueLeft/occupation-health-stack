@@ -307,6 +307,11 @@ export class ReportsService {
         sectionVII.map((r) => [r.riskType, r.conditions, r.healthEffects]),
       );
 
+      // Sección VIII: Medidas de control en la fuente y los trabajadores
+      this.ensureSpace(doc, 120);
+      this.drawSectionHeader(doc, 'VIII. Medidas de Control en la Fuente y los Trabajadores');
+      this.drawMedidasControl(doc, filters);
+
       // Agregar footer a cada página
       const range = doc.bufferedPageRange();
       for (let i = 0; i < range.count; i++) {
@@ -542,6 +547,40 @@ export class ReportsService {
     doc.fillColor('#000000');
     // Reposicionar el cursor de texto al final de la tabla + margen
     doc.y = y + 12;
+  }
+
+  private drawMedidasControl(doc: PDFKit.PDFDocument, filters: VigilanciaReportDto) {
+    const medidas: { label: string; value: string | undefined }[] = [
+      { label: '1. En la Fuente', value: filters.recomendacion1 },
+      { label: '2. En el Ambiente', value: filters.recomendacion2 },
+      { label: '3. En los Trabajadores', value: filters.recomendacion3 },
+      { label: '4. En lo Administrativo', value: filters.recomendacion4 },
+      { label: '5. En lo Psicológico', value: filters.recomendacion5 },
+    ];
+
+    const startY = doc.y + 6;
+    let y = startY;
+    const LABEL_W = 120;
+    const TEXT_W = USABLE_WIDTH - LABEL_W - 8;
+
+    for (const medida of medidas) {
+      const text = medida.value?.trim() || 'No especificado.';
+      const textHeight = Math.max(22, doc.heightOfString(text, { width: TEXT_W }) + 12);
+      this.ensureSpace(doc, textHeight + 4);
+      y = doc.y;
+
+      doc.rect(MARGIN, y, USABLE_WIDTH, textHeight).fill('#F5F8FC');
+      doc.font('Helvetica-Bold').fontSize(8).fillColor(PRIMARY_COLOR)
+        .text(medida.label, MARGIN + 6, y + (textHeight - 10) / 2, { width: LABEL_W - 6, lineBreak: false });
+      doc.font('Helvetica').fontSize(8).fillColor('#333333')
+        .text(text, MARGIN + LABEL_W + 2, y + 6, { width: TEXT_W, lineBreak: true });
+      doc.moveTo(MARGIN, y + textHeight).lineTo(MARGIN + USABLE_WIDTH, y + textHeight)
+        .strokeColor('#DDE5F0').lineWidth(0.5).stroke();
+      doc.y = y + textHeight + 2;
+    }
+
+    doc.fillColor('#000000');
+    doc.moveDown(0.5);
   }
 
   // Asegura que haya al menos 'space' puntos disponibles antes del footer
@@ -1090,8 +1129,8 @@ export class ReportsService {
       const entry = map.get(r.diseaseId)!;
       entry.totalCases++;
       if (r.restDays) entry.totalRestDays += r.restDays;
-      if (r.sex === 'Masculino') entry.maleCases++;
-      else if (r.sex === 'Femenino') entry.femaleCases++;
+      if (r.sex === 'M' || r.sex === 'Masculino') entry.maleCases++;
+      else if (r.sex === 'F' || r.sex === 'Femenino') entry.femaleCases++;
       const effectiveReason = r.restCategoryName ?? r.legacyRestReason ?? '';
       if (effectiveReason === 'Enfermedad Comun' || effectiveReason === 'Accidente Comun') entry.commonOrigin++;
       else if (effectiveReason === 'Enfermedad Laboral' || effectiveReason === 'Accidente Laboral') entry.laborOrigin++;
@@ -1148,8 +1187,8 @@ export class ReportsService {
       const entry = map.get(r.systemId)!;
       entry.totalCases++;
       if (r.restDays) entry.totalRestDays += r.restDays;
-      if (r.sex === 'Masculino') entry.maleCases++;
-      else if (r.sex === 'Femenino') entry.femaleCases++;
+      if (r.sex === 'M' || r.sex === 'Masculino') entry.maleCases++;
+      else if (r.sex === 'F' || r.sex === 'Femenino') entry.femaleCases++;
       const effectiveReason = r.restCategoryName ?? r.legacyRestReason ?? '';
       if (effectiveReason === 'Enfermedad Comun' || effectiveReason === 'Accidente Comun') entry.commonOrigin++;
       else if (effectiveReason === 'Enfermedad Laboral' || effectiveReason === 'Accidente Laboral') entry.laborOrigin++;
@@ -1715,14 +1754,29 @@ export class ReportsService {
     return Array.from(map.values()).sort((a, b) => b.total - a.total);
   }
 
-  private drawConsolidacionTable(doc: PDFKit.PDFDocument, rows: ConsolidacionRow[]) {
-    const MONTH_ABBRS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-    // Widths: 125 + 30 + 12×30 = 515
-    const W_NAME = 125;
+  private computeVisibleMonths(dateFrom?: string, dateTo?: string): number[] {
+    const ALL = Array.from({ length: 12 }, (_, i) => i);
+    if (!dateFrom || !dateTo) return ALL;
+    const from = new Date(dateFrom);
+    const to = new Date(dateTo);
+    if (from.getFullYear() !== to.getFullYear()) return ALL;
+    const fromM = from.getMonth();
+    const toM = to.getMonth();
+    if (toM < fromM) return ALL;
+    return Array.from({ length: toM - fromM + 1 }, (_, i) => fromM + i);
+  }
+
+  private drawConsolidacionTable(doc: PDFKit.PDFDocument, rows: ConsolidacionRow[], visibleMonths?: number[]) {
+    const ALL_ABBRS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const months = visibleMonths ?? Array.from({ length: 12 }, (_, i) => i);
+    const N = months.length;
+
+    // Widths: W_NAME + W_TOTAL + N×W_MONTH = USABLE_WIDTH (515)
     const W_TOTAL = 30;
-    const W_MONTH = 30;
-    const widths = [W_NAME, W_TOTAL, ...Array(12).fill(W_MONTH)];
-    const headers = ['Patología', 'Total', ...MONTH_ABBRS];
+    const W_MONTH = N > 0 ? Math.floor((USABLE_WIDTH - W_TOTAL) / (N + 4)) : 30;
+    const W_NAME = USABLE_WIDTH - W_TOTAL - W_MONTH * N;
+    const widths = [W_NAME, W_TOTAL, ...Array(N).fill(W_MONTH)];
+    const headers = ['Patología', 'Total', ...months.map((m) => ALL_ABBRS[m])];
 
     let y = doc.y + 4;
 
@@ -1760,9 +1814,9 @@ export class ReportsService {
         doc.rect(MARGIN, y, USABLE_WIDTH, HEADER_ROW_HEIGHT).fill(PRIMARY_COLOR);
         doc.font('Helvetica-Bold').fontSize(7).fillColor('#FFFFFF');
         x = MARGIN;
-        for (let h = 0; h < headers.length; h++) {
-          doc.text(headers[h], x + 2, y + 7, { width: widths[h] - 4, align: h === 0 ? 'left' : 'center', lineBreak: false });
-          x += widths[h];
+        for (let hi = 0; hi < headers.length; hi++) {
+          doc.text(headers[hi], x + 2, y + 7, { width: widths[hi] - 4, align: hi === 0 ? 'left' : 'center', lineBreak: false });
+          x += widths[hi];
         }
         y += HEADER_ROW_HEIGHT;
         doc.font('Helvetica').fontSize(7).fillColor('#000000');
@@ -1776,8 +1830,8 @@ export class ReportsService {
       x += W_NAME;
       doc.text(String(row.total), x + 2, y + 6, { width: W_TOTAL - 4, align: 'center', lineBreak: false });
       x += W_TOTAL;
-      for (let m = 0; m < 12; m++) {
-        const v = row.months[m];
+      for (const mi of months) {
+        const v = row.months[mi];
         doc.text(v > 0 ? String(v) : '—', x + 2, y + 6, { width: W_MONTH - 4, align: 'center', lineBreak: false });
         x += W_MONTH;
       }
@@ -1803,8 +1857,8 @@ export class ReportsService {
     x += W_NAME;
     doc.text(String(grandTotal), x + 2, y + 6, { width: W_TOTAL - 4, align: 'center', lineBreak: false });
     x += W_TOTAL;
-    for (let m = 0; m < 12; m++) {
-      doc.text(monthTotals[m] > 0 ? String(monthTotals[m]) : '—', x + 2, y + 6, { width: W_MONTH - 4, align: 'center', lineBreak: false });
+    for (const mi of months) {
+      doc.text(monthTotals[mi] > 0 ? String(monthTotals[mi]) : '—', x + 2, y + 6, { width: W_MONTH - 4, align: 'center', lineBreak: false });
       x += W_MONTH;
     }
 
@@ -1897,7 +1951,8 @@ export class ReportsService {
       doc.fillColor('#000000');
       doc.moveDown(0.8);
 
-      this.drawConsolidacionTable(doc, data);
+      const visibleMonths = this.computeVisibleMonths(filters.dateFrom, filters.dateTo);
+      this.drawConsolidacionTable(doc, data, visibleMonths);
       this.drawConsolidacionSummary(doc, nroPatologias, nroPatMasc, nroPatFem, totalRestDays, origenComun, origenLaboral);
 
       const range = doc.bufferedPageRange();

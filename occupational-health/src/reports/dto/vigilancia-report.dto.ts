@@ -1,4 +1,4 @@
-import { IsOptional, IsDateString, IsUUID } from 'class-validator';
+import { IsOptional, IsDateString, IsUUID, IsString, MaxLength } from 'class-validator';
 
 export class VigilanciaReportDto {
   @IsOptional()
@@ -18,4 +18,29 @@ export class VigilanciaReportDto {
   @IsOptional()
   @IsUUID('4', { message: 'El ID de la empresa debe ser un UUID válido.' })
   companyId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  recomendacion1?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  recomendacion2?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  recomendacion3?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  recomendacion4?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  recomendacion5?: string;
 }
