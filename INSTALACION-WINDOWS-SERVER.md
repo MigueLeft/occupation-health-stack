@@ -1,7 +1,7 @@
 # Instalación del Sistema Web en Windows Server 2022
 
-Sistema: React + NestJS + PostgreSQL en Docker sobre WSL2  
-Acceso: Red local (LAN)  
+Sistema: React + NestJS + PostgreSQL en Docker sobre WSL2
+Acceso: Red local (LAN)
 Arranque: Automático al encender el servidor, sin inicio de sesión
 
 ---
@@ -11,9 +11,6 @@ Arranque: Automático al encender el servidor, sin inicio de sesión
 - Windows Server 2022 build 20348.740 o superior (verificar con `winver`)
 - Virtualización habilitada en BIOS/UEFI (VT-x o AMD-V)
 - El servidor debe tener IP estática en la red local
-
-> **Nota:** WSL2 no requiere el rol completo de Hyper-V, pero sí necesita la característica
-> "Plataforma de máquina virtual" que se instala automáticamente con WSL.
 
 ---
 
@@ -72,6 +69,10 @@ En **PowerShell como administrador**:
 wsl --install -d Ubuntu
 ```
 
+Este comando habilita los componentes necesarios (incluida la Plataforma de máquina
+virtual), descarga el kernel de Linux, establece WSL 2 como predeterminado e instala Ubuntu.
+**No requiere instalar el rol de Hyper-V.**
+
 Reiniciar cuando lo solicite. Tras el reinicio abrir Ubuntu y crear usuario y contraseña de Linux.
 
 ### B2. Habilitar systemd
@@ -127,9 +128,9 @@ Ambos comandos deben responder correctamente antes de continuar.
 Copiar el proyecto dentro del filesystem de Linux (no en `/mnt/c`):
 
 ```bash
-# Clonar el repositorio
+# Ejemplo clonando desde git
 cd ~
-git clone https://github.com/MigueLeft/occupation-health-stack.git app
+git clone <url-del-repositorio> app
 cd app
 ```
 
@@ -211,14 +212,14 @@ En **PowerShell como administrador**, crear la carpeta:
 New-Item -ItemType Directory -Path C:\scripts -Force
 ```
 
-**Script 1** — `C:\scripts\wsl-start.ps1`  
+**Script 1** — `C:\scripts\wsl-start.ps1`
 Arranca WSL y lo mantiene vivo. El proceso nunca termina (eso es correcto):
 
 ```powershell
 C:\Windows\System32\wsl.exe -d Ubuntu -u root -e sh -c "exec sleep infinity"
 ```
 
-**Script 2** — `C:\scripts\portproxy-setup.ps1`  
+**Script 2** — `C:\scripts\portproxy-setup.ps1`
 Espera a que Docker y los contenedores estén listos y reconfigura el portproxy
 con la IP nueva de WSL (que cambia en cada arranque):
 
@@ -230,7 +231,7 @@ netsh interface portproxy add v4tov4 listenport=80   listenaddress=0.0.0.0 conne
 netsh interface portproxy add v4tov4 listenport=3000 listenaddress=0.0.0.0 connectport=3000 connectaddress=$wslIp
 ```
 
-**Script 3** — `C:\scripts\register-tasks.ps1`  
+**Script 3** — `C:\scripts\register-tasks.ps1`
 Registra las dos tareas programadas. Ejecutar una sola vez:
 
 ```powershell
@@ -253,6 +254,7 @@ Register-ScheduledTask -TaskName "Portproxy-Setup" -InputObject $task2 -User $us
 
 > **Importante:** Reemplazar `TuPassword` por la contraseña real de `svcapp` y
 > `win-bies8ch9v1e` por el nombre real del equipo antes de ejecutar.
+> No guardar la contraseña real en el repositorio.
 
 ### E2. Probar los scripts manualmente
 
@@ -403,3 +405,26 @@ Get-ScheduledTaskInfo -TaskName "Portproxy-Setup"
 | El portproxy no apunta bien | Correr manualmente `portproxy-setup.ps1` |
 | Apagado del servidor | Siempre ordenado desde Windows, nunca el botón físico (protege PostgreSQL) |
 | IP del servidor cambia | Actualizar `.env`, reconstruir frontend y actualizar registro DNS |
+
+---
+
+## Arquitectura de la solución
+
+```
+Equipos de la red ──► http://192.168.1.50:80 (frontend)
+                  └─► http://192.168.1.50:3000 (backend)
+                            │
+                   Windows Server 2022
+                            │
+                   netsh portproxy + firewall
+                            │
+                       WSL2 (Ubuntu)
+                            │
+                      Docker Engine
+                    ┌───────┼───────┐
+                 frontend backend  db
+                  (nginx) (NestJS) (PostgreSQL)
+```
+
+No se utiliza Hyper-V ni Docker Desktop. WSL2 usa su propia plataforma de
+virtualización ligera, habilitada automáticamente con `wsl --install`.
