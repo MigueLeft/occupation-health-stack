@@ -65,9 +65,11 @@ export function CompaniesPage() {
                 <SortByAlphaOutlined />
               </IconButton>
             </Tooltip>
-            <Button variant="contained" startIcon={<AddOutlined />} onClick={() => setCreateOpen(true)}>
-              Nueva Empresa
-            </Button>
+            {can('companies', 'create') && (
+              <Button variant="contained" startIcon={<AddOutlined />} onClick={() => setCreateOpen(true)}>
+                Nueva Empresa
+              </Button>
+            )}
           </Box>
         </Box>
 
@@ -134,6 +136,8 @@ export function CompaniesPage() {
         open={detailId !== null}
         onClose={() => setDetailId(null)}
         company={detailTarget}
+        canEdit={can('companies', 'edit')}
+        canCreate={can('companies', 'create')}
       />
     </AppLayout>
   );

@@ -20,28 +20,28 @@ export class ExamResultsController {
 
   // Permite filtrar por consulta: GET /exam-results?consultationId=<uuid>
   @Get()
-  @RequirePermission('exam_results', 'view')
+  @RequirePermission('consultations', 'view')
   async findAll(@Query('consultationId') consultationId?: string) {
     const examResults = await this.examResultsService.findAll(consultationId);
     return { examResults };
   }
 
   @Get(':id')
-  @RequirePermission('exam_results', 'view')
+  @RequirePermission('consultations', 'view')
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
     const examResult = await this.examResultsService.findOne(id);
     return { examResult };
   }
 
   @Post()
-  @RequirePermission('exam_results', 'create')
+  @RequirePermission('consultations', 'create')
   async create(@Body() dto: CreateExamResultDto) {
     const examResult = await this.examResultsService.create(dto);
     return { examResult };
   }
 
   @Patch(':id')
-  @RequirePermission('exam_results', 'edit')
+  @RequirePermission('consultations', 'edit')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateExamResultDto,
@@ -51,7 +51,7 @@ export class ExamResultsController {
   }
 
   @Delete(':id')
-  @RequirePermission('exam_results', 'delete')
+  @RequirePermission('consultations', 'delete')
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     const examResult = await this.examResultsService.remove(id);
     return { examResult };

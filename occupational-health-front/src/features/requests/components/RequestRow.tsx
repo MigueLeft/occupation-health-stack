@@ -8,6 +8,7 @@ interface Props {
   request: AppRequestWithPatient;
   onEdit: (request: AppRequestWithPatient) => void;
   onNoAsistio: (request: AppRequestWithPatient) => void;
+  canEdit?: boolean;
 }
 
 const TRUNCATE = { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } as const;
@@ -21,7 +22,7 @@ function getInitials(name: string): string {
   return name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
 }
 
-export function RequestRow({ request, onEdit, onNoAsistio }: Props) {
+export function RequestRow({ request, onEdit, onNoAsistio, canEdit = true }: Props) {
   const isConsulta = request.evaluationReason === 'Consulta';
   const reasonLabel = EVALUATION_REASON_LABELS[request.evaluationReason] ?? request.evaluationReason;
 
@@ -64,16 +65,20 @@ export function RequestRow({ request, onEdit, onNoAsistio }: Props) {
         <RequestStatusChip status={request.status} />
       </TableCell>
       <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
-        <Tooltip title="Editar">
-          <IconButton size="small" onClick={() => onEdit(request)} sx={{ color: 'text.secondary' }}>
-            <EditOutlined fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Marcar como No asistió">
-          <IconButton size="small" onClick={() => onNoAsistio(request)} sx={{ color: 'text.secondary' }}>
-            <PersonRemoveOutlined fontSize="small" />
-          </IconButton>
-        </Tooltip>
+        {canEdit && (
+          <>
+            <Tooltip title="Editar">
+              <IconButton size="small" onClick={() => onEdit(request)} sx={{ color: 'text.secondary' }}>
+                <EditOutlined fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Marcar como No asistió">
+              <IconButton size="small" onClick={() => onNoAsistio(request)} sx={{ color: 'text.secondary' }}>
+                <PersonRemoveOutlined fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </>
+        )}
       </TableCell>
     </TableRow>
   );

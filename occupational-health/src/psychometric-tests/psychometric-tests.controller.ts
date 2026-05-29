@@ -21,7 +21,7 @@ export class PsychometricTestsController {
   ) {}
 
   @Get()
-  @RequirePermission('psychometric_tests', 'view')
+  @RequirePermission('consultations', 'view')
   async findAll(@Query('consultationId') consultationId?: string) {
     const psychometricTests =
       await this.psychometricTestsService.findAll(consultationId);
@@ -29,21 +29,21 @@ export class PsychometricTestsController {
   }
 
   @Get(':id')
-  @RequirePermission('psychometric_tests', 'view')
+  @RequirePermission('consultations', 'view')
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
     const psychometricTest = await this.psychometricTestsService.findOne(id);
     return { psychometricTest };
   }
 
   @Post()
-  @RequirePermission('psychometric_tests', 'create')
+  @RequirePermission('consultations', 'create')
   async create(@Body() dto: CreatePsychometricTestDto) {
     const psychometricTest = await this.psychometricTestsService.create(dto);
     return { psychometricTest };
   }
 
   @Patch(':id')
-  @RequirePermission('psychometric_tests', 'edit')
+  @RequirePermission('consultations', 'edit')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdatePsychometricTestDto,
@@ -56,7 +56,7 @@ export class PsychometricTestsController {
   }
 
   @Delete(':id')
-  @RequirePermission('psychometric_tests', 'delete')
+  @RequirePermission('consultations', 'delete')
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     const psychometricTest = await this.psychometricTestsService.remove(id);
     return { psychometricTest };

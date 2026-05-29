@@ -94,9 +94,11 @@ export function RequestsPage() {
       <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         <Box sx={{ px: 4, pt: 3.5, pb: 2.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid', borderColor: 'divider' }}>
           <Typography variant="h2">Solicitudes</Typography>
-          <Button variant="contained" startIcon={<AddOutlined />} onClick={() => setCreateOpen(true)}>
-            Nueva Solicitud
-          </Button>
+          {can('requests', 'create') && (
+            <Button variant="contained" startIcon={<AddOutlined />} onClick={() => setCreateOpen(true)}>
+              Nueva Solicitud
+            </Button>
+          )}
         </Box>
 
         <Box sx={{ px: 4, py: 2.5 }}>
@@ -126,6 +128,7 @@ export function RequestsPage() {
                     <RequestRow key={r.id} request={r}
                       onEdit={setEditTarget}
                       onNoAsistio={setNoAsistioTarget}
+                      canEdit={can('requests', 'edit')}
                     />
                   ))
                 )}

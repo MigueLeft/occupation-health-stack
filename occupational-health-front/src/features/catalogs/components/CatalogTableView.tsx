@@ -4,6 +4,7 @@ import {
   TableRow, TableCell, TableContainer, Skeleton,
 } from '@mui/material';
 import { AddOutlined } from '@mui/icons-material';
+import { usePermissions } from '@/features/auth';
 
 interface CatalogTableViewProps {
   title: string;
@@ -18,13 +19,14 @@ interface CatalogTableViewProps {
 export function CatalogTableView({
   title, headers, isLoading, onAdd, showAddButton = true, children, emptyLabel = 'Sin registros',
 }: CatalogTableViewProps) {
+  const { can } = usePermissions();
   const colSpan = headers.length + 1; // +1 for Acciones
 
   return (
     <Box>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
         <Typography variant="h2">{title}</Typography>
-        {showAddButton && onAdd && (
+        {showAddButton && can('catalogs', 'create') && onAdd && (
           <Button variant="contained" startIcon={<AddOutlined />} onClick={onAdd}>
             Agregar
           </Button>

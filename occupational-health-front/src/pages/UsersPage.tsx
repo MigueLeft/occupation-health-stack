@@ -60,6 +60,9 @@ function DesktopView({
   total,
   onPageChange,
   onRowsPerPageChange,
+  canCreate,
+  canEdit,
+  canDelete,
 }: {
   users: AppUser[];
   search: string;
@@ -77,6 +80,9 @@ function DesktopView({
   total: number;
   onPageChange: (p: number) => void;
   onRowsPerPageChange: (rpp: number) => void;
+  canCreate?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
 }) {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -98,9 +104,11 @@ function DesktopView({
             Administra los usuarios del sistema
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<AddOutlined />} onClick={onCreateOpen}>
-          Crear Usuario
-        </Button>
+        {canCreate && (
+          <Button variant="contained" startIcon={<AddOutlined />} onClick={onCreateOpen}>
+            Crear Usuario
+          </Button>
+        )}
       </Box>
 
       <Box sx={{ px: 4, py: 2.5, display: 'flex', gap: 2, alignItems: 'center' }}>
@@ -166,6 +174,8 @@ function DesktopView({
                         onToggleStatus={onToggleStatus}
                         onEdit={onEdit}
                         onDelete={onDeleteRequest}
+                        canEdit={canEdit}
+                        canDelete={canDelete}
                       />
                     ))}
                 {!isLoading && users.length === 0 && (
@@ -202,6 +212,7 @@ function MobileView({
   onCreateOpen,
   onEdit,
   isLoading,
+  canCreate,
 }: {
   users: AppUser[];
   search: string;
@@ -209,6 +220,7 @@ function MobileView({
   onCreateOpen: () => void;
   onEdit: (user: AppUser) => void;
   isLoading: boolean;
+  canCreate?: boolean;
 }) {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
@@ -226,9 +238,11 @@ function MobileView({
         <Typography variant="h3" sx={{ fontWeight: 700 }}>
           Usuarios
         </Typography>
-        <IconButton color="primary" onClick={onCreateOpen}>
-          <PersonAddOutlined />
-        </IconButton>
+        {canCreate && (
+          <IconButton color="primary" onClick={onCreateOpen}>
+            <PersonAddOutlined />
+          </IconButton>
+        )}
       </Box>
 
       <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
@@ -278,13 +292,15 @@ function MobileView({
         )}
       </Box>
 
-      <Fab
-        color="primary"
-        onClick={onCreateOpen}
-        sx={{ position: 'fixed', bottom: 24, right: 24 }}
-      >
-        <AddOutlined />
-      </Fab>
+      {canCreate && (
+        <Fab
+          color="primary"
+          onClick={onCreateOpen}
+          sx={{ position: 'fixed', bottom: 24, right: 24 }}
+        >
+          <AddOutlined />
+        </Fab>
+      )}
     </Box>
   );
 }
@@ -311,6 +327,10 @@ export function UsersPage() {
 
   if (isPermLoading) return null;
   if (!can('users', 'view')) return <Navigate to="/" />;
+
+  const canCreate = can('users', 'create');
+  const canEdit = can('users', 'edit');
+  const canDelete = can('users', 'delete');
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -349,6 +369,7 @@ export function UsersPage() {
             onCreateOpen={() => setCreateOpen(true)}
             onEdit={setEditTarget}
             isLoading={isLoading}
+            canCreate={canCreate}
           />
         ) : (
           <DesktopView
@@ -368,6 +389,9 @@ export function UsersPage() {
             total={filtered.length}
             onPageChange={setPage}
             onRowsPerPageChange={(rpp) => { setRowsPerPage(rpp); setPage(0); }}
+            canCreate={canCreate}
+            canEdit={canEdit}
+            canDelete={canDelete}
           />
         )}
       </Box>

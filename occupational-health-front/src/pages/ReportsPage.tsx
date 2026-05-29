@@ -5,6 +5,7 @@ import {
   CoronavirusOutlined, AccessibilityNewOutlined,
   TrendingUpOutlined, SummarizeOutlined,
 } from '@mui/icons-material';
+import { Navigate } from '@tanstack/react-router';
 import { AppLayout } from '@/components/AppLayout';
 import { reportsService, VigilanciaReportCard } from '@/features/reports';
 import { ReportCard } from '@/features/reports/components/ReportCard';
@@ -13,6 +14,7 @@ import {
   YEAR_OPTIONS, MONTH_OPTIONS, QUARTER_OPTIONS, SEMESTER_OPTIONS,
 } from '@/features/reports/utils/period-dates';
 import { useCompanies } from '@/features/patients';
+import { usePermissions } from '@/features/auth';
 
 interface PeriodState {
   periodType: PeriodType;
@@ -27,6 +29,7 @@ const DEFAULT_PERIOD: PeriodState = { periodType: 'none', year: '', month: '', q
 export function ReportsPage() {
   usePageTitle('Reportes');
 
+  const { can, isLoading: isPermLoading } = usePermissions();
   const { data: companies = [] } = useCompanies();
   const [filters, setFilters] = useState({ from: '', to: '', company: '' });
   const [period, setPeriod] = useState<PeriodState>(DEFAULT_PERIOD);
@@ -40,6 +43,9 @@ export function ReportsPage() {
       setFilters((p) => ({ ...p, from: '', to: '' }));
     }
   }, [period, isPresetActive]);
+
+  if (isPermLoading) return null;
+  if (!can('reports', 'view')) return <Navigate to="/" />;
 
   const sharedFilters = {
     dateFrom: filters.from || undefined,

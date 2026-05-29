@@ -21,7 +21,7 @@ export class ConsultationDiagnosticsController {
   ) {}
 
   @Get()
-  @RequirePermission('diagnostics', 'view')
+  @RequirePermission('consultations', 'view')
   async findAll(@Query('consultationId') consultationId?: string) {
     const consultationDiagnostics =
       await this.consultationDiagnosticsService.findAll(consultationId);
@@ -29,7 +29,7 @@ export class ConsultationDiagnosticsController {
   }
 
   @Get(':id')
-  @RequirePermission('diagnostics', 'view')
+  @RequirePermission('consultations', 'view')
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
     const consultationDiagnostic =
       await this.consultationDiagnosticsService.findOne(id);
@@ -37,7 +37,7 @@ export class ConsultationDiagnosticsController {
   }
 
   @Post()
-  @RequirePermission('diagnostics', 'create')
+  @RequirePermission('consultations', 'create')
   async create(@Body() dto: CreateConsultationDiagnosticDto) {
     const consultationDiagnostic =
       await this.consultationDiagnosticsService.create(dto);
@@ -45,7 +45,7 @@ export class ConsultationDiagnosticsController {
   }
 
   @Patch(':id')
-  @RequirePermission('diagnostics', 'edit')
+  @RequirePermission('consultations', 'edit')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateConsultationDiagnosticDto,
@@ -56,7 +56,7 @@ export class ConsultationDiagnosticsController {
   }
 
   @Delete(':id')
-  @RequirePermission('diagnostics', 'delete')
+  @RequirePermission('consultations', 'delete')
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     const consultationDiagnostic =
       await this.consultationDiagnosticsService.remove(id);

@@ -16,17 +16,21 @@ interface PatientRowProps {
   onToggleSelect: (cedula: string) => void;
   onView: (patient: Patient) => void;
   onEdit: (patient: Patient) => void;
+  canEdit?: boolean;
+  canDelete?: boolean;
 }
 
-export function PatientRow({ patient, selected, onToggleSelect, onView, onEdit }: PatientRowProps) {
+export function PatientRow({ patient, selected, onToggleSelect, onView, onEdit, canEdit = true, canDelete = true }: PatientRowProps) {
   const fullName = `${patient.firstName} ${patient.lastName}`;
   const age = patient.birthDate ? calculateAge(patient.birthDate) : '—';
 
   return (
     <TableRow sx={{ '&:last-child td': { border: 0 }, '&:hover': { bgcolor: 'action.hover' } }} selected={selected}>
-      <TableCell padding="checkbox">
-        <Checkbox checked={selected} onChange={() => onToggleSelect(patient.cedula)} />
-      </TableCell>
+      {canDelete && (
+        <TableCell padding="checkbox">
+          <Checkbox checked={selected} onChange={() => onToggleSelect(patient.cedula)} />
+        </TableCell>
+      )}
       <TableCell sx={{ fontWeight: 500, fontSize: '0.9rem', whiteSpace: 'nowrap' }}>
         {formatCedula(patient.cedula)}
       </TableCell>
@@ -79,11 +83,13 @@ export function PatientRow({ patient, selected, onToggleSelect, onView, onEdit }
               <ArticleOutlined fontSize="small" />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Editar paciente">
-            <IconButton size="small" color="primary" onClick={() => onEdit(patient)}>
-              <ManageAccountsOutlined fontSize="small" />
-            </IconButton>
-          </Tooltip>
+          {canEdit && (
+            <Tooltip title="Editar paciente">
+              <IconButton size="small" color="primary" onClick={() => onEdit(patient)}>
+                <ManageAccountsOutlined fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
         </Box>
       </TableCell>
     </TableRow>

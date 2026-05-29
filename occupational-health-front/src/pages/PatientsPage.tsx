@@ -80,6 +80,10 @@ export function PatientsPage() {
   if (isPermLoading) return null;
   if (!can('patients', 'view')) return <Navigate to="/" />;
 
+  const canCreate = can('patients', 'create');
+  const canEdit = can('patients', 'edit');
+  const canDelete = can('patients', 'delete');
+
   const paginated = filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   const allSelected = paginated.length > 0 && paginated.every((p) => selected.has(p.cedula));
@@ -139,7 +143,7 @@ export function PatientsPage() {
         >
           <Typography variant="h2">Pacientes</Typography>
           <Box sx={{ display: 'flex', gap: 1 }}>
-            {someSelected && (
+            {someSelected && canDelete && (
               <Button
                 variant="outlined"
                 color="error"
@@ -154,13 +158,15 @@ export function PatientsPage() {
                 <SortByAlphaOutlined />
               </IconButton>
             </Tooltip>
-            <Button
-              variant="contained"
-              startIcon={<PersonAddOutlined />}
-              onClick={() => setCreateOpen(true)}
-            >
-              Nuevo Paciente
-            </Button>
+            {canCreate && (
+              <Button
+                variant="contained"
+                startIcon={<PersonAddOutlined />}
+                onClick={() => setCreateOpen(true)}
+              >
+                Nuevo Paciente
+              </Button>
+            )}
           </Box>
         </Box>
 
@@ -183,14 +189,16 @@ export function PatientsPage() {
               <Table>
                 <TableHead>
                   <TableRow sx={{ bgcolor: 'primary.main' }}>
-                    <TableCell padding="checkbox" sx={{ bgcolor: 'primary.main' }}>
-                      <Checkbox
-                        checked={allSelected}
-                        indeterminate={!allSelected && paginated.some((p) => selected.has(p.cedula))}
-                        onChange={handleToggleAll}
-                        sx={{ color: 'primary.contrastText', '&.Mui-checked': { color: 'primary.contrastText' }, '&.MuiCheckbox-indeterminate': { color: 'primary.contrastText' } }}
-                      />
-                    </TableCell>
+                    {canDelete && (
+                      <TableCell padding="checkbox" sx={{ bgcolor: 'primary.main' }}>
+                        <Checkbox
+                          checked={allSelected}
+                          indeterminate={!allSelected && paginated.some((p) => selected.has(p.cedula))}
+                          onChange={handleToggleAll}
+                          sx={{ color: 'primary.contrastText', '&.Mui-checked': { color: 'primary.contrastText' }, '&.MuiCheckbox-indeterminate': { color: 'primary.contrastText' } }}
+                        />
+                      </TableCell>
+                    )}
                     {TABLE_HEADERS.map((h) => (
                       <TableCell
                         key={h}
@@ -221,11 +229,13 @@ export function PatientsPage() {
                           onToggleSelect={handleToggleOne}
                           onView={handleView}
                           onEdit={handleEdit}
+                          canEdit={canEdit}
+                          canDelete={canDelete}
                         />
                       ))}
                   {!isLoading && filtered.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={7} align="center" sx={{ py: 6, color: 'text.disabled' }}>
+                      <TableCell colSpan={TABLE_HEADERS.length + (canDelete ? 1 : 0)} align="center" sx={{ py: 6, color: 'text.disabled' }}>
                         No se encontraron pacientes
                       </TableCell>
                     </TableRow>

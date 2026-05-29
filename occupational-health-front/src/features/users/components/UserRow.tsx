@@ -23,9 +23,11 @@ interface UserRowProps {
   onToggleStatus: (user: AppUser) => void;
   onEdit: (user: AppUser) => void;
   onDelete: (user: AppUser) => void;
+  canEdit?: boolean;
+  canDelete?: boolean;
 }
 
-export function UserRow({ user, onToggleStatus, onEdit, onDelete }: UserRowProps) {
+export function UserRow({ user, onToggleStatus, onEdit, onDelete, canEdit = true, canDelete = true }: UserRowProps) {
   const isActive = !user.banned;
 
   return (
@@ -77,16 +79,20 @@ export function UserRow({ user, onToggleStatus, onEdit, onDelete }: UserRowProps
 
       <TableCell sx={{ whiteSpace: 'nowrap' }}>
         <Box sx={{ display: 'flex', gap: 0.5 }}>
-          <Tooltip title="Editar rol">
-            <IconButton size="small" onClick={() => onEdit(user)}>
-              <EditOutlined fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Eliminar usuario">
-            <IconButton size="small" color="error" onClick={() => onDelete(user)}>
-              <DeleteOutlined fontSize="small" />
-            </IconButton>
-          </Tooltip>
+          {canEdit && (
+            <Tooltip title="Editar rol">
+              <IconButton size="small" onClick={() => onEdit(user)}>
+                <EditOutlined fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+          {canDelete && (
+            <Tooltip title="Eliminar usuario">
+              <IconButton size="small" color="error" onClick={() => onDelete(user)}>
+                <DeleteOutlined fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
         </Box>
       </TableCell>
     </TableRow>

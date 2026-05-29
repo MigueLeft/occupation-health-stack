@@ -20,7 +20,7 @@ export class PhysicalExamsController {
 
   // Permite filtrar por consulta: GET /physical-exams?consultationId=<uuid>
   @Get()
-  @RequirePermission('physical_exams', 'view')
+  @RequirePermission('consultations', 'view')
   async findAll(@Query('consultationId') consultationId?: string) {
     const physicalExams =
       await this.physicalExamsService.findAll(consultationId);
@@ -28,21 +28,21 @@ export class PhysicalExamsController {
   }
 
   @Get(':id')
-  @RequirePermission('physical_exams', 'view')
+  @RequirePermission('consultations', 'view')
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
     const physicalExam = await this.physicalExamsService.findOne(id);
     return { physicalExam };
   }
 
   @Post()
-  @RequirePermission('physical_exams', 'create')
+  @RequirePermission('consultations', 'create')
   async create(@Body() dto: CreatePhysicalExamDto) {
     const physicalExam = await this.physicalExamsService.create(dto);
     return { physicalExam };
   }
 
   @Patch(':id')
-  @RequirePermission('physical_exams', 'edit')
+  @RequirePermission('consultations', 'edit')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdatePhysicalExamDto,
@@ -52,7 +52,7 @@ export class PhysicalExamsController {
   }
 
   @Delete(':id')
-  @RequirePermission('physical_exams', 'view')
+  @RequirePermission('consultations', 'delete')
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     const physicalExam = await this.physicalExamsService.remove(id);
     return { physicalExam };

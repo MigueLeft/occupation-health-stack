@@ -14,6 +14,8 @@ interface CompanyDetailModalProps {
   open: boolean;
   onClose: () => void;
   company: CompanyWithPositions | null;
+  canEdit?: boolean;
+  canCreate?: boolean;
 }
 
 function InfoItem({ label, value }: { label: string; value: string }) {
@@ -39,7 +41,7 @@ function InfoItem({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function CompanyDetailModal({ open, onClose, company }: CompanyDetailModalProps) {
+export function CompanyDetailModal({ open, onClose, company, canEdit = true, canCreate = true }: CompanyDetailModalProps) {
   const [createPositionOpen, setCreatePositionOpen] = useState(false);
   const [editCompanyOpen, setEditCompanyOpen] = useState(false);
 
@@ -60,15 +62,17 @@ export function CompanyDetailModal({ open, onClose, company }: CompanyDetailModa
         >
           <Typography variant="h3" sx={{ color: 'inherit' }}>Detalles de la Empresa</Typography>
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-            <Button
-              variant="outlined"
-              startIcon={<EditOutlined />}
-              size="small"
-              onClick={() => setEditCompanyOpen(true)}
-              sx={{ color: 'inherit', borderColor: 'rgba(255,255,255,0.5)', '&:hover': { borderColor: 'white' } }}
-            >
-              Editar
-            </Button>
+            {canEdit && (
+              <Button
+                variant="outlined"
+                startIcon={<EditOutlined />}
+                size="small"
+                onClick={() => setEditCompanyOpen(true)}
+                sx={{ color: 'inherit', borderColor: 'rgba(255,255,255,0.5)', '&:hover': { borderColor: 'white' } }}
+              >
+                Editar
+              </Button>
+            )}
             <IconButton size="small" onClick={onClose} sx={{ color: 'inherit' }}>
               <CloseOutlined />
             </IconButton>
@@ -105,14 +109,16 @@ export function CompanyDetailModal({ open, onClose, company }: CompanyDetailModa
             <Box sx={{ flex: 1, p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Typography variant="h3">Cargos y Riesgos de Exposición</Typography>
-                <Button
-                  variant="contained"
-                  size="small"
-                  startIcon={<AddOutlined />}
-                  onClick={() => setCreatePositionOpen(true)}
-                >
-                  Nuevo Cargo
-                </Button>
+                {canCreate && (
+                  <Button
+                    variant="contained"
+                    size="small"
+                    startIcon={<AddOutlined />}
+                    onClick={() => setCreatePositionOpen(true)}
+                  >
+                    Nuevo Cargo
+                  </Button>
+                )}
               </Box>
               <Box sx={{ flex: 1 }}>
                 <PositionsTable positions={company.positions} companyId={company.id} />

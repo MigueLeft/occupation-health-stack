@@ -127,9 +127,9 @@ Ambos comandos deben responder correctamente antes de continuar.
 Copiar el proyecto dentro del filesystem de Linux (no en `/mnt/c`):
 
 ```bash
-# Ejemplo clonando desde git
+# Clonar el repositorio
 cd ~
-git clone <url-del-repositorio> app
+git clone https://github.com/MigueLeft/occupation-health-stack.git app
 cd app
 ```
 
