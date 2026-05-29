@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import PDFDocument from 'pdfkit';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { and, gte, lte, eq, isNotNull, isNull, count, SQL } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { DRIZZLE } from '../database/database.module';
 import { consultations } from '../consultations/consultations.schema';
 import { requests } from '../requests/requests.schema';
@@ -876,8 +877,8 @@ export class ReportsService {
       const key = row.categoryName ?? 'Sin especificar';
       if (!map.has(key)) map.set(key, { femenino: 0, masculino: 0 });
       const entry = map.get(key)!;
-      if (row.sex === 'Femenino') entry.femenino += Number(1);
-      else entry.masculino += Number(1);
+      if (row.sex === 'F' || row.sex === 'Femenino') entry.femenino++;
+      else if (row.sex === 'M' || row.sex === 'Masculino') entry.masculino++;
     }
 
     return Array.from(map.entries()).map(([category, vals]) => ({
@@ -1093,13 +1094,17 @@ export class ReportsService {
     if (filters.companyId) conditions.push(eq(patients.companyId, filters.companyId));
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
+    const restCategories = alias(diseaseCategories, 'rest_categories');
+    const diagnosticCategories = alias(diseaseCategories, 'diagnostic_categories');
+
     const rows = await this.db
       .select({
         diseaseId: diseases.id,
         diseaseName: diseases.name,
         sex: patients.sex,
         restDays: restPeriods.days,
-        restCategoryName: diseaseCategories.name,
+        restCategoryName: restCategories.name,
+        diagnosticCategoryName: diagnosticCategories.name,
         legacyRestReason: restPeriods.reason,
       })
       .from(consultationDiagnostics)
@@ -1107,8 +1112,9 @@ export class ReportsService {
       .innerJoin(consultations, eq(consultationDiagnostics.consultationId, consultations.id))
       .innerJoin(requests, eq(consultations.requestId, requests.id))
       .innerJoin(patients, eq(requests.patientId, patients.cedula))
+      .leftJoin(diagnosticCategories, eq(consultationDiagnostics.categoryId, diagnosticCategories.id))
       .leftJoin(restPeriods, eq(restPeriods.consultationId, consultations.id))
-      .leftJoin(diseaseCategories, eq(restPeriods.categoryId, diseaseCategories.id))
+      .leftJoin(restCategories, eq(restPeriods.categoryId, restCategories.id))
       .where(whereClause)
       .orderBy(diseases.name);
 
@@ -1131,7 +1137,7 @@ export class ReportsService {
       if (r.restDays) entry.totalRestDays += r.restDays;
       if (r.sex === 'M' || r.sex === 'Masculino') entry.maleCases++;
       else if (r.sex === 'F' || r.sex === 'Femenino') entry.femaleCases++;
-      const effectiveReason = r.restCategoryName ?? r.legacyRestReason ?? '';
+      const effectiveReason = r.restCategoryName ?? r.diagnosticCategoryName ?? r.legacyRestReason ?? '';
       if (effectiveReason === 'Enfermedad Comun' || effectiveReason === 'Accidente Comun') entry.commonOrigin++;
       else if (effectiveReason === 'Enfermedad Laboral' || effectiveReason === 'Accidente Laboral') entry.laborOrigin++;
     }
@@ -1147,13 +1153,17 @@ export class ReportsService {
     if (filters.dateTo) conditions.push(lte(requests.requestDate, filters.dateTo));
     if (filters.companyId) conditions.push(eq(patients.companyId, filters.companyId));
 
+    const restCategories = alias(diseaseCategories, 'rest_categories');
+    const diagnosticCategories = alias(diseaseCategories, 'diagnostic_categories');
+
     const rows = await this.db
       .select({
         systemId: bodySystems.id,
         systemName: bodySystems.name,
         sex: patients.sex,
         restDays: restPeriods.days,
-        restCategoryName: diseaseCategories.name,
+        restCategoryName: restCategories.name,
+        diagnosticCategoryName: diagnosticCategories.name,
         legacyRestReason: restPeriods.reason,
       })
       .from(consultationDiagnostics)
@@ -1161,8 +1171,9 @@ export class ReportsService {
       .innerJoin(consultations, eq(consultationDiagnostics.consultationId, consultations.id))
       .innerJoin(requests, eq(consultations.requestId, requests.id))
       .innerJoin(patients, eq(requests.patientId, patients.cedula))
+      .leftJoin(diagnosticCategories, eq(consultationDiagnostics.categoryId, diagnosticCategories.id))
       .leftJoin(restPeriods, eq(restPeriods.consultationId, consultations.id))
-      .leftJoin(diseaseCategories, eq(restPeriods.categoryId, diseaseCategories.id))
+      .leftJoin(restCategories, eq(restPeriods.categoryId, restCategories.id))
       .where(
         conditions.length > 0
           ? and(and(...conditions), isNotNull(consultationDiagnostics.bodySystemId))
@@ -1189,7 +1200,7 @@ export class ReportsService {
       if (r.restDays) entry.totalRestDays += r.restDays;
       if (r.sex === 'M' || r.sex === 'Masculino') entry.maleCases++;
       else if (r.sex === 'F' || r.sex === 'Femenino') entry.femaleCases++;
-      const effectiveReason = r.restCategoryName ?? r.legacyRestReason ?? '';
+      const effectiveReason = r.restCategoryName ?? r.diagnosticCategoryName ?? r.legacyRestReason ?? '';
       if (effectiveReason === 'Enfermedad Comun' || effectiveReason === 'Accidente Comun') entry.commonOrigin++;
       else if (effectiveReason === 'Enfermedad Laboral' || effectiveReason === 'Accidente Laboral') entry.laborOrigin++;
     }
