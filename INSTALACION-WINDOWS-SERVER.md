@@ -212,6 +212,11 @@ En **PowerShell como administrador**, crear la carpeta:
 New-Item -ItemType Directory -Path C:\scripts -Force
 ```
 
+**Crear archivo Ejemplo:** 
+```powershell
+notepad C:\scripts\register-tasks.ps1
+```
+
 **Script 1** — `C:\scripts\wsl-start.ps1`
 Arranca WSL y lo mantiene vivo. El proceso nunca termina (eso es correcto):
 
