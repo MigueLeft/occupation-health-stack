@@ -1,7 +1,7 @@
 import { Box, Typography, Avatar, CircularProgress, Chip, Table, TableHead, TableBody, TableRow, TableCell, IconButton, Tooltip } from '@mui/material';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { VisibilityOutlined } from '@mui/icons-material';
-import { useParams, useNavigate } from '@tanstack/react-router';
+import { useParams, useNavigate, Navigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { AppLayout } from '@/components/AppLayout';
 import { usePatient } from '@/features/patients/hooks/usePatient';
@@ -11,6 +11,7 @@ import { ConsultationTypeChip } from '@/features/consultations/components/Consul
 import { ConsultationResultChip } from '@/features/consultations/components/ConsultationResultChip';
 import { RequestStatusChip } from '@/features/requests/components/RequestStatusChip';
 import { EVALUATION_REASON_LABELS } from '@/features/requests/types';
+import { usePermissions } from '@/features/auth';
 
 function calcAge(birthDate: string): number {
   const [y, m, d] = birthDate.split('-').map(Number);
@@ -60,6 +61,7 @@ export function ExpedientePage() {
 
   const { cedula } = useParams({ strict: false }) as { cedula: string };
   const navigate = useNavigate();
+  const { can, isLoading: isPermLoading } = usePermissions();
   const { data: patient, isLoading: patientLoading } = usePatient(cedula);
   const { data: consultations = [], isLoading: consultLoading } = useConsultations();
   const { data: patientDisabilities = [] } = useQuery({
@@ -68,7 +70,16 @@ export function ExpedientePage() {
   });
 
   const patientConsultations = consultations.filter((c) => c.patientId === cedula);
-  const isLoading = patientLoading || consultLoading;
+  const isLoading = patientLoading || consultLoading || isPermLoading;
+
+  const hasMedicoRole = can('es-medico', 'view');
+  const hasPsicologoRole = can('es-psicologo', 'view');
+  const neitherRoleSet = !hasMedicoRole && !hasPsicologoRole;
+  const canSeeMedical = hasMedicoRole || neitherRoleSet;
+  const canSeePsychological = hasPsicologoRole || neitherRoleSet;
+
+  if (isPermLoading) return null;
+  if (!can('expediente', 'view')) return <Navigate to="/" />;
 
   if (isLoading) {
     return <AppLayout><Box sx={{ display: 'flex', justifyContent: 'center', pt: 10 }}><CircularProgress /></Box></AppLayout>;
@@ -187,19 +198,19 @@ export function ExpedientePage() {
                       <TableCell><ConsultationTypeChip type={c.type} /></TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                          {c.consultationResult && (
+                          {canSeeMedical && c.consultationResult && (
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                               <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', minWidth: 18 }}>M:</Typography>
                               <ConsultationResultChip result={c.consultationResult} />
                             </Box>
                           )}
-                          {c.psychologicalAptitude && (
+                          {canSeePsychological && c.psychologicalAptitude && (
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                               <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', minWidth: 18 }}>P:</Typography>
                               <ConsultationResultChip result={c.psychologicalAptitude as import('@/features/consultations/types').ConsultationResultUnion} />
                             </Box>
                           )}
-                          {!c.consultationResult && !c.psychologicalAptitude && (
+                          {!(canSeeMedical && c.consultationResult) && !(canSeePsychological && c.psychologicalAptitude) && (
                             <Typography variant="body2" color="text.secondary">—</Typography>
                           )}
                         </Box>

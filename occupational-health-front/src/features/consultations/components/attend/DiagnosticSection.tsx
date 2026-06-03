@@ -13,6 +13,8 @@ interface Cat { id: string; name: string; }
 interface Disease { id: string; name: string; }
 interface BodySystem { id: string; name: string; }
 
+export interface RestEntry { diagId: string; days: number; }
+
 interface Props {
   diagnostics: ConsultationDiagnostic[];
   onAddDiagnostic: (row: DiagRow, isRest: boolean, restDays: number | '') => void;
@@ -26,10 +28,7 @@ interface Props {
   onDescriptionChange: (v: string) => void;
   isHealthy: boolean;
   onIsHealthyChange: (v: boolean) => void;
-  restCategoryId: string;
-  restDiseaseId: string;
-  restBodySystemId: string;
-  restDays: number | '';
+  restEntries: RestEntry[];
 }
 
 export function DiagnosticSection({
@@ -38,7 +37,7 @@ export function DiagnosticSection({
   result, onResultChange,
   description, onDescriptionChange,
   isHealthy, onIsHealthyChange,
-  restCategoryId, restDiseaseId, restBodySystemId, restDays,
+  restEntries,
 }: Props) {
   const [cat, setCat] = useState<Cat | null>(null);
   const [disease, setDisease] = useState<Disease | null>(null);
@@ -62,11 +61,8 @@ export function DiagnosticSection({
 
   const getName = (list: Cat[], id: string) => list.find((x) => x.id === id)?.name ?? id;
 
-  const isRestDiagnostic = (d: ConsultationDiagnostic) =>
-    !!restCategoryId &&
-    d.categoryId === restCategoryId &&
-    d.diseaseId === restDiseaseId &&
-    (d.bodySystemId ?? '') === restBodySystemId;
+  const getRestEntry = (d: ConsultationDiagnostic) =>
+    restEntries.find((e) => e.diagId === d.id);
 
   return (
     <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
@@ -137,7 +133,6 @@ export function DiagnosticSection({
             slotProps={{ listbox: { style: { maxHeight: 7 * 36 } } }}
           />
 
-          {/* Reposo médico inline */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
             <FormControlLabel
               control={
@@ -180,17 +175,17 @@ export function DiagnosticSection({
           {diagnostics.length > 0 && (
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
               {diagnostics.map((d) => {
-                const hasRest = isRestDiagnostic(d);
-                const label = `${getName(categories, d.categoryId)} · ${getName(diseases, d.diseaseId)}${hasRest ? ` · Reposo: ${restDays} día(s)` : ''}`;
+                const entry = getRestEntry(d);
+                const label = `${getName(categories, d.categoryId)} · ${getName(diseases, d.diseaseId)}${entry ? ` · Reposo: ${entry.days} día(s)` : ''}`;
                 return (
                   <Chip
                     key={d.id}
                     size="small"
                     onDelete={() => onRemoveDiagnostic(d.id)}
-                    icon={hasRest ? <HotelOutlined fontSize="inherit" /> : undefined}
+                    icon={entry ? <HotelOutlined fontSize="inherit" /> : undefined}
                     label={label}
-                    color={hasRest ? 'primary' : 'default'}
-                    variant={hasRest ? 'outlined' : 'filled'}
+                    color={entry ? 'primary' : 'default'}
+                    variant={entry ? 'outlined' : 'filled'}
                   />
                 );
               })}

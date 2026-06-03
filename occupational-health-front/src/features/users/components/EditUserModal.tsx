@@ -11,9 +11,10 @@ import {
   MenuItem,
   FormHelperText,
   Stack,
-  Typography,
   Avatar,
-  Box,
+  TextField,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 import { CloseOutlined } from '@mui/icons-material';
 import { useEffect } from 'react';
@@ -25,7 +26,10 @@ import { useRoles } from '@/features/roles-permissions';
 import type { AppUser } from '../types';
 
 const schema = z.object({
+  name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres.').max(100),
+  email: z.string().email('Ingresa un correo válido.'),
   roleId: z.string().uuid('El rol es obligatorio'),
+  banned: z.boolean(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -45,13 +49,22 @@ export function EditUserModal({ open, user, onClose }: EditUserModalProps) {
   const { mutate: updateUser, isPending } = useUpdateUser();
   const { data: roles = [] } = useRoles();
 
-  const { control, handleSubmit, reset } = useForm<FormData>({
+  const { control, handleSubmit, reset, watch } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { roleId: '' },
+    defaultValues: { name: '', email: '', roleId: '', banned: false },
   });
 
+  const nameValue = watch('name');
+
   useEffect(() => {
-    if (user && open) reset({ roleId: user.roleId ?? '' });
+    if (user && open) {
+      reset({
+        name: user.name ?? '',
+        email: user.email ?? '',
+        roleId: user.roleId ?? '',
+        banned: user.banned ?? false,
+      });
+    }
   }, [user, open, reset]);
 
   const handleClose = () => {
@@ -62,7 +75,7 @@ export function EditUserModal({ open, user, onClose }: EditUserModalProps) {
   const onSubmit = (data: FormData) => {
     if (!user) return;
     updateUser(
-      { id: user.id, payload: { roleId: data.roleId } },
+      { id: user.id, payload: data },
       { onSuccess: () => handleClose() },
     );
   };
@@ -83,22 +96,54 @@ export function EditUserModal({ open, user, onClose }: EditUserModalProps) {
       <form onSubmit={handleSubmit(onSubmit)}>
         <DialogContent>
           <Stack spacing={2.5}>
-            {/* User info preview */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1 }}>
-              <Avatar sx={{ bgcolor: getAvatarColor(user.name), width: 40, height: 40 }}>
-                {user.name.charAt(0).toUpperCase()}
-              </Avatar>
-              <Box>
-                <Typography sx={{ fontWeight: 600, fontSize: '0.95rem' }}>{user.name}</Typography>
-                <Typography variant="body2" color="text.secondary">{user.email}</Typography>
-              </Box>
-            </Box>
+            <Avatar
+              sx={{
+                bgcolor: getAvatarColor(nameValue || user.name),
+                width: 44,
+                height: 44,
+                alignSelf: 'flex-start',
+                fontSize: '1.1rem',
+              }}
+            >
+              {(nameValue || user.name).charAt(0).toUpperCase()}
+            </Avatar>
+
+            <Controller
+              name="name"
+              control={control}
+              render={({ field, fieldState: { error } }) => (
+                <TextField
+                  {...field}
+                  label="Nombre completo"
+                  size="small"
+                  fullWidth
+                  error={!!error}
+                  helperText={error?.message}
+                />
+              )}
+            />
+
+            <Controller
+              name="email"
+              control={control}
+              render={({ field, fieldState: { error } }) => (
+                <TextField
+                  {...field}
+                  label="Correo electrónico"
+                  size="small"
+                  fullWidth
+                  type="email"
+                  error={!!error}
+                  helperText={error?.message}
+                />
+              )}
+            />
 
             <Controller
               name="roleId"
               control={control}
               render={({ field, fieldState: { error } }) => (
-                <FormControl fullWidth error={!!error}>
+                <FormControl fullWidth size="small" error={!!error}>
                   <InputLabel>Rol</InputLabel>
                   <Select {...field} label="Rol" value={field.value ?? ''}>
                     {roles.map((role) => (
@@ -109,6 +154,23 @@ export function EditUserModal({ open, user, onClose }: EditUserModalProps) {
                   </Select>
                   {error && <FormHelperText>{error.message}</FormHelperText>}
                 </FormControl>
+              )}
+            />
+
+            <Controller
+              name="banned"
+              control={control}
+              render={({ field }) => (
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={field.value}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                      color="error"
+                    />
+                  }
+                  label="Usuario bloqueado"
+                />
               )}
             />
           </Stack>

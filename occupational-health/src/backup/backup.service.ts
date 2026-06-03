@@ -25,7 +25,9 @@ export class BackupService {
 
     child.on('error', (err) =>
       pass.destroy(
-        new InternalServerErrorException(`pg_dump no encontrado: ${err.message}`),
+        new InternalServerErrorException(
+          `pg_dump no encontrado: ${err.message}`,
+        ),
       ),
     );
 
@@ -53,7 +55,8 @@ export class BackupService {
         '--no-acl',
         '--no-owner',
         '--single-transaction',
-        '-d', dbUrl,
+        '-d',
+        dbUrl,
       ]);
 
       const errors: string[] = [];
@@ -61,7 +64,9 @@ export class BackupService {
 
       child.on('error', (err) =>
         reject(
-          new InternalServerErrorException(`pg_restore no encontrado: ${err.message}`),
+          new InternalServerErrorException(
+            `pg_restore no encontrado: ${err.message}`,
+          ),
         ),
       );
 

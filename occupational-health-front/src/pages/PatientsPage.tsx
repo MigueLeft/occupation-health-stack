@@ -83,6 +83,7 @@ export function PatientsPage() {
   const canCreate = can('patients', 'create');
   const canEdit = can('patients', 'edit');
   const canDelete = can('patients', 'delete');
+  const canViewExpediente = can('expediente', 'view');
 
   const paginated = filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
@@ -231,6 +232,7 @@ export function PatientsPage() {
                           onEdit={handleEdit}
                           canEdit={canEdit}
                           canDelete={canDelete}
+                          canViewExpediente={canViewExpediente}
                         />
                       ))}
                   {!isLoading && filtered.length === 0 && (

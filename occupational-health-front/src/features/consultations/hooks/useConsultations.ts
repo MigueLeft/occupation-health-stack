@@ -29,6 +29,8 @@ export function useConsultations() {
             requestStatus: (req?.status ?? 'Pendiente') as RequestStatus,
             patientId: req?.patientId ?? '',
             patientName: patient ? `${patient.firstName} ${patient.lastName}` : (req?.patientId ?? ''),
+            companyName: patient?.company?.name ?? '',
+            positionName: patient?.position?.name ?? '',
           } as ConsultationWithDetails;
         })
       : undefined;

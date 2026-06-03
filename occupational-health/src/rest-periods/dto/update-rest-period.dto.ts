@@ -42,6 +42,8 @@ export class UpdateRestPeriodDto {
   categoryId?: string | null;
 
   @IsOptional()
-  @IsUUID('4', { message: 'El ID del aparato/sistema debe ser un UUID válido.' })
+  @IsUUID('4', {
+    message: 'El ID del aparato/sistema debe ser un UUID válido.',
+  })
   bodySystemId?: string | null;
 }

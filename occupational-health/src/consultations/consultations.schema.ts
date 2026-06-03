@@ -81,14 +81,23 @@ export const consultations = pgTable(
       () => user.id,
       { onDelete: 'set null' },
     ),
-    medicalAttendedByFreeText: varchar('medical_attended_by_free_text', { length: 255 }),
+    medicalAttendedByFreeText: varchar('medical_attended_by_free_text', {
+      length: 255,
+    }),
     psychologicalAttendedById: text('psychological_attended_by_id').references(
       () => user.id,
       { onDelete: 'set null' },
     ),
-    psychologicalAttendedByFreeText: varchar('psychological_attended_by_free_text', { length: 255 }),
-    positionRisksSnapshot: jsonb('position_risks_snapshot').$type<Array<{ id: string; name: string; type: string }>>(),
-    chronicDiseasesSnapshot: jsonb('chronic_diseases_snapshot').$type<Array<{ id: string; name: string }>>(),
+    psychologicalAttendedByFreeText: varchar(
+      'psychological_attended_by_free_text',
+      { length: 255 },
+    ),
+    positionRisksSnapshot: jsonb('position_risks_snapshot').$type<
+      Array<{ id: string; name: string; type: string }>
+    >(),
+    chronicDiseasesSnapshot: jsonb('chronic_diseases_snapshot').$type<
+      Array<{ id: string; name: string }>
+    >(),
   },
   (t) => [unique('uq_consultation_request').on(t.requestId)],
 );

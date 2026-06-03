@@ -98,6 +98,8 @@ export interface ConsultationWithDetails extends Consultation {
   requestDate: string;
   evaluationReason: EvaluationReason;
   requestStatus: RequestStatus;
+  companyName: string;
+  positionName: string;
 }
 
 export interface CreateConsultationPayload {

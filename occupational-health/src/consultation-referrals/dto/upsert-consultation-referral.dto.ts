@@ -1,9 +1,4 @@
-import {
-  IsUUID,
-  IsNotEmpty,
-  IsBoolean,
-  IsOptional,
-} from 'class-validator';
+import { IsUUID, IsNotEmpty, IsBoolean, IsOptional } from 'class-validator';
 
 export class UpsertConsultationReferralDto {
   @IsUUID('4', { message: 'El ID de la consulta debe ser un UUID válido.' })

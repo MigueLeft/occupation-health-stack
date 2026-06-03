@@ -79,7 +79,7 @@ const homeRoute = createRoute({
   path: '/',
   beforeLoad: async () => {
     await requireAuth();
-    throw redirect({ to: '/solicitudes' });
+    throw redirect({ to: '/pacientes' });
   },
   component: () => null,
 });

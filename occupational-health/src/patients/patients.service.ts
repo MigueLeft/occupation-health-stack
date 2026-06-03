@@ -5,7 +5,7 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, count } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DRIZZLE } from '../database/database.module';
 import {
@@ -18,6 +18,7 @@ import { allergies } from '../allergies/allergies.schema';
 import { diseases } from '../diseases/diseases.schema';
 import { companies } from '../companies/companies.schema';
 import { positions } from '../positions/positions.schema';
+import { requests } from '../requests/requests.schema';
 import { CreatePatientDto } from './dto/create-patient.dto';
 import { UpdatePatientDto } from './dto/update-patient.dto';
 
@@ -37,10 +38,16 @@ export class PatientsService {
     // Obtiene empresa y cargo en paralelo (solo si los IDs están presentes)
     const [companyResult, positionResult] = await Promise.all([
       patient.companyId
-        ? this.db.select().from(companies).where(eq(companies.id, patient.companyId))
+        ? this.db
+            .select()
+            .from(companies)
+            .where(eq(companies.id, patient.companyId))
         : Promise.resolve([]),
       patient.positionId
-        ? this.db.select().from(positions).where(eq(positions.id, patient.positionId))
+        ? this.db
+            .select()
+            .from(positions)
+            .where(eq(positions.id, patient.positionId))
         : Promise.resolve([]),
     ]);
     const [company] = companyResult;
@@ -301,6 +308,18 @@ export class PatientsService {
     if (!existing) {
       throw new NotFoundException(
         `No se encontró ningún paciente con la cédula "${cedula}".`,
+      );
+    }
+
+    // Proteger contra eliminación si el paciente tiene solicitudes/historial clínico
+    const [{ total }] = await this.db
+      .select({ total: count() })
+      .from(requests)
+      .where(eq(requests.patientId, cedula));
+
+    if (total > 0) {
+      throw new ConflictException(
+        `No se puede eliminar al paciente porque tiene ${total} solicitud(es) registrada(s). Elimine primero el historial clínico o desactive al paciente.`,
       );
     }
 

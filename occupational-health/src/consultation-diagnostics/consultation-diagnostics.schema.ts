@@ -1,4 +1,4 @@
-import { pgTable, uuid } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, boolean, integer } from 'drizzle-orm/pg-core';
 import { consultations } from '../consultations/consultations.schema';
 import { diseaseCategories } from '../disease-categories/disease-categories.schema';
 import { diseases } from '../diseases/diseases.schema';
@@ -15,8 +15,9 @@ export const consultationDiagnostics = pgTable('consultation_diagnostics', {
   diseaseId: uuid('disease_id')
     .notNull()
     .references(() => diseases.id),
-  // Sistema corporal afectado (opcional)
   bodySystemId: uuid('body_system_id').references(() => bodySystems.id),
+  requiresRest: boolean('requires_rest').notNull().default(false),
+  restDays: integer('rest_days'),
 });
 
 export type ConsultationDiagnostic =

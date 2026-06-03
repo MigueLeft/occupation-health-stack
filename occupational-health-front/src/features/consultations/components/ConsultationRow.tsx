@@ -5,7 +5,6 @@ import { RequestStatusChip } from '@/features/requests/components/RequestStatusC
 import { EVALUATION_REASON_LABELS } from '@/features/requests/types';
 import type { ConsultationWithDetails } from '../types';
 import { ConsultationTypeChip } from './ConsultationTypeChip';
-import { ConsultationResultChip } from './ConsultationResultChip';
 
 interface Props {
   consultation: ConsultationWithDetails;
@@ -25,12 +24,10 @@ function getInitials(name: string) {
 
 export function ConsultationRow({ consultation }: Props) {
   const navigate = useNavigate();
-  const result = consultation.type === 'Medica'
-    ? consultation.consultationResult
-    : consultation.psychologicalResult;
-
   const canAttend = consultation.requestStatus !== 'Finalizada' && consultation.requestStatus !== 'No asistio';
   const reasonLabel = EVALUATION_REASON_LABELS[consultation.evaluationReason] ?? consultation.evaluationReason;
+
+  const empresaLabel = [consultation.companyName, consultation.positionName].filter(Boolean).join(' · ') || '—';
 
   return (
     <TableRow sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
@@ -56,8 +53,14 @@ export function ConsultationRow({ consultation }: Props) {
           </Typography>
         </Tooltip>
       </TableCell>
+      <TableCell sx={{ maxWidth: 180 }}>
+        <Tooltip title={empresaLabel} placement="top-start">
+          <Typography variant="body2" color="text.secondary" sx={TRUNCATE}>
+            {empresaLabel}
+          </Typography>
+        </Tooltip>
+      </TableCell>
       <TableCell sx={{ whiteSpace: 'nowrap' }}><ConsultationTypeChip type={consultation.type} /></TableCell>
-      <TableCell sx={{ whiteSpace: 'nowrap' }}><ConsultationResultChip result={result} /></TableCell>
       <TableCell sx={{ whiteSpace: 'nowrap' }}><RequestStatusChip status={consultation.requestStatus} /></TableCell>
       <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
         {canAttend && (

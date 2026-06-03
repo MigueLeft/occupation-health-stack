@@ -1,6 +1,11 @@
 import { pgTable, uuid, varchar } from 'drizzle-orm/pg-core';
 
-export const GEO_TYPES = ['Estado', 'Ciudad', 'Municipio', 'Parroquia'] as const;
+export const GEO_TYPES = [
+  'Estado',
+  'Ciudad',
+  'Municipio',
+  'Parroquia',
+] as const;
 export type GeoType = (typeof GEO_TYPES)[number];
 
 export const geoLocations = pgTable('geo_locations', {

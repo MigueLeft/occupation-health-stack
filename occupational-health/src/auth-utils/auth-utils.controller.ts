@@ -86,7 +86,8 @@ export class AuthUtilsController {
     if (!resetResponse.ok) {
       const body = await resetResponse.json().catch(() => ({}));
       throw new BadRequestException(
-        (body as { message?: string })?.message ?? 'No se pudo restablecer la contraseña.',
+        (body as { message?: string })?.message ??
+          'No se pudo restablecer la contraseña.',
       );
     }
 

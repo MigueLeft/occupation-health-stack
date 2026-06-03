@@ -11,7 +11,7 @@ import { ConsultationRow, ConsultationFilters, useConsultations } from '@/featur
 import type { ConsultationFiltersState, ConsultationWithDetails } from '@/features/consultations';
 import { usePermissions } from '@/features/auth';
 
-const TABLE_HEADERS = ['Paciente', 'Fecha', 'Motivo', 'Tipo', 'Resultado', 'Estatus', 'Acciones'];
+const TABLE_HEADERS = ['Paciente', 'Fecha', 'Motivo', 'Empresa', 'Tipo', 'Estatus', 'Acciones'];
 const DEFAULT_FILTERS: ConsultationFiltersState = { search: '', tipo: 'all', resultado: 'all', status: 'active' };
 const ROWS_PER_PAGE_OPTIONS = [10, 25, 50];
 

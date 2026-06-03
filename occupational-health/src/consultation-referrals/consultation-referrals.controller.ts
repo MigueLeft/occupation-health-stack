@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Query,
-  Body,
-} from '@nestjs/common';
+import { Controller, Get, Post, Query, Body } from '@nestjs/common';
 import { ConsultationReferralsService } from './consultation-referrals.service';
 import { UpsertConsultationReferralDto } from './dto/upsert-consultation-referral.dto';
 
@@ -17,7 +11,9 @@ export class ConsultationReferralsController {
   @Get()
   async findByConsultation(@Query('consultationId') consultationId: string) {
     const consultationReferral =
-      await this.consultationReferralsService.findByConsultation(consultationId);
+      await this.consultationReferralsService.findByConsultation(
+        consultationId,
+      );
     return { consultationReferral };
   }
 

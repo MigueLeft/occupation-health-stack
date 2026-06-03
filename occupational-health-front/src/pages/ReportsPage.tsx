@@ -9,6 +9,7 @@ import { Navigate } from '@tanstack/react-router';
 import { AppLayout } from '@/components/AppLayout';
 import { reportsService, VigilanciaReportCard } from '@/features/reports';
 import { ReportCard } from '@/features/reports/components/ReportCard';
+import { SelloMedicoCard } from '@/features/reports/components/SelloMedicoCard';
 import {
   type PeriodType, computeDateRange,
   YEAR_OPTIONS, MONTH_OPTIONS, QUARTER_OPTIONS, SEMESTER_OPTIONS,
@@ -218,6 +219,18 @@ export function ReportsPage() {
             />
           </Grid>
         </Grid>
+
+        <Box sx={{ mt: 4 }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>Configuración de Reportes</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Personaliza los elementos que aparecen en todos los reportes generados.
+          </Typography>
+          <Grid container spacing={2.5}>
+            <Grid size={6}>
+              <SelloMedicoCard />
+            </Grid>
+          </Grid>
+        </Box>
       </Box>
     </AppLayout>
   );

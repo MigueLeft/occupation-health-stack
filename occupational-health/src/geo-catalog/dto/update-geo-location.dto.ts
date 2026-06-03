@@ -1,4 +1,10 @@
-import { IsString, IsNotEmpty, MaxLength, IsIn, IsOptional } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  MaxLength,
+  IsIn,
+  IsOptional,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 import { GEO_TYPES } from '../geo-catalog.schema';
 

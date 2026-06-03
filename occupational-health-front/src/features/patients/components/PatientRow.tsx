@@ -18,9 +18,10 @@ interface PatientRowProps {
   onEdit: (patient: Patient) => void;
   canEdit?: boolean;
   canDelete?: boolean;
+  canViewExpediente?: boolean;
 }
 
-export function PatientRow({ patient, selected, onToggleSelect, onView, onEdit, canEdit = true, canDelete = true }: PatientRowProps) {
+export function PatientRow({ patient, selected, onToggleSelect, onView, onEdit, canEdit = true, canDelete = true, canViewExpediente = true }: PatientRowProps) {
   const fullName = `${patient.firstName} ${patient.lastName}`;
   const age = patient.birthDate ? calculateAge(patient.birthDate) : '—';
 
@@ -78,11 +79,13 @@ export function PatientRow({ patient, selected, onToggleSelect, onView, onEdit, 
 
       <TableCell>
         <Box sx={{ display: 'flex', gap: 0.5 }}>
-          <Tooltip title="Ver expediente">
-            <IconButton size="small" onClick={() => onView(patient)}>
-              <ArticleOutlined fontSize="small" />
-            </IconButton>
-          </Tooltip>
+          {canViewExpediente && (
+            <Tooltip title="Ver expediente">
+              <IconButton size="small" onClick={() => onView(patient)}>
+                <ArticleOutlined fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
           {canEdit && (
             <Tooltip title="Editar paciente">
               <IconButton size="small" color="primary" onClick={() => onEdit(patient)}>

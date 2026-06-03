@@ -18,6 +18,8 @@ export interface CreateUserPayload {
 }
 
 export interface UpdateUserPayload {
+  name?: string;
+  email?: string;
   roleId?: string;
   banned?: boolean;
 }

@@ -39,8 +39,7 @@ export class ReportsController {
     @Body() filters: VigilanciaReportDto,
     @Res() res: Response,
   ) {
-    const buffer =
-      await this.reportsService.generateVigilanciaReport(filters);
+    const buffer = await this.reportsService.generateVigilanciaReport(filters);
 
     const filename = `reporte-vigilancia-${new Date().toISOString().slice(0, 10)}.pdf`;
 
@@ -87,7 +86,10 @@ export class ReportsController {
 
   @Get('morbidity')
   @RequirePermission('reports', 'view')
-  async morbidityReport(@Query() filters: MorbidityReportDto, @Res() res: Response) {
+  async morbidityReport(
+    @Query() filters: MorbidityReportDto,
+    @Res() res: Response,
+  ) {
     const buffer = await this.reportsService.generateMorbidityReport(filters);
     const filename = `reporte-morbilidad-${new Date().toISOString().slice(0, 10)}.pdf`;
     res.set({
@@ -100,8 +102,12 @@ export class ReportsController {
 
   @Get('consolidacion')
   @RequirePermission('reports', 'view')
-  async consolidacionReport(@Query() filters: ConsolidacionReportDto, @Res() res: Response) {
-    const buffer = await this.reportsService.generateConsolidacionReport(filters);
+  async consolidacionReport(
+    @Query() filters: ConsolidacionReportDto,
+    @Res() res: Response,
+  ) {
+    const buffer =
+      await this.reportsService.generateConsolidacionReport(filters);
     const filename = `reporte-consolidacion-${new Date().toISOString().slice(0, 10)}.pdf`;
     res.set({
       'Content-Type': 'application/pdf',

@@ -1,4 +1,10 @@
-import { IsOptional, IsDateString, IsUUID, IsString, MaxLength } from 'class-validator';
+import {
+  IsOptional,
+  IsDateString,
+  IsUUID,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 
 export class VigilanciaReportDto {
   @IsOptional()

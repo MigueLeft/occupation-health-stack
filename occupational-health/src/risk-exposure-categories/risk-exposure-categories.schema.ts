@@ -11,7 +11,6 @@ export const riskExposureCategories = pgTable('risk_exposure_categories', {
   healthEffects: text('health_effects'),
 });
 
-export type RiskExposureCategory =
-  typeof riskExposureCategories.$inferSelect;
+export type RiskExposureCategory = typeof riskExposureCategories.$inferSelect;
 export type NewRiskExposureCategory =
   typeof riskExposureCategories.$inferInsert;

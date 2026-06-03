@@ -5,7 +5,9 @@ export class UpsertConsultationDisabilityDto {
   @IsNotEmpty({ message: 'El ID de la consulta es obligatorio.' })
   consultationId: string;
 
-  @IsBoolean({ message: 'El campo "tiene discapacidad" debe ser verdadero o falso.' })
+  @IsBoolean({
+    message: 'El campo "tiene discapacidad" debe ser verdadero o falso.',
+  })
   hasDisability: boolean;
 
   @IsOptional()

@@ -4,10 +4,11 @@ import {
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { eq, count } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DRIZZLE } from '../database/database.module';
 import { exams, Exam } from './exams.schema';
+import { examResults } from '../exam-results/exam-results.schema';
 import { CreateExamDto } from './dto/create-exam.dto';
 import { UpdateExamDto } from './dto/update-exam.dto';
 
@@ -16,7 +17,6 @@ export class ExamsService {
   constructor(@Inject(DRIZZLE) private readonly db: NodePgDatabase) {}
 
   async findAll(category?: string): Promise<Exam[]> {
-    // Permite filtrar el catálogo por categoría
     if (category) {
       return this.db.select().from(exams).where(eq(exams.category, category));
     }
@@ -35,7 +35,6 @@ export class ExamsService {
   }
 
   async create(dto: CreateExamDto): Promise<Exam> {
-    // Verificar que no exista un examen con el mismo nombre
     const [existing] = await this.db
       .select()
       .from(exams)
@@ -64,7 +63,18 @@ export class ExamsService {
   }
 
   async remove(id: string): Promise<Exam> {
-    await this.findOne(id);
+    const exam = await this.findOne(id);
+
+    const [{ total }] = await this.db
+      .select({ total: count() })
+      .from(examResults)
+      .where(eq(examResults.examId, id));
+
+    if (total > 0) {
+      throw new ConflictException(
+        `No se puede eliminar el examen "${exam.name}" porque tiene ${total} resultado(s) registrado(s) en consultas.`,
+      );
+    }
 
     const [deleted] = await this.db
       .delete(exams)

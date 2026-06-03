@@ -13,8 +13,15 @@ export const consultationDisabilities = pgTable(
       .notNull()
       .references(() => disabilities.id, { onDelete: 'cascade' }),
   },
-  (t) => [unique('uq_cd_consultation_disability').on(t.consultationId, t.disabilityId)],
+  (t) => [
+    unique('uq_cd_consultation_disability').on(
+      t.consultationId,
+      t.disabilityId,
+    ),
+  ],
 );
 
-export type ConsultationDisability = typeof consultationDisabilities.$inferSelect;
-export type NewConsultationDisability = typeof consultationDisabilities.$inferInsert;
+export type ConsultationDisability =
+  typeof consultationDisabilities.$inferSelect;
+export type NewConsultationDisability =
+  typeof consultationDisabilities.$inferInsert;

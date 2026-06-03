@@ -79,13 +79,17 @@ export class PhysicalExamsService {
     await this.findOne(id);
 
     const updatePayload: Record<string, unknown> = {};
-    if (dto.systolicPressure !== undefined) updatePayload.systolicPressure = dto.systolicPressure;
-    if (dto.diastolicPressure !== undefined) updatePayload.diastolicPressure = dto.diastolicPressure;
+    if (dto.systolicPressure !== undefined)
+      updatePayload.systolicPressure = dto.systolicPressure;
+    if (dto.diastolicPressure !== undefined)
+      updatePayload.diastolicPressure = dto.diastolicPressure;
     if (dto.heartRate !== undefined) updatePayload.heartRate = dto.heartRate;
     if (dto.weight !== undefined) updatePayload.weight = dto.weight;
     if (dto.height !== undefined) updatePayload.height = dto.height;
-    if (dto.respiratoryRate !== undefined) updatePayload.respiratoryRate = dto.respiratoryRate;
-    if (dto.oxygenSaturation !== undefined) updatePayload.oxygenSaturation = dto.oxygenSaturation;
+    if (dto.respiratoryRate !== undefined)
+      updatePayload.respiratoryRate = dto.respiratoryRate;
+    if (dto.oxygenSaturation !== undefined)
+      updatePayload.oxygenSaturation = dto.oxygenSaturation;
     if (dto.notes !== undefined) updatePayload.notes = dto.notes;
 
     const [updated] = await this.db

@@ -45,10 +45,7 @@ export class GeoCatalogService {
       .select()
       .from(geoLocations)
       .where(
-        and(
-          eq(geoLocations.name, dto.name),
-          eq(geoLocations.type, dto.type),
-        ),
+        and(eq(geoLocations.name, dto.name), eq(geoLocations.type, dto.type)),
       );
 
     if (existing) {

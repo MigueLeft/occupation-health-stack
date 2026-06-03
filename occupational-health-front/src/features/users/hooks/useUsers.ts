@@ -41,8 +41,8 @@ export function useUpdateUser() {
       queryClient.invalidateQueries({ queryKey: ROLES_KEY });
       toast.success('Usuario actualizado correctamente');
     },
-    onError: () => {
-      toast.error('Error al actualizar el usuario');
+    onError: (error: { response?: { data?: { message?: string } } }) => {
+      toast.error(error.response?.data?.message ?? 'Error al actualizar el usuario');
     },
   });
 }

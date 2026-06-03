@@ -17,6 +17,7 @@ export const physicalExamService = {
 // ─── Consultation Diagnostics ─────────────────────────────────────────────────
 export interface ConsultationDiagnostic {
   id: string; consultationId: string; categoryId: string; diseaseId: string; bodySystemId?: string | null;
+  requiresRest?: boolean; restDays?: number | null;
 }
 export type DiagnosticPayload = Omit<ConsultationDiagnostic, 'id'>;
 

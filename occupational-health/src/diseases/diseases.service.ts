@@ -4,10 +4,11 @@ import {
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { eq, count } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DRIZZLE } from '../database/database.module';
 import { diseases, Disease } from './diseases.schema';
+import { patientDiseases } from '../patients/patients.schema';
 import { CreateDiseaseDto } from './dto/create-disease.dto';
 import { UpdateDiseaseDto } from './dto/update-disease.dto';
 
@@ -81,7 +82,18 @@ export class DiseasesService {
   }
 
   async remove(id: string): Promise<Disease> {
-    await this.findOne(id);
+    const disease = await this.findOne(id);
+
+    const [{ total }] = await this.db
+      .select({ total: count() })
+      .from(patientDiseases)
+      .where(eq(patientDiseases.diseaseId, id));
+
+    if (total > 0) {
+      throw new ConflictException(
+        `No se puede eliminar la enfermedad "${disease.name}" porque está registrada en ${total} paciente(s).`,
+      );
+    }
 
     const [deleted] = await this.db
       .delete(diseases)

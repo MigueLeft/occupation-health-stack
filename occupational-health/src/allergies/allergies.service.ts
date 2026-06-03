@@ -4,10 +4,11 @@ import {
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { eq, count } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DRIZZLE } from '../database/database.module';
 import { allergies, Allergy } from './allergies.schema';
+import { patientAllergies } from '../patients/patients.schema';
 import { CreateAllergyDto } from './dto/create-allergy.dto';
 import { UpdateAllergyDto } from './dto/update-allergy.dto';
 
@@ -34,7 +35,6 @@ export class AllergiesService {
   }
 
   async create(dto: CreateAllergyDto): Promise<Allergy> {
-    // Verificar que no exista una alergia con el mismo nombre
     const [existing] = await this.db
       .select()
       .from(allergies)
@@ -67,7 +67,18 @@ export class AllergiesService {
   }
 
   async remove(id: string): Promise<Allergy> {
-    await this.findOne(id);
+    const allergy = await this.findOne(id);
+
+    const [{ total }] = await this.db
+      .select({ total: count() })
+      .from(patientAllergies)
+      .where(eq(patientAllergies.allergyId, id));
+
+    if (total > 0) {
+      throw new ConflictException(
+        `No se puede eliminar la alergia "${allergy.name}" porque está asignada a ${total} paciente(s).`,
+      );
+    }
 
     const [deleted] = await this.db
       .delete(allergies)

@@ -68,7 +68,11 @@ export class UpdateConsultationDto {
   recommendations?: RecommendationsDto;
 
   @IsOptional()
-  observations?: { medica?: string; psicologica?: string; aptitudeDetails?: string };
+  observations?: {
+    medica?: string;
+    psicologica?: string;
+    aptitudeDetails?: string;
+  };
 
   @IsOptional()
   @IsIn(CONSULTATION_STATUSES, {

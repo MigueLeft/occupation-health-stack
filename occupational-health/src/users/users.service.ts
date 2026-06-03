@@ -5,7 +5,7 @@ import {
   ConflictException,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { eq, isNull } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DRIZZLE } from '../database/database.module';
 import { user } from '../auth/auth.schema';
@@ -31,7 +31,8 @@ export class UsersService {
         roleDescription: roles.description,
       })
       .from(user)
-      .leftJoin(roles, eq(user.roleId, roles.id));
+      .leftJoin(roles, eq(user.roleId, roles.id))
+      .where(isNull(user.deletedAt));
 
     return { users };
   }
@@ -95,9 +96,24 @@ export class UsersService {
   async update(id: string, dto: UpdateUserDto) {
     await this.findOne(id);
 
+    // Verificar unicidad del email si se va a cambiar
+    if (dto.email) {
+      const [existing] = await this.db
+        .select({ id: user.id })
+        .from(user)
+        .where(eq(user.email, dto.email));
+      if (existing && existing.id !== id) {
+        throw new ConflictException(
+          `El correo "${dto.email}" ya está en uso por otro usuario.`,
+        );
+      }
+    }
+
     await this.db
       .update(user)
       .set({
+        ...(dto.name !== undefined && { name: dto.name }),
+        ...(dto.email !== undefined && { email: dto.email }),
         ...(dto.roleId !== undefined && { roleId: dto.roleId }),
         ...(dto.banned !== undefined && { banned: dto.banned }),
         updatedAt: new Date(),
@@ -109,7 +125,12 @@ export class UsersService {
 
   async remove(id: string) {
     await this.findOne(id);
-    await this.db.delete(user).where(eq(user.id, id));
+
+    await this.db
+      .update(user)
+      .set({ deletedAt: new Date(), updatedAt: new Date() })
+      .where(eq(user.id, id));
+
     return { message: 'Usuario eliminado correctamente' };
   }
 }

@@ -1,4 +1,11 @@
-import { pgTable, uuid, varchar, text, primaryKey, timestamp } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  uuid,
+  varchar,
+  text,
+  primaryKey,
+  timestamp,
+} from 'drizzle-orm/pg-core';
 import { companies } from '../companies/companies.schema';
 import { risks } from '../risks/risks.schema';
 
@@ -21,7 +28,7 @@ export const positionRisks = pgTable(
       .notNull()
       .references(() => risks.id, { onDelete: 'cascade' }),
     assignedAt: timestamp('assigned_at').notNull().defaultNow(),
-    removedAt:  timestamp('removed_at'),
+    removedAt: timestamp('removed_at'),
   },
   (t) => [primaryKey({ columns: [t.positionId, t.riskId, t.assignedAt] })],
 );

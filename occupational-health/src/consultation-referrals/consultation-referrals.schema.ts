@@ -19,7 +19,5 @@ export const consultationReferrals = pgTable(
   (t) => [unique('uq_referral_consultation').on(t.consultationId)],
 );
 
-export type ConsultationReferral =
-  typeof consultationReferrals.$inferSelect;
-export type NewConsultationReferral =
-  typeof consultationReferrals.$inferInsert;
+export type ConsultationReferral = typeof consultationReferrals.$inferSelect;
+export type NewConsultationReferral = typeof consultationReferrals.$inferInsert;

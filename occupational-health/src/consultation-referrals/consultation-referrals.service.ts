@@ -23,7 +23,9 @@ export class ConsultationReferralsService {
     return referral ?? null;
   }
 
-  async upsert(dto: UpsertConsultationReferralDto): Promise<ConsultationReferral> {
+  async upsert(
+    dto: UpsertConsultationReferralDto,
+  ): Promise<ConsultationReferral> {
     // Intentar actualizar si ya existe, si no, insertar
     const existing = await this.findByConsultation(dto.consultationId);
 

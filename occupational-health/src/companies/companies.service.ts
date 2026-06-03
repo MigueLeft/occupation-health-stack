@@ -92,8 +92,12 @@ export class CompaniesService {
 
         return {
           ...company,
-          stateName: company.stateId ? (geoMap.get(company.stateId) ?? null) : null,
-          cityName: company.cityId ? (geoMap.get(company.cityId) ?? null) : null,
+          stateName: company.stateId
+            ? (geoMap.get(company.stateId) ?? null)
+            : null,
+          cityName: company.cityId
+            ? (geoMap.get(company.cityId) ?? null)
+            : null,
           municipalityName: company.municipalityId
             ? (geoMap.get(company.municipalityId) ?? null)
             : null,

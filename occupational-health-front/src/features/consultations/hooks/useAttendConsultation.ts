@@ -99,6 +99,8 @@ export function useAttendConsultation(consultationId: string) {
       restPeriod: c.restPeriod ?? null,
       referral: referralQ.data ?? null,
       disabilities: disabilitiesQ.data ?? [],
+      companyName: pat?.company?.name ?? '',
+      positionName: pat?.position?.name ?? '',
     };
   })();
 

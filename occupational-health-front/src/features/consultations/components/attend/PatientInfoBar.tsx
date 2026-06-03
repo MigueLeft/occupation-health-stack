@@ -12,6 +12,8 @@ interface Props {
   activeTab: 'medica' | 'psicologica';
   onTabChange: (tab: 'medica' | 'psicologica') => void;
   hiddenTab?: 'medica' | 'psicologica';
+  canSeeMedical?: boolean;
+  canSeePsychological?: boolean;
 }
 
 function formatDate(d: string) {
@@ -20,8 +22,11 @@ function formatDate(d: string) {
   return new Date(y, m - 1, day).toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-export function PatientInfoBar({ patientName, patientId, company, position, evaluationReason, requestDate, activeTab, onTabChange, hiddenTab }: Props) {
+export function PatientInfoBar({ patientName, patientId, company, position, evaluationReason, requestDate, activeTab, onTabChange, hiddenTab, canSeeMedical = true, canSeePsychological = true }: Props) {
   const initials = patientName.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+
+  const showMedica = canSeeMedical && hiddenTab !== 'medica';
+  const showPsicologica = canSeePsychological && hiddenTab !== 'psicologica';
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, px: 4, py: 2.5, bgcolor: 'background.paper', borderBottom: '1px solid', borderColor: 'divider' }}>
@@ -47,8 +52,8 @@ export function PatientInfoBar({ patientName, patientId, company, position, eval
       </Box>
 
       <Tabs value={activeTab} onChange={(_, v) => onTabChange(v)} sx={{ minHeight: 36, flexShrink: 0 }}>
-        {hiddenTab !== 'medica' && <Tab label="Médica" value="medica" sx={{ minHeight: 36, textTransform: 'none', fontWeight: 600 }} />}
-        {hiddenTab !== 'psicologica' && <Tab label="Psicológica" value="psicologica" sx={{ minHeight: 36, textTransform: 'none', fontWeight: 600 }} />}
+        {showMedica && <Tab label="Médica" value="medica" sx={{ minHeight: 36, textTransform: 'none', fontWeight: 600 }} />}
+        {showPsicologica && <Tab label="Psicológica" value="psicologica" sx={{ minHeight: 36, textTransform: 'none', fontWeight: 600 }} />}
       </Tabs>
     </Box>
   );

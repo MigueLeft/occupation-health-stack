@@ -152,7 +152,8 @@ export class ConsultationsService {
     if (dto.psychologicalAttendedById !== undefined)
       updatePayload.psychologicalAttendedById = dto.psychologicalAttendedById;
     if (dto.psychologicalAttendedByFreeText !== undefined)
-      updatePayload.psychologicalAttendedByFreeText = dto.psychologicalAttendedByFreeText;
+      updatePayload.psychologicalAttendedByFreeText =
+        dto.psychologicalAttendedByFreeText;
     if (dto.chronicDiseasesSnapshot !== undefined)
       updatePayload.chronicDiseasesSnapshot = dto.chronicDiseasesSnapshot;
 
@@ -170,10 +171,19 @@ export class ConsultationsService {
           .limit(1);
         if (patient?.positionId) {
           const riskRows = await this.db
-            .select({ id: risksTable.id, name: risksTable.name, type: risksTable.type })
+            .select({
+              id: risksTable.id,
+              name: risksTable.name,
+              type: risksTable.type,
+            })
             .from(positionRisks)
             .innerJoin(risksTable, eq(positionRisks.riskId, risksTable.id))
-            .where(and(eq(positionRisks.positionId, patient.positionId), isNull(positionRisks.removedAt)));
+            .where(
+              and(
+                eq(positionRisks.positionId, patient.positionId),
+                isNull(positionRisks.removedAt),
+              ),
+            );
           updatePayload.positionRisksSnapshot = riskRows;
         }
       }

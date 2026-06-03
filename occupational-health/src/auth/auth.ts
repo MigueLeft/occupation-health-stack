@@ -29,11 +29,19 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     // Captura el token crudo para uso interno vía clave maestra
-    sendResetPassword: async ({ user, url }: { user: { email: string }; url: string }) => {
+    sendResetPassword: async ({
+      user,
+      url,
+    }: {
+      user: { email: string };
+      url: string;
+    }) => {
       try {
         const rawToken = new URL(url).searchParams.get('token');
         if (rawToken) resetTokenStore.set(user.email, rawToken);
-      } catch { /* ignorar URLs malformadas */ }
+      } catch {
+        /* ignorar URLs malformadas */
+      }
     },
   },
   plugins: [

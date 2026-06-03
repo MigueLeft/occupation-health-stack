@@ -19,6 +19,8 @@ export const user = pgTable('user', {
   phone: text('phone'),
   // FK al sistema de roles personalizado
   roleId: uuid('role_id').references(() => roles.id, { onDelete: 'set null' }),
+  // Soft-delete: registros eliminados conservan el historial clínico intacto
+  deletedAt: timestamp('deleted_at'),
 });
 
 // Tabla de sesiones

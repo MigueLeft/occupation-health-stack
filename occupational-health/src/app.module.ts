@@ -33,6 +33,7 @@ import { ConsultationReferralsModule } from './consultation-referrals/consultati
 import { DisabilitiesModule } from './disabilities/disabilities.module';
 import { ConsultationDisabilitiesModule } from './consultation-disabilities/consultation-disabilities.module';
 import { BackupModule } from './backup/backup.module';
+import { ReportConfigModule } from './report-config/report-config.module';
 
 @Module({
   imports: [
@@ -70,6 +71,7 @@ import { BackupModule } from './backup/backup.module';
     UsersModule,
     AuthUtilsModule,
     ReportsModule,
+    ReportConfigModule,
     BackupModule,
   ],
   providers: [

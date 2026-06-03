@@ -127,6 +127,20 @@
       "when": 1747267200000,
       "tag": "0017_chronic_diseases_snapshot",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1780494800034,
+      "tag": "0018_bizarre_goblin_queen",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1780495874826,
+      "tag": "0019_same_marvex",
+      "breakpoints": true
     }
   ]
 }
