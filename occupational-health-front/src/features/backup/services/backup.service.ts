@@ -6,9 +6,20 @@ export const backupService = {
     const url = URL.createObjectURL(
       new Blob([response.data as BlobPart], { type: 'application/octet-stream' }),
     );
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    const month = months[now.getMonth()];
+    const year = now.getFullYear();
+    const h = now.getHours();
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const period = h >= 12 ? 'PM' : 'AM';
+    const hour12 = String(h % 12 || 12).padStart(2, '0');
+    const filename = `Respaldo-${day}-${month}-${year}-${hour12}-${minutes}${period}`;
+
     const link = document.createElement('a');
     link.href = url;
-    link.download = `backup-${new Date().toISOString().slice(0, 10)}.pgdump`;
+    link.download = `${filename}.pgdump`;
     document.body.appendChild(link);
     link.click();
     link.remove();
