@@ -25,6 +25,7 @@ function getInitials(name: string): string {
 export function RequestRow({ request, onEdit, onNoAsistio, canEdit = true }: Props) {
   const isConsulta = request.evaluationReason === 'Consulta';
   const reasonLabel = EVALUATION_REASON_LABELS[request.evaluationReason] ?? request.evaluationReason;
+  const isActionable = request.status !== 'En Proceso' && request.status !== 'Finalizada';
 
   return (
     <TableRow sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
@@ -65,7 +66,7 @@ export function RequestRow({ request, onEdit, onNoAsistio, canEdit = true }: Pro
         <RequestStatusChip status={request.status} />
       </TableCell>
       <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
-        {canEdit && (
+        {canEdit && isActionable && (
           <>
             <Tooltip title="Editar">
               <IconButton size="small" onClick={() => onEdit(request)} sx={{ color: 'text.secondary' }}>

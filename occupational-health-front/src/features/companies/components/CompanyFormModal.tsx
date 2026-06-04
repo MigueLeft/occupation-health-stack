@@ -58,7 +58,7 @@ async function resizeImageToBase64(file: File): Promise<string> {
       canvas.height = height;
       const ctx = canvas.getContext('2d')!;
       ctx.drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL('image/webp', 0.8));
+      resolve(canvas.toDataURL('image/png'));
     };
     img.onerror = reject;
     img.src = url;
