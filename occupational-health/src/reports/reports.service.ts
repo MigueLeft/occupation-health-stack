@@ -2088,7 +2088,8 @@ export class ReportsService {
         diseaseName: diseases.name,
         sex: patients.sex,
         requestDate: requests.requestDate,
-        restDays: restPeriods.days,
+        // Días de reposo del diagnóstico individual (excluye accidentes porque el INNER JOIN con diseases solo trae enfermedades)
+        restDays: consultationDiagnostics.restDays,
         // Categoría del diagnóstico (origen: Enfermedad Comun / Laboral)
         diagnosticCategoryName: diseaseCategories.name,
       })
@@ -2104,7 +2105,6 @@ export class ReportsService {
       )
       .innerJoin(requests, eq(consultations.requestId, requests.id))
       .innerJoin(patients, eq(requests.patientId, patients.cedula))
-      .leftJoin(restPeriods, eq(restPeriods.consultationId, consultations.id))
       .where(whereClause)
       .orderBy(diseases.name);
 
