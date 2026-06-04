@@ -46,16 +46,14 @@ export class ConsultationsService {
         .where(eq(consultationDiagnostics.consultationId, id)),
     ]);
 
-    // Compute rest period from diagnostics: only disease diagnostics (no accidentTypeId), days = MAX
-    const diseaseDiagsWithRest = diagnosticsList.filter(
-      (d) => d.requiresRest && !d.accidentTypeId,
-    );
+    // Compute rest period from ALL diagnostics with rest (accidents included), days = MAX
+    const diagsWithRest = diagnosticsList.filter((d) => d.requiresRest);
     const maxRestDays =
-      diseaseDiagsWithRest.length > 0
-        ? Math.max(...diseaseDiagsWithRest.map((d) => d.restDays ?? 0))
+      diagsWithRest.length > 0
+        ? Math.max(...diagsWithRest.map((d) => d.restDays ?? 0))
         : null;
     const restPeriod =
-      diseaseDiagsWithRest.length > 0
+      diagsWithRest.length > 0
         ? { requiresRest: true, days: maxRestDays || null }
         : null;
 
