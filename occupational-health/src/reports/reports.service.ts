@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import PDFDocument from 'pdfkit';
 import sharp from 'sharp';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { and, gte, lte, eq, isNotNull, isNull, count, max, SQL } from 'drizzle-orm';
+import { and, gte, lte, eq, isNotNull, isNull, count, SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { DRIZZLE } from '../database/database.module';
 import { consultations } from '../consultations/consultations.schema';
@@ -1076,41 +1076,6 @@ export class ReportsService {
     }));
   }
 
-  // Suma de MAX dias de reposo por consulta (solo enfermedades) para los resúmenes de reportes
-  private async fetchDiseaseMaxRestDaysTotal(filters: {
-    dateFrom?: string;
-    dateTo?: string;
-    companyId?: string;
-  }): Promise<number> {
-    const conditions: SQL[] = [];
-    if (filters.dateFrom)
-      conditions.push(gte(requests.requestDate, filters.dateFrom));
-    if (filters.dateTo)
-      conditions.push(lte(requests.requestDate, filters.dateTo));
-    if (filters.companyId)
-      conditions.push(eq(patients.companyId, filters.companyId));
-
-    const whereClause =
-      conditions.length > 0
-        ? and(...conditions, eq(consultationDiagnostics.requiresRest, true))
-        : eq(consultationDiagnostics.requiresRest, true);
-
-    const perConsultation = await this.db
-      .select({ maxDays: max(consultationDiagnostics.restDays) })
-      .from(consultationDiagnostics)
-      .innerJoin(diseases, eq(consultationDiagnostics.diseaseId, diseases.id))
-      .innerJoin(
-        consultations,
-        eq(consultationDiagnostics.consultationId, consultations.id),
-      )
-      .innerJoin(requests, eq(consultations.requestId, requests.id))
-      .innerJoin(patients, eq(requests.patientId, patients.cedula))
-      .where(whereClause)
-      .groupBy(consultations.id);
-
-    return perConsultation.reduce((s, r) => s + Number(r.maxDays ?? 0), 0);
-  }
-
   // Sección IV: Motivos de reposo médico (cuenta por diagnóstico, no por consulta)
   private async fetchRestPeriodReasons(
     filters: VigilanciaReportDto,
@@ -1321,16 +1286,6 @@ export class ReportsService {
       .where(whereClause)
       .orderBy(diseases.name);
 
-    // First pass: compute MAX rest days per consultation
-    const consultationMaxRestDays = new Map<string, number>();
-    for (const r of rows) {
-      if (r.diagRequiresRest && r.diagRestDays) {
-        const current = consultationMaxRestDays.get(r.consultationId) ?? 0;
-        if (r.diagRestDays > current)
-          consultationMaxRestDays.set(r.consultationId, r.diagRestDays);
-      }
-    }
-
     const map = new Map<string, PathologyRow>();
     for (const r of rows) {
       if (!map.has(r.diseaseId)) {
@@ -1348,7 +1303,7 @@ export class ReportsService {
       const entry = map.get(r.diseaseId)!;
       entry.totalCases++;
       if (r.diagRequiresRest) {
-        entry.totalRestDays += consultationMaxRestDays.get(r.consultationId) ?? 0;
+        entry.totalRestDays += r.diagRestDays ?? 0;
       }
       if (r.sex === 'M' || r.sex === 'Masculino') entry.maleCases++;
       else if (r.sex === 'F' || r.sex === 'Femenino') entry.femaleCases++;
@@ -1413,16 +1368,6 @@ export class ReportsService {
       )
       .orderBy(bodySystems.name);
 
-    // First pass: compute MAX rest days per consultation
-    const consultationMaxRestDays = new Map<string, number>();
-    for (const r of rows) {
-      if (r.diagRequiresRest && r.diagRestDays) {
-        const current = consultationMaxRestDays.get(r.consultationId) ?? 0;
-        if (r.diagRestDays > current)
-          consultationMaxRestDays.set(r.consultationId, r.diagRestDays);
-      }
-    }
-
     const map = new Map<string, BodySystemRow>();
     for (const r of rows) {
       if (!map.has(r.systemId)) {
@@ -1440,7 +1385,7 @@ export class ReportsService {
       const entry = map.get(r.systemId)!;
       entry.totalCases++;
       if (r.diagRequiresRest) {
-        entry.totalRestDays += consultationMaxRestDays.get(r.consultationId) ?? 0;
+        entry.totalRestDays += r.diagRestDays ?? 0;
       }
       if (r.sex === 'M' || r.sex === 'Masculino') entry.maleCases++;
       else if (r.sex === 'F' || r.sex === 'Femenino') entry.femaleCases++;
@@ -1643,15 +1588,15 @@ export class ReportsService {
     filters: PathologiesReportDto,
   ): Promise<Buffer> {
     await this.loadSello();
-    const [data, companyInfo, totalRestDays] = await Promise.all([
+    const [data, companyInfo] = await Promise.all([
       this.fetchPathologyData(filters),
       filters.companyId
         ? this.fetchCompanyInfo(filters.companyId)
         : Promise.resolve(null),
-      this.fetchDiseaseMaxRestDaysTotal(filters),
     ]);
     const logoBuffer = await this.resolveLogoBuffer(companyInfo?.logo);
     const grandTotal = data.reduce((s, r) => s + r.totalCases, 0);
+    const totalRestDays = data.reduce((s, r) => s + r.totalRestDays, 0);
     const maleCases = data.reduce((s, r) => s + r.maleCases, 0);
     const femaleCases = data.reduce((s, r) => s + r.femaleCases, 0);
     const commonOrigin = data.reduce((s, r) => s + r.commonOrigin, 0);
@@ -1744,15 +1689,15 @@ export class ReportsService {
     filters: BodySystemsReportDto,
   ): Promise<Buffer> {
     await this.loadSello();
-    const [data, companyInfo, totalRestDays] = await Promise.all([
+    const [data, companyInfo] = await Promise.all([
       this.fetchBodySystemData(filters),
       filters.companyId
         ? this.fetchCompanyInfo(filters.companyId)
         : Promise.resolve(null),
-      this.fetchDiseaseMaxRestDaysTotal(filters),
     ]);
     const logoBuffer = await this.resolveLogoBuffer(companyInfo?.logo);
     const grandTotal = data.reduce((s, r) => s + r.totalCases, 0);
+    const totalRestDays = data.reduce((s, r) => s + r.totalRestDays, 0);
     const maleCases = data.reduce((s, r) => s + r.maleCases, 0);
     const femaleCases = data.reduce((s, r) => s + r.femaleCases, 0);
     const commonOrigin = data.reduce((s, r) => s + r.commonOrigin, 0);
@@ -2126,16 +2071,6 @@ export class ReportsService {
       .where(whereClause)
       .orderBy(diseases.name);
 
-    // First pass: compute MAX rest days per consultation (only disease diagnostics with rest)
-    const consultationMaxRestDays = new Map<string, number>();
-    for (const r of rows) {
-      if (r.requiresRest && r.restDays) {
-        const current = consultationMaxRestDays.get(r.consultationId) ?? 0;
-        if (r.restDays > current)
-          consultationMaxRestDays.set(r.consultationId, r.restDays);
-      }
-    }
-
     const map = new Map<string, ConsolidacionRow>();
     for (const r of rows) {
       if (!map.has(r.diseaseId)) {
@@ -2163,7 +2098,7 @@ export class ReportsService {
       else if (r.sex === 'F' || r.sex === 'Femenino') entry.femaleCases++;
 
       if (r.requiresRest) {
-        entry.totalRestDays += consultationMaxRestDays.get(r.consultationId) ?? 0;
+        entry.totalRestDays += r.restDays ?? 0;
       }
 
       const origin = r.diagnosticCategoryName ?? '';
@@ -2403,14 +2338,14 @@ export class ReportsService {
     filters: ConsolidacionReportDto,
   ): Promise<Buffer> {
     await this.loadSello();
-    const [data, companyInfo, totalRestDays] = await Promise.all([
+    const [data, companyInfo] = await Promise.all([
       this.fetchConsolidacionData(filters),
       filters.companyId
         ? this.fetchCompanyInfo(filters.companyId)
         : Promise.resolve(null),
-      this.fetchDiseaseMaxRestDaysTotal(filters),
     ]);
     const logoBuffer = await this.resolveLogoBuffer(companyInfo?.logo);
+    const totalRestDays = data.reduce((s, r) => s + r.totalRestDays, 0);
 
     const nroPatologias = data.length;
     const nroPatMasc = data.filter((r) => r.maleCases > 0).length;
