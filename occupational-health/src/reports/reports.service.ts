@@ -12,7 +12,6 @@ import { requests } from '../requests/requests.schema';
 import { patients } from '../patients/patients.schema';
 import { companies } from '../companies/companies.schema';
 import { positions } from '../positions/positions.schema';
-import { restPeriods } from '../rest-periods/rest-periods.schema';
 import { examResults } from '../exam-results/exam-results.schema';
 import { exams } from '../exams/exams.schema';
 import { positionRisks } from '../positions/positions.schema';
@@ -1257,7 +1256,6 @@ export class ReportsService {
       conditions.push(eq(patients.companyId, filters.companyId));
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-    const restCategories = alias(diseaseCategories, 'rest_categories');
     const diagnosticCategories = alias(
       diseaseCategories,
       'diagnostic_categories',
@@ -1270,11 +1268,8 @@ export class ReportsService {
         sex: patients.sex,
         diagRequiresRest: consultationDiagnostics.requiresRest,
         diagRestDays: consultationDiagnostics.restDays,
-        legacyRestDays: restPeriods.days,
-        legacyRequiresRest: restPeriods.requiresRest,
-        restCategoryName: restCategories.name,
         diagnosticCategoryName: diagnosticCategories.name,
-        legacyRestReason: restPeriods.reason,
+        consultationId: consultations.id,
       })
       .from(consultationDiagnostics)
       .innerJoin(diseases, eq(consultationDiagnostics.diseaseId, diseases.id))
@@ -1288,10 +1283,18 @@ export class ReportsService {
         diagnosticCategories,
         eq(consultationDiagnostics.categoryId, diagnosticCategories.id),
       )
-      .leftJoin(restPeriods, eq(restPeriods.consultationId, consultations.id))
-      .leftJoin(restCategories, eq(restPeriods.categoryId, restCategories.id))
       .where(whereClause)
       .orderBy(diseases.name);
+
+    // First pass: compute MAX rest days per consultation
+    const consultationMaxRestDays = new Map<string, number>();
+    for (const r of rows) {
+      if (r.diagRequiresRest && r.diagRestDays) {
+        const current = consultationMaxRestDays.get(r.consultationId) ?? 0;
+        if (r.diagRestDays > current)
+          consultationMaxRestDays.set(r.consultationId, r.diagRestDays);
+      }
+    }
 
     const map = new Map<string, PathologyRow>();
     for (const r of rows) {
@@ -1309,32 +1312,15 @@ export class ReportsService {
       }
       const entry = map.get(r.diseaseId)!;
       entry.totalCases++;
-      // Nuevos diagnósticos usan requires_rest/rest_days; datos legados usan rest_periods
-      if (r.diagRequiresRest && r.diagRestDays) {
-        entry.totalRestDays += r.diagRestDays;
-      } else if (
-        !r.diagRequiresRest &&
-        r.legacyRequiresRest &&
-        r.legacyRestDays
-      ) {
-        entry.totalRestDays += r.legacyRestDays;
+      if (r.diagRequiresRest) {
+        entry.totalRestDays += consultationMaxRestDays.get(r.consultationId) ?? 0;
       }
       if (r.sex === 'M' || r.sex === 'Masculino') entry.maleCases++;
       else if (r.sex === 'F' || r.sex === 'Femenino') entry.femaleCases++;
-      const effectiveReason =
-        r.restCategoryName ??
-        r.diagnosticCategoryName ??
-        r.legacyRestReason ??
-        '';
-      if (
-        effectiveReason === 'Enfermedad Comun' ||
-        effectiveReason === 'Accidente Comun'
-      )
+      const origin = r.diagnosticCategoryName ?? '';
+      if (origin === 'Enfermedad Comun' || origin === 'Accidente Comun')
         entry.commonOrigin++;
-      else if (
-        effectiveReason === 'Enfermedad Laboral' ||
-        effectiveReason === 'Accidente Laboral'
-      )
+      else if (origin === 'Enfermedad Laboral' || origin === 'Accidente Laboral')
         entry.laborOrigin++;
     }
 
@@ -1352,7 +1338,6 @@ export class ReportsService {
     if (filters.companyId)
       conditions.push(eq(patients.companyId, filters.companyId));
 
-    const restCategories = alias(diseaseCategories, 'rest_categories');
     const diagnosticCategories = alias(
       diseaseCategories,
       'diagnostic_categories',
@@ -1365,11 +1350,8 @@ export class ReportsService {
         sex: patients.sex,
         diagRequiresRest: consultationDiagnostics.requiresRest,
         diagRestDays: consultationDiagnostics.restDays,
-        legacyRestDays: restPeriods.days,
-        legacyRequiresRest: restPeriods.requiresRest,
-        restCategoryName: restCategories.name,
         diagnosticCategoryName: diagnosticCategories.name,
-        legacyRestReason: restPeriods.reason,
+        consultationId: consultations.id,
       })
       .from(consultationDiagnostics)
       .innerJoin(
@@ -1386,8 +1368,6 @@ export class ReportsService {
         diagnosticCategories,
         eq(consultationDiagnostics.categoryId, diagnosticCategories.id),
       )
-      .leftJoin(restPeriods, eq(restPeriods.consultationId, consultations.id))
-      .leftJoin(restCategories, eq(restPeriods.categoryId, restCategories.id))
       .where(
         conditions.length > 0
           ? and(
@@ -1397,6 +1377,16 @@ export class ReportsService {
           : isNotNull(consultationDiagnostics.bodySystemId),
       )
       .orderBy(bodySystems.name);
+
+    // First pass: compute MAX rest days per consultation
+    const consultationMaxRestDays = new Map<string, number>();
+    for (const r of rows) {
+      if (r.diagRequiresRest && r.diagRestDays) {
+        const current = consultationMaxRestDays.get(r.consultationId) ?? 0;
+        if (r.diagRestDays > current)
+          consultationMaxRestDays.set(r.consultationId, r.diagRestDays);
+      }
+    }
 
     const map = new Map<string, BodySystemRow>();
     for (const r of rows) {
@@ -1414,31 +1404,15 @@ export class ReportsService {
       }
       const entry = map.get(r.systemId)!;
       entry.totalCases++;
-      if (r.diagRequiresRest && r.diagRestDays) {
-        entry.totalRestDays += r.diagRestDays;
-      } else if (
-        !r.diagRequiresRest &&
-        r.legacyRequiresRest &&
-        r.legacyRestDays
-      ) {
-        entry.totalRestDays += r.legacyRestDays;
+      if (r.diagRequiresRest) {
+        entry.totalRestDays += consultationMaxRestDays.get(r.consultationId) ?? 0;
       }
       if (r.sex === 'M' || r.sex === 'Masculino') entry.maleCases++;
       else if (r.sex === 'F' || r.sex === 'Femenino') entry.femaleCases++;
-      const effectiveReason =
-        r.restCategoryName ??
-        r.diagnosticCategoryName ??
-        r.legacyRestReason ??
-        '';
-      if (
-        effectiveReason === 'Enfermedad Comun' ||
-        effectiveReason === 'Accidente Comun'
-      )
+      const origin = r.diagnosticCategoryName ?? '';
+      if (origin === 'Enfermedad Comun' || origin === 'Accidente Comun')
         entry.commonOrigin++;
-      else if (
-        effectiveReason === 'Enfermedad Laboral' ||
-        effectiveReason === 'Accidente Laboral'
-      )
+      else if (origin === 'Enfermedad Laboral' || origin === 'Accidente Laboral')
         entry.laborOrigin++;
     }
 
@@ -2097,10 +2071,10 @@ export class ReportsService {
         diseaseName: diseases.name,
         sex: patients.sex,
         requestDate: requests.requestDate,
-        // Días de reposo del diagnóstico individual (excluye accidentes porque el INNER JOIN con diseases solo trae enfermedades)
         restDays: consultationDiagnostics.restDays,
-        // Categoría del diagnóstico (origen: Enfermedad Comun / Laboral)
+        requiresRest: consultationDiagnostics.requiresRest,
         diagnosticCategoryName: diseaseCategories.name,
+        consultationId: consultations.id,
       })
       .from(consultationDiagnostics)
       .innerJoin(diseases, eq(consultationDiagnostics.diseaseId, diseases.id))
@@ -2116,6 +2090,16 @@ export class ReportsService {
       .innerJoin(patients, eq(requests.patientId, patients.cedula))
       .where(whereClause)
       .orderBy(diseases.name);
+
+    // First pass: compute MAX rest days per consultation (only disease diagnostics with rest)
+    const consultationMaxRestDays = new Map<string, number>();
+    for (const r of rows) {
+      if (r.requiresRest && r.restDays) {
+        const current = consultationMaxRestDays.get(r.consultationId) ?? 0;
+        if (r.restDays > current)
+          consultationMaxRestDays.set(r.consultationId, r.restDays);
+      }
+    }
 
     const map = new Map<string, ConsolidacionRow>();
     for (const r of rows) {
@@ -2140,20 +2124,17 @@ export class ReportsService {
         if (monthIdx >= 0 && monthIdx < 12) entry.months[monthIdx]++;
       }
 
-      // Acepta tanto 'M'/'F' (seed) como 'Masculino'/'Femenino' (API)
       if (r.sex === 'M' || r.sex === 'Masculino') entry.maleCases++;
       else if (r.sex === 'F' || r.sex === 'Femenino') entry.femaleCases++;
 
-      if (r.restDays) entry.totalRestDays += r.restDays;
+      if (r.requiresRest) {
+        entry.totalRestDays += consultationMaxRestDays.get(r.consultationId) ?? 0;
+      }
 
-      // El origen se lee de la categoría del diagnóstico, no del reposo
       const origin = r.diagnosticCategoryName ?? '';
       if (origin === 'Enfermedad Comun' || origin === 'Accidente Comun')
         entry.commonOrigin++;
-      else if (
-        origin === 'Enfermedad Laboral' ||
-        origin === 'Accidente Laboral'
-      )
+      else if (origin === 'Enfermedad Laboral' || origin === 'Accidente Laboral')
         entry.laborOrigin++;
     }
 

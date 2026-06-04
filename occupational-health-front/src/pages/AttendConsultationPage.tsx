@@ -18,7 +18,6 @@ import { useUsers } from '@/features/users/hooks/useUsers';
 import { useAuth, usePermissions } from '@/features/auth';
 import { consultationsService } from '@/features/consultations/services/consultations.service';
 import { physicalExamService, diagnosticsService, examResultsService, psychometricTestsService } from '@/features/consultations/services/sub-entities.service';
-import { restPeriodsService } from '@/features/consultations/services/rest-periods.service';
 import { referralsService } from '@/features/consultations/services/referrals.service';
 import { patientsService } from '@/features/patients/services/patients.service';
 import { PatientInfoBar } from '@/features/consultations/components/attend/PatientInfoBar';
@@ -289,31 +288,6 @@ export function AttendConsultationPage({ editMode = false }: Props) {
         await physicalExamService.update(data.physicalExam.id, physExam);
       } else if (Object.values(physExam).some(Boolean)) {
         await physicalExamService.create({ ...physExam, consultationId: id });
-      }
-
-      const hasAnyRest = restEntries.length > 0;
-      const totalRestDays = restEntries.reduce((sum, e) => sum + e.days, 0);
-      const firstRestDiag = hasAnyRest
-        ? localDiagnostics.find((d) => d.id === restEntries[0].diagId)
-        : null;
-
-      if (data.restPeriod) {
-        await restPeriodsService.update(data.restPeriod.id, {
-          requiresRest: hasAnyRest,
-          days: hasAnyRest ? totalRestDays : null,
-          categoryId: firstRestDiag?.categoryId ?? null,
-          diseaseId: firstRestDiag?.diseaseId ?? null,
-          bodySystemId: firstRestDiag?.bodySystemId ?? null,
-        });
-      } else if (hasAnyRest) {
-        await restPeriodsService.create({
-          consultationId: id,
-          requiresRest: true,
-          days: totalRestDays,
-          categoryId: firstRestDiag?.categoryId || undefined,
-          diseaseId: firstRestDiag?.diseaseId || undefined,
-          bodySystemId: firstRestDiag?.bodySystemId || undefined,
-        });
       }
 
       await referralsService.upsert({

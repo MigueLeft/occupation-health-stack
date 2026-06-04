@@ -36,8 +36,8 @@ export interface Observations {
 }
 
 export interface RestPeriod {
-  id: string;
-  consultationId: string;
+  id?: string;
+  consultationId?: string;
   requiresRest: boolean;
   days?: number | null;
   startDate?: string | null;

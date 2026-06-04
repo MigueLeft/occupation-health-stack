@@ -11,7 +11,7 @@ import { DRIZZLE } from '../database/database.module';
 import { consultations, Consultation } from './consultations.schema';
 import { requests, Request } from '../requests/requests.schema';
 import { physicalExams } from '../physical-exams/physical-exams.schema';
-import { restPeriods } from '../rest-periods/rest-periods.schema';
+import { consultationDiagnostics } from '../consultation-diagnostics/consultation-diagnostics.schema';
 import { examResults } from '../exam-results/exam-results.schema';
 import { patients } from '../patients/patients.schema';
 import { positionRisks } from '../positions/positions.schema';
@@ -31,25 +31,38 @@ export class ConsultationsService {
 
     if (!consultation) return null;
 
-    const [[physicalExam], [restPeriod], examResultsList] = await Promise.all([
+    const [[physicalExam], examResultsList, diagnosticsList] = await Promise.all([
       this.db
         .select()
         .from(physicalExams)
         .where(eq(physicalExams.consultationId, id)),
       this.db
         .select()
-        .from(restPeriods)
-        .where(eq(restPeriods.consultationId, id)),
-      this.db
-        .select()
         .from(examResults)
         .where(eq(examResults.consultationId, id)),
+      this.db
+        .select()
+        .from(consultationDiagnostics)
+        .where(eq(consultationDiagnostics.consultationId, id)),
     ]);
+
+    // Compute rest period from diagnostics: only disease diagnostics (no accidentTypeId), days = MAX
+    const diseaseDiagsWithRest = diagnosticsList.filter(
+      (d) => d.requiresRest && !d.accidentTypeId,
+    );
+    const maxRestDays =
+      diseaseDiagsWithRest.length > 0
+        ? Math.max(...diseaseDiagsWithRest.map((d) => d.restDays ?? 0))
+        : null;
+    const restPeriod =
+      diseaseDiagsWithRest.length > 0
+        ? { requiresRest: true, days: maxRestDays || null }
+        : null;
 
     return {
       ...consultation,
       physicalExam: physicalExam ?? null,
-      restPeriod: restPeriod ?? null,
+      restPeriod,
       examResults: examResultsList,
     };
   }
