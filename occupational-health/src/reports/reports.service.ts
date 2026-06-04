@@ -2,6 +2,7 @@ import { Injectable, Inject } from '@nestjs/common';
 import * as path from 'path';
 import * as fs from 'fs';
 import PDFDocument from 'pdfkit';
+import sharp from 'sharp';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { and, gte, lte, eq, isNotNull, isNull, count, SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
@@ -161,6 +162,7 @@ export class ReportsService {
         ? this.fetchCompanyInfo(filters.companyId)
         : Promise.resolve(null),
     ]);
+    const logoBuffer = await this.resolveLogoBuffer(companyInfo?.logo);
 
     return new Promise((resolve, reject) => {
       const doc = new PDFDocument({
@@ -182,7 +184,7 @@ export class ReportsService {
       this.drawHeader(doc);
       doc.on('pageAdded', () => this.drawHeader(doc));
 
-      if (companyInfo) this.drawCompanyInfoBlock(doc, companyInfo);
+      if (companyInfo) this.drawCompanyInfoBlock(doc, companyInfo, logoBuffer);
       this.drawTitle(doc, filters);
       this.drawTable(doc, rows);
 
@@ -223,6 +225,7 @@ export class ReportsService {
         ? this.fetchCompanyInfo(filters.companyId)
         : Promise.resolve(null),
     ]);
+    const logoBuffer = await this.resolveLogoBuffer(companyInfo?.logo);
 
     return new Promise((resolve, reject) => {
       const doc = new PDFDocument({
@@ -244,7 +247,7 @@ export class ReportsService {
       this.drawHeader(doc);
       doc.on('pageAdded', () => this.drawHeader(doc));
 
-      if (companyInfo) this.drawCompanyInfoBlock(doc, companyInfo);
+      if (companyInfo) this.drawCompanyInfoBlock(doc, companyInfo, logoBuffer);
       this.drawVigilanciaTitle(doc, filters);
 
       // Sección I: Trabajadores por motivo de evaluación
@@ -371,6 +374,20 @@ export class ReportsService {
     return result[0] ?? null;
   }
 
+  private async resolveLogoBuffer(logo: string | null | undefined): Promise<Buffer | null> {
+    if (!logo) return null;
+    try {
+      const base64Data = logo.replace(/^data:[^;]+;base64,/, '');
+      const rawBuffer = Buffer.from(base64Data, 'base64');
+      return logo.startsWith('data:image/webp')
+        ? await sharp(rawBuffer).png().toBuffer()
+        : rawBuffer;
+    } catch (err) {
+      console.error('[ReportsService] Error al procesar logo:', err);
+      return null;
+    }
+  }
+
   private drawCompanyInfoBlock(
     doc: PDFKit.PDFDocument,
     company: {
@@ -378,8 +395,8 @@ export class ReportsService {
       rif: string;
       address: string;
       contact: string;
-      logo?: string | null;
     },
+    logoBuffer: Buffer | null,
   ) {
     const y = HEADER_HEIGHT + 14;
     const blockHeight = 52;
@@ -390,17 +407,15 @@ export class ReportsService {
     const cx = MARGIN + avatarSize / 2 + 6;
     const cy = y + blockHeight / 2;
 
-    if (company.logo) {
-      // Usar el logo real de la empresa (base64)
+    if (logoBuffer) {
       try {
-        const base64Data = company.logo.replace(/^data:.+;base64,/, '');
-        const logoBuffer = Buffer.from(base64Data, 'base64');
         doc.image(logoBuffer, MARGIN + 6, y + (blockHeight - avatarSize) / 2, {
           fit: [avatarSize, avatarSize],
           align: 'center',
           valign: 'center',
         });
-      } catch {
+      } catch (err) {
+        console.error('[ReportsService] Error al renderizar logo de empresa:', err);
         this.drawCompanyInitialCircle(doc, company.name, cx, cy);
       }
     } else {
@@ -1633,6 +1648,7 @@ export class ReportsService {
         ? this.fetchCompanyInfo(filters.companyId)
         : Promise.resolve(null),
     ]);
+    const logoBuffer = await this.resolveLogoBuffer(companyInfo?.logo);
     const grandTotal = data.reduce((s, r) => s + r.totalCases, 0);
     const totalRestDays = data.reduce((s, r) => s + r.totalRestDays, 0);
     const maleCases = data.reduce((s, r) => s + r.maleCases, 0);
@@ -1660,7 +1676,7 @@ export class ReportsService {
       this.drawHeader(doc);
       doc.on('pageAdded', () => this.drawHeader(doc));
 
-      if (companyInfo) this.drawCompanyInfoBlock(doc, companyInfo);
+      if (companyInfo) this.drawCompanyInfoBlock(doc, companyInfo, logoBuffer);
       const titleY = Math.max(doc.y, HEADER_HEIGHT + 14);
       doc
         .font('Helvetica-Bold')
@@ -1733,6 +1749,7 @@ export class ReportsService {
         ? this.fetchCompanyInfo(filters.companyId)
         : Promise.resolve(null),
     ]);
+    const logoBuffer = await this.resolveLogoBuffer(companyInfo?.logo);
     const grandTotal = data.reduce((s, r) => s + r.totalCases, 0);
     const totalRestDays = data.reduce((s, r) => s + r.totalRestDays, 0);
     const maleCases = data.reduce((s, r) => s + r.maleCases, 0);
@@ -1760,7 +1777,7 @@ export class ReportsService {
       this.drawHeader(doc);
       doc.on('pageAdded', () => this.drawHeader(doc));
 
-      if (companyInfo) this.drawCompanyInfoBlock(doc, companyInfo);
+      if (companyInfo) this.drawCompanyInfoBlock(doc, companyInfo, logoBuffer);
       const titleY = Math.max(doc.y, HEADER_HEIGHT + 14);
       doc
         .font('Helvetica-Bold')
@@ -2384,6 +2401,7 @@ export class ReportsService {
         ? this.fetchCompanyInfo(filters.companyId)
         : Promise.resolve(null),
     ]);
+    const logoBuffer = await this.resolveLogoBuffer(companyInfo?.logo);
 
     const nroPatologias = data.length;
     const nroPatMasc = data.filter((r) => r.maleCases > 0).length;
@@ -2412,7 +2430,7 @@ export class ReportsService {
       this.drawHeader(doc);
       doc.on('pageAdded', () => this.drawHeader(doc));
 
-      if (companyInfo) this.drawCompanyInfoBlock(doc, companyInfo);
+      if (companyInfo) this.drawCompanyInfoBlock(doc, companyInfo, logoBuffer);
       const titleY = Math.max(doc.y, HEADER_HEIGHT + 14);
       doc
         .font('Helvetica-Bold')
@@ -2473,6 +2491,7 @@ export class ReportsService {
         ? this.fetchCompanyInfo(filters.companyId)
         : Promise.resolve(null),
     ]);
+    const logoBuffer = await this.resolveLogoBuffer(companyInfo?.logo);
     const grandTotal = data.reduce((s, r) => s + r.total, 0);
 
     return new Promise((resolve, reject) => {
@@ -2495,7 +2514,7 @@ export class ReportsService {
       this.drawHeader(doc);
       doc.on('pageAdded', () => this.drawHeader(doc));
 
-      if (companyInfo) this.drawCompanyInfoBlock(doc, companyInfo);
+      if (companyInfo) this.drawCompanyInfoBlock(doc, companyInfo, logoBuffer);
       const titleY = Math.max(doc.y, HEADER_HEIGHT + 14);
       doc
         .font('Helvetica-Bold')

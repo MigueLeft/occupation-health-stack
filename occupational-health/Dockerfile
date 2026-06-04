@@ -7,7 +7,8 @@ WORKDIR /app
 
 COPY package.json pnpm-lock.yaml ./
 
-RUN pnpm install --frozen-lockfile
+# No usar --frozen-lockfile: sharp necesita resolver su binario nativo por plataforma (linux-musl en Alpine)
+RUN pnpm install --no-frozen-lockfile
 
 COPY . .
 
