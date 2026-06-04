@@ -74,7 +74,7 @@ export function ConsultationDetailPage() {
     return <AppLayout><Box sx={{ display: 'flex', justifyContent: 'center', pt: 10 }}><CircularProgress /></Box></AppLayout>;
   }
 
-  const getName = (list: { id: string; name: string }[], itemId: string) => list.find((x) => x.id === itemId)?.name ?? '—';
+  const getName = (list: { id: string; name: string }[], itemId: string | null | undefined) => list.find((x) => x.id === itemId)?.name ?? '—';
   const getUserName = (uid?: string | null, freeText?: string | null) => {
     if (uid) return users.find((u) => u.id === uid)?.name ?? uid;
     if (freeText) return freeText;

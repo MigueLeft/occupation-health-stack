@@ -36,6 +36,22 @@ export function useCreateRole() {
   });
 }
 
+export function useUpdateRole() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: { name?: string; description?: string } }) =>
+      rolesService.update(id, payload),
+    onSuccess: ({ role }) => {
+      queryClient.invalidateQueries({ queryKey: ROLES_KEY });
+      toast.success(`Rol "${role.name}" actualizado correctamente`);
+    },
+    onError: (error: { response?: { data?: { message?: string } } }) => {
+      toast.error(error.response?.data?.message ?? 'Error al actualizar el rol');
+    },
+  });
+}
+
 export function useUpdatePermissions() {
   const queryClient = useQueryClient();
 

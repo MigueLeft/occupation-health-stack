@@ -34,6 +34,7 @@ import { DisabilitiesModule } from './disabilities/disabilities.module';
 import { ConsultationDisabilitiesModule } from './consultation-disabilities/consultation-disabilities.module';
 import { BackupModule } from './backup/backup.module';
 import { ReportConfigModule } from './report-config/report-config.module';
+import { AccidentTypesModule } from './accident-types/accident-types.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { ReportConfigModule } from './report-config/report-config.module';
     MedicalSpecialtiesModule,
     RiskExposureCategoriesModule,
     DisabilitiesModule,
+    AccidentTypesModule,
     // Estructura de empresa
     CompaniesModule,
     PositionsModule,

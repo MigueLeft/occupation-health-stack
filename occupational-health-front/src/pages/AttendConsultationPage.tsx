@@ -13,6 +13,7 @@ import { useDiseaseCategories } from '@/features/catalogs/hooks/useDiseaseCatego
 import { useBodySystems } from '@/features/catalogs/hooks/useBodySystems';
 import { usePsychometricTests as usePsychometricCatalog } from '@/features/catalogs/hooks/usePsychometricTests';
 import { useAllergies } from '@/features/catalogs/hooks/useAllergies';
+import { useAccidentTypes } from '@/features/catalogs/hooks/useAccidentTypes';
 import { useUsers } from '@/features/users/hooks/useUsers';
 import { useAuth, usePermissions } from '@/features/auth';
 import { consultationsService } from '@/features/consultations/services/consultations.service';
@@ -56,9 +57,8 @@ export function AttendConsultationPage({ editMode = false }: Props) {
 
   const hasMedicoRole = can('es-medico', 'view');
   const hasPsicologoRole = can('es-psicologo', 'view');
-  const neitherRoleSet = !hasMedicoRole && !hasPsicologoRole;
-  const canSeeMedical = hasMedicoRole || neitherRoleSet;
-  const canSeePsychological = hasPsicologoRole || neitherRoleSet;
+  const canSeeMedical = hasMedicoRole;
+  const canSeePsychological = hasPsicologoRole;
 
   const [activeTab, setActiveTab] = useState<'medica' | 'psicologica'>(() =>
     !can('es-medico', 'view') && can('es-psicologo', 'view') ? 'psicologica' : 'medica',
@@ -112,6 +112,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   const { data: users = [] } = useUsers();
   const { data: medicalSpecialties = [] } = useMedicalSpecialties();
   const { data: disabilities = [] } = useDisabilities();
+  const { data: accidentTypes = [] } = useAccidentTypes();
 
   useEffect(() => {
     if (!data || !currentUser?.id) return;
@@ -181,14 +182,14 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   }, [data?.id, isPsychometricFetching, isReferralLoading, isDisabilitiesLoading]);
 
   const handleAddDiagnostic = (
-    { categoryId, diseaseId, bodySystemId }: { categoryId: string; diseaseId: string; bodySystemId?: string },
+    { categoryId, diseaseId, accidentTypeId, bodySystemId }: { categoryId: string; diseaseId?: string; accidentTypeId?: string; bodySystemId?: string },
     isRest: boolean,
     days: number | '',
   ) => {
     const tempId = `new-${Date.now()}`;
     setLocalDiagnostics((prev) => [
       ...prev,
-      { id: tempId, consultationId: id, categoryId, diseaseId, bodySystemId: bodySystemId ?? null, requiresRest: isRest, restDays: isRest && days !== '' ? Number(days) : null, _isNew: true },
+      { id: tempId, consultationId: id, categoryId, diseaseId: diseaseId ?? null, accidentTypeId: accidentTypeId ?? null, bodySystemId: bodySystemId ?? null, requiresRest: isRest, restDays: isRest && days !== '' ? Number(days) : null, _isNew: true },
     ]);
     if (isRest && days !== '') {
       setRestEntries((prev) => [...prev, { diagId: tempId, days: Number(days) }]);
@@ -263,7 +264,8 @@ export function AttendConsultationPage({ editMode = false }: Props) {
         ...localDiagnostics.filter((d) => d._isNew).map((d) =>
           diagnosticsService.create({
             categoryId: d.categoryId,
-            diseaseId: d.diseaseId,
+            diseaseId: d.diseaseId ?? undefined,
+            accidentTypeId: d.accidentTypeId ?? undefined,
             bodySystemId: d.bodySystemId ?? undefined,
             consultationId: id,
             requiresRest: d.requiresRest ?? false,
@@ -507,6 +509,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
               <Grid size={5}>
                 <DiagnosticSection
                   diagnostics={localDiagnostics} categories={categories} diseases={diseases} bodySystems={bodySystems}
+                  accidentTypes={accidentTypes}
                   onAddDiagnostic={handleAddDiagnostic}
                   onRemoveDiagnostic={handleRemoveDiagnostic}
                   result={consultResult} onResultChange={setConsultResult}

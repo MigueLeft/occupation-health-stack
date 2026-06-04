@@ -21,9 +21,10 @@ import { ACTIONS } from '../types';
 
 interface PermissionsMatrixProps {
   role: Role;
+  onSaveSuccess?: () => void;
 }
 
-export function PermissionsMatrix({ role }: PermissionsMatrixProps) {
+export function PermissionsMatrix({ role, onSaveSuccess }: PermissionsMatrixProps) {
   const { data: modules, isLoading } = useModules();
   const { mutate: updatePermissions, isPending } = useUpdatePermissions();
 
@@ -43,7 +44,10 @@ export function PermissionsMatrix({ role }: PermissionsMatrixProps) {
   };
 
   const handleSave = () => {
-    updatePermissions({ id: role.id, permissions: localPerms });
+    updatePermissions(
+      { id: role.id, permissions: localPerms },
+      { onSuccess: () => onSaveSuccess?.() },
+    );
   };
 
   return (

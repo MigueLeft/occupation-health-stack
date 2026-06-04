@@ -12,7 +12,8 @@ export type CatalogTab =
   | 'geo'
   | 'medical-specialties'
   | 'exposure-categories'
-  | 'disabilities';
+  | 'disabilities'
+  | 'accidents';
 
 const NAV_ITEMS: { id: CatalogTab; label: string }[] = [
   { id: 'exams', label: 'Exámenes' },
@@ -24,6 +25,7 @@ const NAV_ITEMS: { id: CatalogTab; label: string }[] = [
   { id: 'allergies', label: 'Alergias' },
   { id: 'body-systems', label: 'Aparatos y Sistemas' },
   { id: 'categories', label: 'Categorías de Diagnóstico' },
+  { id: 'accidents', label: 'Tipos de Accidente' },
   { id: 'geo', label: 'Catálogo Geográfico' },
   { id: 'disabilities', label: 'Discapacidades' },
 ];

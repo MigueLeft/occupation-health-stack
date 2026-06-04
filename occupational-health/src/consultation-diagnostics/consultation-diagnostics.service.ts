@@ -15,6 +15,7 @@ import { consultations } from '../consultations/consultations.schema';
 import { diseaseCategories } from '../disease-categories/disease-categories.schema';
 import { diseases } from '../diseases/diseases.schema';
 import { bodySystems } from '../body-systems/body-systems.schema';
+import { accidentTypes } from '../accident-types/accident-types.schema';
 import { CreateConsultationDiagnosticDto } from './dto/create-consultation-diagnostic.dto';
 import { UpdateConsultationDiagnosticDto } from './dto/update-consultation-diagnostic.dto';
 
@@ -49,7 +50,6 @@ export class ConsultationDiagnosticsService {
   async create(
     dto: CreateConsultationDiagnosticDto,
   ): Promise<ConsultationDiagnostic> {
-    // Verificar que la consulta existe
     const [consultation] = await this.db
       .select()
       .from(consultations)
@@ -61,7 +61,6 @@ export class ConsultationDiagnosticsService {
       );
     }
 
-    // Verificar que la categoría de diagnóstico existe
     const [category] = await this.db
       .select()
       .from(diseaseCategories)
@@ -73,19 +72,32 @@ export class ConsultationDiagnosticsService {
       );
     }
 
-    // Verificar que la enfermedad existe
-    const [disease] = await this.db
-      .select()
-      .from(diseases)
-      .where(eq(diseases.id, dto.diseaseId));
+    if (dto.diseaseId) {
+      const [disease] = await this.db
+        .select()
+        .from(diseases)
+        .where(eq(diseases.id, dto.diseaseId));
 
-    if (!disease) {
-      throw new BadRequestException(
-        `No existe ninguna enfermedad con el ID "${dto.diseaseId}".`,
-      );
+      if (!disease) {
+        throw new BadRequestException(
+          `No existe ninguna enfermedad con el ID "${dto.diseaseId}".`,
+        );
+      }
     }
 
-    // Verificar que el aparato/sistema existe (si fue enviado)
+    if (dto.accidentTypeId) {
+      const [accidentType] = await this.db
+        .select()
+        .from(accidentTypes)
+        .where(eq(accidentTypes.id, dto.accidentTypeId));
+
+      if (!accidentType) {
+        throw new BadRequestException(
+          `No existe ningún tipo de accidente con el ID "${dto.accidentTypeId}".`,
+        );
+      }
+    }
+
     if (dto.bodySystemId) {
       const [system] = await this.db
         .select()
@@ -113,7 +125,6 @@ export class ConsultationDiagnosticsService {
   ): Promise<ConsultationDiagnostic> {
     await this.findOne(id);
 
-    // Verificar que la nueva categoría existe (si se actualiza)
     if (dto.categoryId) {
       const [category] = await this.db
         .select()
@@ -127,7 +138,6 @@ export class ConsultationDiagnosticsService {
       }
     }
 
-    // Verificar que la nueva enfermedad existe (si se actualiza)
     if (dto.diseaseId) {
       const [disease] = await this.db
         .select()
@@ -141,7 +151,19 @@ export class ConsultationDiagnosticsService {
       }
     }
 
-    // Verificar que el nuevo aparato/sistema existe (si se actualiza)
+    if (dto.accidentTypeId) {
+      const [accidentType] = await this.db
+        .select()
+        .from(accidentTypes)
+        .where(eq(accidentTypes.id, dto.accidentTypeId));
+
+      if (!accidentType) {
+        throw new BadRequestException(
+          `No existe ningún tipo de accidente con el ID "${dto.accidentTypeId}".`,
+        );
+      }
+    }
+
     if (dto.bodySystemId) {
       const [system] = await this.db
         .select()

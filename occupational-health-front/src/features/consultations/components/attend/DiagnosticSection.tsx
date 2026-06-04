@@ -8,10 +8,16 @@ import { CONSULTATION_RESULTS } from '../../types';
 import type { ConsultationResult } from '../../types';
 import type { ConsultationDiagnostic } from '../../services/sub-entities.service';
 
-interface DiagRow { categoryId: string; diseaseId: string; bodySystemId?: string; }
+interface DiagRow {
+  categoryId: string;
+  diseaseId?: string;
+  accidentTypeId?: string;
+  bodySystemId?: string;
+}
 interface Cat { id: string; name: string; }
 interface Disease { id: string; name: string; }
 interface BodySystem { id: string; name: string; }
+interface AccidentType { id: string; name: string; }
 
 export interface RestEntry { diagId: string; days: number; }
 
@@ -22,6 +28,7 @@ interface Props {
   categories: Cat[];
   diseases: Disease[];
   bodySystems: BodySystem[];
+  accidentTypes: AccidentType[];
   result: ConsultationResult | '' | undefined;
   onResultChange: (r: ConsultationResult | '') => void;
   description: string;
@@ -31,9 +38,15 @@ interface Props {
   restEntries: RestEntry[];
 }
 
+const ACCIDENT_KEYWORD = 'accidente';
+
+function isAccidentCategory(cat: Cat | null): boolean {
+  return cat?.name.toLowerCase().includes(ACCIDENT_KEYWORD) ?? false;
+}
+
 export function DiagnosticSection({
   diagnostics, onAddDiagnostic, onRemoveDiagnostic,
-  categories, diseases, bodySystems,
+  categories, diseases, bodySystems, accidentTypes,
   result, onResultChange,
   description, onDescriptionChange,
   isHealthy, onIsHealthyChange,
@@ -41,25 +54,50 @@ export function DiagnosticSection({
 }: Props) {
   const [cat, setCat] = useState<Cat | null>(null);
   const [disease, setDisease] = useState<Disease | null>(null);
+  const [accidentType, setAccidentType] = useState<AccidentType | null>(null);
   const [sys, setSys] = useState<BodySystem | null>(null);
   const [isRest, setIsRest] = useState(false);
   const [localRestDays, setLocalRestDays] = useState<number | ''>('');
 
+  const isAccident = isAccidentCategory(cat);
+
+  const handleCategoryChange = (newCat: Cat | null) => {
+    setCat(newCat);
+    setDisease(null);
+    setAccidentType(null);
+  };
+
+  const canAdd = cat !== null && (isAccident ? accidentType !== null : disease !== null);
+
   const handleAdd = () => {
-    if (!cat || !disease) return;
+    if (!canAdd) return;
     onAddDiagnostic(
-      { categoryId: cat.id, diseaseId: disease.id, bodySystemId: sys?.id },
+      {
+        categoryId: cat!.id,
+        diseaseId: isAccident ? undefined : disease?.id,
+        accidentTypeId: isAccident ? accidentType?.id : undefined,
+        bodySystemId: sys?.id,
+      },
       isRest,
       localRestDays,
     );
     setCat(null);
     setDisease(null);
+    setAccidentType(null);
     setSys(null);
     setIsRest(false);
     setLocalRestDays('');
   };
 
   const getName = (list: Cat[], id: string) => list.find((x) => x.id === id)?.name ?? id;
+
+  const getDiagLabel = (d: ConsultationDiagnostic) => {
+    const catName = getName(categories, d.categoryId);
+    const entityName = d.accidentTypeId
+      ? getName(accidentTypes, d.accidentTypeId)
+      : getName(diseases, d.diseaseId ?? '');
+    return `${catName} · ${entityName}`;
+  };
 
   const getRestEntry = (d: ConsultationDiagnostic) =>
     restEntries.find((e) => e.diagId === d.id);
@@ -104,23 +142,41 @@ export function DiagnosticSection({
             options={categories}
             getOptionLabel={(c) => c.name}
             value={cat}
-            onChange={(_, v) => setCat(v)}
+            onChange={(_, v) => handleCategoryChange(v)}
             renderInput={(params) => <TextField {...params} label="Categoría" placeholder="Buscar categoría..." />}
             fullWidth
             noOptionsText="Sin resultados"
             slotProps={{ listbox: { style: { maxHeight: 7 * 36 } } }}
           />
-          <Autocomplete
-            size="small"
-            options={diseases}
-            getOptionLabel={(d) => d.name}
-            value={disease}
-            onChange={(_, v) => setDisease(v)}
-            renderInput={(params) => <TextField {...params} label="Enfermedad" placeholder="Buscar enfermedad..." />}
-            fullWidth
-            noOptionsText="Sin resultados"
-            slotProps={{ listbox: { style: { maxHeight: 7 * 36 } } }}
-          />
+
+          {isAccident ? (
+            <Autocomplete
+              size="small"
+              options={accidentTypes}
+              getOptionLabel={(a) => a.name}
+              value={accidentType}
+              onChange={(_, v) => setAccidentType(v)}
+              renderInput={(params) => (
+                <TextField {...params} label="Tipo de Accidente" placeholder="Buscar tipo de accidente..." />
+              )}
+              fullWidth
+              noOptionsText="Sin resultados"
+              slotProps={{ listbox: { style: { maxHeight: 7 * 36 } } }}
+            />
+          ) : (
+            <Autocomplete
+              size="small"
+              options={diseases}
+              getOptionLabel={(d) => d.name}
+              value={disease}
+              onChange={(_, v) => setDisease(v)}
+              renderInput={(params) => <TextField {...params} label="Enfermedad" placeholder="Buscar enfermedad..." />}
+              fullWidth
+              noOptionsText="Sin resultados"
+              slotProps={{ listbox: { style: { maxHeight: 7 * 36 } } }}
+            />
+          )}
+
           <Autocomplete
             size="small"
             options={bodySystems}
@@ -168,7 +224,13 @@ export function DiagnosticSection({
             )}
           </Box>
 
-          <Button variant="outlined" startIcon={<AddOutlined />} onClick={handleAdd} disabled={!cat || !disease} fullWidth>
+          <Button
+            variant="outlined"
+            startIcon={<AddOutlined />}
+            onClick={handleAdd}
+            disabled={!canAdd}
+            fullWidth
+          >
             Agregar
           </Button>
 
@@ -176,7 +238,7 @@ export function DiagnosticSection({
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
               {diagnostics.map((d) => {
                 const entry = getRestEntry(d);
-                const label = `${getName(categories, d.categoryId)} · ${getName(diseases, d.diseaseId)}${entry ? ` · Reposo: ${entry.days} día(s)` : ''}`;
+                const label = `${getDiagLabel(d)}${entry ? ` · Reposo: ${entry.days} día(s)` : ''}`;
                 return (
                   <Chip
                     key={d.id}

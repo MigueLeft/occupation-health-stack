@@ -3,6 +3,7 @@ import {
   AdminPanelSettingsOutlined,
   PersonOutlineOutlined,
   DeleteOutlined,
+  EditOutlined,
 } from '@mui/icons-material';
 import type { Role } from '../types';
 
@@ -11,9 +12,10 @@ interface RoleCardProps {
   selected: boolean;
   onClick: () => void;
   onDelete?: (role: Role) => void;
+  onRename?: (role: Role) => void;
 }
 
-export function RoleCard({ role, selected, onClick, onDelete }: RoleCardProps) {
+export function RoleCard({ role, selected, onClick, onDelete, onRename }: RoleCardProps) {
   return (
     <Box
       onClick={onClick}
@@ -32,7 +34,7 @@ export function RoleCard({ role, selected, onClick, onDelete }: RoleCardProps) {
         transition: 'all 0.15s ease',
         '&:hover': {
           bgcolor: selected ? 'primary.dark' : 'action.hover',
-          '& .role-delete-btn': { opacity: 1 },
+          '& .role-actions': { opacity: 1 },
         },
       }}
     >
@@ -72,27 +74,42 @@ export function RoleCard({ role, selected, onClick, onDelete }: RoleCardProps) {
         </Typography>
       </Box>
 
-      {onDelete && (
-        <Tooltip title="Eliminar rol">
-          <IconButton
-            className="role-delete-btn"
-            size="small"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(role);
-            }}
-            sx={{
-              opacity: 0,
-              color: selected ? 'rgba(255,255,255,0.7)' : 'text.disabled',
-              flexShrink: 0,
-              transition: 'opacity 0.15s',
-              '&:hover': { color: selected ? 'white' : 'error.main' },
-            }}
-          >
-            <DeleteOutlined fontSize="small" />
-          </IconButton>
-        </Tooltip>
-      )}
+      <Box className="role-actions" sx={{ display: 'flex', opacity: 0, transition: 'opacity 0.15s', flexShrink: 0 }}>
+        {onRename && (
+          <Tooltip title="Renombrar rol">
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                onRename(role);
+              }}
+              sx={{
+                color: selected ? 'rgba(255,255,255,0.7)' : 'text.disabled',
+                '&:hover': { color: selected ? 'white' : 'primary.main' },
+              }}
+            >
+              <EditOutlined fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
+        {onDelete && (
+          <Tooltip title="Eliminar rol">
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(role);
+              }}
+              sx={{
+                color: selected ? 'rgba(255,255,255,0.7)' : 'text.disabled',
+                '&:hover': { color: selected ? 'white' : 'error.main' },
+              }}
+            >
+              <DeleteOutlined fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
+      </Box>
     </Box>
   );
 }

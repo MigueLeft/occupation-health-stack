@@ -20,6 +20,7 @@ import {
   RoleCard,
   PermissionsMatrix,
   CreateRoleModal,
+  RenameRoleModal,
   useRoles,
   useDeleteRole,
 } from '@/features/roles-permissions';
@@ -31,11 +32,13 @@ function RolesListPanel({
   selectedId,
   onSelect,
   onDeleteRequest,
+  onRenameRequest,
 }: {
   roles: Role[];
   selectedId: string | null;
   onSelect: (id: string) => void;
   onDeleteRequest: (role: Role) => void;
+  onRenameRequest: (role: Role) => void;
 }) {
   return (
     <Box>
@@ -46,6 +49,7 @@ function RolesListPanel({
           selected={role.id === selectedId}
           onClick={() => onSelect(role.id)}
           onDelete={onDeleteRequest}
+          onRename={onRenameRequest}
         />
       ))}
     </Box>
@@ -59,6 +63,8 @@ function DesktopLayout({
   onSelect,
   onCreateOpen,
   onDeleteRequest,
+  onRenameRequest,
+  onPermissionsSaved,
   isLoading,
 }: {
   roles: Role[];
@@ -67,6 +73,8 @@ function DesktopLayout({
   onSelect: (id: string) => void;
   onCreateOpen: () => void;
   onDeleteRequest: (role: Role) => void;
+  onRenameRequest: (role: Role) => void;
+  onPermissionsSaved: () => void;
   isLoading: boolean;
 }) {
   return (
@@ -129,6 +137,7 @@ function DesktopLayout({
               selectedId={selectedId}
               onSelect={onSelect}
               onDeleteRequest={onDeleteRequest}
+              onRenameRequest={onRenameRequest}
             />
           )}
         </Box>
@@ -136,7 +145,11 @@ function DesktopLayout({
         {/* Panel derecho: permisos */}
         <Box sx={{ flex: 1, p: 3.5, overflowY: 'auto' }}>
           {selectedRole ? (
-            <PermissionsMatrix key={selectedRole.id} role={selectedRole} />
+            <PermissionsMatrix
+              key={selectedRole.id}
+              role={selectedRole}
+              onSaveSuccess={onPermissionsSaved}
+            />
           ) : (
             <Box
               sx={{
@@ -163,6 +176,8 @@ function MobileLayout({
   onSelect,
   onCreateOpen,
   onDeleteRequest,
+  onRenameRequest,
+  onPermissionsSaved,
   isLoading,
 }: {
   roles: Role[];
@@ -171,6 +186,8 @@ function MobileLayout({
   onSelect: (id: string) => void;
   onCreateOpen: () => void;
   onDeleteRequest: (role: Role) => void;
+  onRenameRequest: (role: Role) => void;
+  onPermissionsSaved: () => void;
   isLoading: boolean;
 }) {
   const [tab, setTab] = useState(0);
@@ -201,12 +218,17 @@ function MobileLayout({
                 setTab(1);
               }}
               onDeleteRequest={onDeleteRequest}
+              onRenameRequest={onRenameRequest}
             />
           ))}
 
         {tab === 1 &&
           (selectedRole ? (
-            <PermissionsMatrix key={selectedRole.id} role={selectedRole} />
+            <PermissionsMatrix
+              key={selectedRole.id}
+              role={selectedRole}
+              onSaveSuccess={() => { onPermissionsSaved(); setTab(0); }}
+            />
           ) : (
             <Alert severity="info" sx={{ mt: 1 }}>
               Selecciona un rol en la pestaña anterior para ver sus permisos
@@ -238,6 +260,7 @@ export function RolesPermissionsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Role | null>(null);
+  const [renameTarget, setRenameTarget] = useState<Role | null>(null);
 
   if (isPermLoading) return null;
   if (!can('roles', 'view')) return <Navigate to="/" />;
@@ -246,11 +269,12 @@ export function RolesPermissionsPage() {
 
   const handleSelect = (id: string) => setSelectedId(id);
 
+  const handlePermissionsSaved = () => setSelectedId(null);
+
   const handleConfirmDelete = () => {
     if (!deleteTarget) return;
     deleteRole(deleteTarget.id, {
       onSuccess: () => {
-        // Si el rol eliminado era el seleccionado, deseleccionar
         if (selectedId === deleteTarget.id) setSelectedId(null);
         setDeleteTarget(null);
       },
@@ -275,6 +299,8 @@ export function RolesPermissionsPage() {
             onSelect={handleSelect}
             onCreateOpen={() => setCreateOpen(true)}
             onDeleteRequest={setDeleteTarget}
+            onRenameRequest={setRenameTarget}
+            onPermissionsSaved={handlePermissionsSaved}
             isLoading={isLoading}
           />
         ) : (
@@ -285,12 +311,16 @@ export function RolesPermissionsPage() {
             onSelect={handleSelect}
             onCreateOpen={() => setCreateOpen(true)}
             onDeleteRequest={setDeleteTarget}
+            onRenameRequest={setRenameTarget}
+            onPermissionsSaved={handlePermissionsSaved}
             isLoading={isLoading}
           />
         )}
       </Box>
 
       <CreateRoleModal open={createOpen} onClose={() => setCreateOpen(false)} />
+
+      <RenameRoleModal role={renameTarget} onClose={() => setRenameTarget(null)} />
 
       <ConfirmDialog
         open={deleteTarget !== null}

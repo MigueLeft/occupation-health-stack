@@ -6,6 +6,7 @@ import {
   IsInt,
   Min,
   Max,
+  ValidateIf,
 } from 'class-validator';
 
 export class CreateConsultationDiagnosticDto {
@@ -21,11 +22,27 @@ export class CreateConsultationDiagnosticDto {
   })
   categoryId: string;
 
+  // Requerido cuando no se envía accidentTypeId
+  @ValidateIf((o: { accidentTypeId?: string }) => !o.accidentTypeId)
   @IsUUID('4', {
     message: 'El ID de la enfermedad (CIE-10) debe ser un UUID válido.',
   })
-  @IsNotEmpty({ message: 'El ID de la enfermedad es obligatorio.' })
-  diseaseId: string;
+  @IsNotEmpty({
+    message:
+      'Se requiere una enfermedad o un tipo de accidente para el diagnóstico.',
+  })
+  diseaseId?: string;
+
+  // Requerido cuando no se envía diseaseId
+  @ValidateIf((o: { diseaseId?: string }) => !o.diseaseId)
+  @IsUUID('4', {
+    message: 'El ID del tipo de accidente debe ser un UUID válido.',
+  })
+  @IsNotEmpty({
+    message:
+      'Se requiere un tipo de accidente o una enfermedad para el diagnóstico.',
+  })
+  accidentTypeId?: string;
 
   @IsUUID('4', {
     message: 'El ID del aparato/sistema afectado debe ser un UUID válido.',
