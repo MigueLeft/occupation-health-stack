@@ -57,7 +57,7 @@ const COLS = [
 const MARGIN = 40;
 const USABLE_WIDTH = 515;
 const HEADER_HEIGHT = 100;
-const FOOTER_HEIGHT = 80;
+const FOOTER_HEIGHT = 120;
 const ROW_HEIGHT = 22;
 const HEADER_ROW_HEIGHT = 24;
 const PRIMARY_COLOR = '#1565C0';
@@ -817,27 +817,6 @@ export class ReportsService {
     const savedBottom = doc.page.margins.bottom;
     doc.page.margins.bottom = 0;
 
-    // Sello médico — esquina derecha, encima de la línea del footer
-    if (this.selloMedico) {
-      try {
-        const selloBase64 = this.selloMedico.replace(/^data:.+;base64,/, '');
-        const selloBuffer = Buffer.from(selloBase64, 'base64');
-        const selloSize = 60;
-        doc.image(
-          selloBuffer,
-          MARGIN + USABLE_WIDTH - selloSize,
-          footerY - selloSize - 8,
-          {
-            width: selloSize,
-            height: selloSize,
-            fit: [selloSize, selloSize],
-          },
-        );
-      } catch {
-        // Ignorar si la imagen no es válida
-      }
-    }
-
     // Línea separadora
     doc
       .moveTo(MARGIN, footerY - 4)
@@ -845,6 +824,36 @@ export class ReportsService {
       .strokeColor('#BBBBBB')
       .lineWidth(0.8)
       .stroke();
+
+    // Número de página — lado izquierdo
+    doc
+      .font('Helvetica')
+      .fontSize(7)
+      .fillColor('#888888')
+      .text(`Página ${pageNum} de ${totalPages}`, MARGIN, footerY, {
+        width: USABLE_WIDTH / 2,
+      });
+
+    // Sello médico — debajo del contador, columna izquierda
+    if (this.selloMedico) {
+      try {
+        const selloBase64 = this.selloMedico.replace(/^data:.+;base64,/, '');
+        const selloBuffer = Buffer.from(selloBase64, 'base64');
+        const selloSize = 90;
+        doc.image(
+          selloBuffer,
+          MARGIN,
+          footerY + 14,
+          {
+            fit: [selloSize, selloSize],
+            align: 'center',
+            valign: 'center',
+          },
+        );
+      } catch {
+        // Ignorar si la imagen no es válida
+      }
+    }
 
     // Información de la empresa — alineada a la derecha
     doc
@@ -863,15 +872,6 @@ export class ReportsService {
         align: 'right',
       });
     }
-
-    // Número de página — lado izquierdo
-    doc
-      .font('Helvetica')
-      .fontSize(7)
-      .fillColor('#888888')
-      .text(`Página ${pageNum} de ${totalPages}`, MARGIN, footerY, {
-        width: USABLE_WIDTH / 2,
-      });
 
     // Restaurar el margen inferior original
     doc.page.margins.bottom = savedBottom;
