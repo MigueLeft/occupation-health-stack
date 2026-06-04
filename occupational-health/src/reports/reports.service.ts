@@ -396,9 +396,9 @@ export class ReportsService {
         const base64Data = company.logo.replace(/^data:.+;base64,/, '');
         const logoBuffer = Buffer.from(base64Data, 'base64');
         doc.image(logoBuffer, MARGIN + 6, y + (blockHeight - avatarSize) / 2, {
-          width: avatarSize,
-          height: avatarSize,
-          cover: [avatarSize, avatarSize],
+          fit: [avatarSize, avatarSize],
+          align: 'center',
+          valign: 'center',
         });
       } catch {
         this.drawCompanyInitialCircle(doc, company.name, cx, cy);

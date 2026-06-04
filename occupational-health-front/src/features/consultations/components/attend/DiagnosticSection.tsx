@@ -65,6 +65,7 @@ export function DiagnosticSection({
     setCat(newCat);
     setDisease(null);
     setAccidentType(null);
+    setSys(null);
   };
 
   const canAdd = cat !== null && (isAccident ? accidentType !== null : disease !== null);
@@ -177,17 +178,19 @@ export function DiagnosticSection({
             />
           )}
 
-          <Autocomplete
-            size="small"
-            options={bodySystems}
-            getOptionLabel={(b) => b.name}
-            value={sys}
-            onChange={(_, v) => setSys(v)}
-            renderInput={(params) => <TextField {...params} label="Aparato/Sistema (opcional)" placeholder="Buscar aparato o sistema..." />}
-            fullWidth
-            noOptionsText="Sin resultados"
-            slotProps={{ listbox: { style: { maxHeight: 7 * 36 } } }}
-          />
+          {!isAccident && (
+            <Autocomplete
+              size="small"
+              options={bodySystems}
+              getOptionLabel={(b) => b.name}
+              value={sys}
+              onChange={(_, v) => setSys(v)}
+              renderInput={(params) => <TextField {...params} label="Aparato/Sistema (opcional)" placeholder="Buscar aparato o sistema..." />}
+              fullWidth
+              noOptionsText="Sin resultados"
+              slotProps={{ listbox: { style: { maxHeight: 7 * 36 } } }}
+            />
+          )}
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
             <FormControlLabel

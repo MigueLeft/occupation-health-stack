@@ -12,6 +12,7 @@ import { useDiseases } from '@/features/catalogs/hooks/useDiseases';
 import { useBodySystems } from '@/features/catalogs/hooks/useBodySystems';
 import { useExams } from '@/features/catalogs/hooks/useExams';
 import { usePsychometricTests as usePsychometricCatalog } from '@/features/catalogs/hooks/usePsychometricTests';
+import { useAccidentTypes } from '@/features/catalogs/hooks/useAccidentTypes';
 import { EVALUATION_REASON_LABELS } from '@/features/requests/types';
 import { ConsultationResultChip } from '@/features/consultations/components/ConsultationResultChip';
 import { AccessibilityNewOutlined } from '@mui/icons-material';
@@ -64,6 +65,7 @@ export function ConsultationDetailPage() {
   const { data: exams = [] } = useExams();
   const { data: psychCatalog = [] } = usePsychometricCatalog();
   const { data: disabilities = [] } = useDisabilities();
+  const { data: accidentTypes = [] } = useAccidentTypes();
 
   const hasMedica = data?.type === 'Medica' || data?.type === 'Medica/Psicologica';
   const hasPsicologica = data?.type === 'Psicologica' || data?.type === 'Medica/Psicologica';
@@ -235,9 +237,17 @@ export function ConsultationDetailPage() {
                           <Box>
                             <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 700, fontSize: '0.68rem' }}>Diagnósticos</Typography>
                             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-                              {data.consultationDiagnostics.map((d) => (
-                                <Chip key={d.id} size="small" label={`${getName(categories, d.categoryId)} · ${getName(diseases, d.diseaseId)}${d.bodySystemId ? ` · ${getName(bodySystems, d.bodySystemId)}` : ''}`} />
-                              ))}
+                              {data.consultationDiagnostics.map((d) => {
+                                const entityName = d.accidentTypeId
+                                  ? getName(accidentTypes, d.accidentTypeId)
+                                  : getName(diseases, d.diseaseId);
+                                const bodyPart = !d.accidentTypeId && d.bodySystemId
+                                  ? ` · ${getName(bodySystems, d.bodySystemId)}`
+                                  : '';
+                                return (
+                                  <Chip key={d.id} size="small" label={`${getName(categories, d.categoryId)} · ${entityName}${bodyPart}`} />
+                                );
+                              })}
                             </Box>
                           </Box>
                         )}
@@ -247,27 +257,45 @@ export function ConsultationDetailPage() {
                   </SectionCard>
 
                   {/* Reposo médico */}
-                  {data.restPeriod?.requiresRest && (
-                    <SectionCard title="Reposo Médico">
-                      <Stack spacing={1.5}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <HotelOutlined sx={{ color: 'primary.main' }} />
-                          <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                            {data.restPeriod.days ? `${data.restPeriod.days} días de reposo` : 'Reposo indicado'}
-                          </Typography>
-                        </Box>
-                        {data.restPeriod.categoryId && (
-                          <ReadField label="Categoría" value={getName(categories, data.restPeriod.categoryId)} />
-                        )}
-                        {data.restPeriod.diseaseId && (
-                          <ReadField label="Enfermedad" value={getName(diseases, data.restPeriod.diseaseId)} />
-                        )}
-                        {data.restPeriod.bodySystemId && (
-                          <ReadField label="Aparato / Sistema" value={getName(bodySystems, data.restPeriod.bodySystemId)} />
-                        )}
-                      </Stack>
-                    </SectionCard>
-                  )}
+                  {(() => {
+                    const restDiags = data.consultationDiagnostics.filter((d) => d.requiresRest);
+                    if (!data.restPeriod?.requiresRest && restDiags.length === 0) return null;
+                    const totalDays = data.restPeriod?.days;
+                    return (
+                      <SectionCard title="Reposo Médico">
+                        <Stack spacing={1.5}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <HotelOutlined sx={{ color: 'primary.main' }} />
+                            <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                              {totalDays ? `${totalDays} días de reposo` : 'Reposo indicado'}
+                            </Typography>
+                          </Box>
+                          {restDiags.map((d) => {
+                            const entityName = d.accidentTypeId
+                              ? getName(accidentTypes, d.accidentTypeId)
+                              : getName(diseases, d.diseaseId);
+                            return (
+                              <Box key={d.id} sx={{ pl: 1, borderLeft: '3px solid', borderColor: 'primary.light' }}>
+                                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                  {getName(categories, d.categoryId)} · {entityName}
+                                </Typography>
+                                {!d.accidentTypeId && d.bodySystemId && (
+                                  <Typography variant="caption" color="text.secondary">
+                                    {getName(bodySystems, d.bodySystemId)}
+                                  </Typography>
+                                )}
+                                {d.restDays && (
+                                  <Typography variant="caption" color="primary.main" sx={{ display: 'block' }}>
+                                    {d.restDays} día(s)
+                                  </Typography>
+                                )}
+                              </Box>
+                            );
+                          })}
+                        </Stack>
+                      </SectionCard>
+                    );
+                  })()}
 
                   {data.disabilities.length > 0 && (
                     <SectionCard title="Discapacidad">
