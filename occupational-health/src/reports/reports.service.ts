@@ -1077,7 +1077,7 @@ export class ReportsService {
     }));
   }
 
-  // Sección IV: Motivos de reposo médico (usa categoría del diagnóstico o reason legacy)
+  // Sección IV: Motivos de reposo médico (cuenta por diagnóstico, no por consulta)
   private async fetchRestPeriodReasons(
     filters: VigilanciaReportDto,
   ): Promise<SectionIVRow[]> {
@@ -1087,38 +1087,30 @@ export class ReportsService {
     const data = await this.db
       .select({
         categoryName: diseaseCategories.name,
-        legacyReason: restPeriods.reason,
         count: count(),
       })
-      .from(restPeriods)
+      .from(consultationDiagnostics)
+      .innerJoin(
+        diseaseCategories,
+        eq(consultationDiagnostics.categoryId, diseaseCategories.id),
+      )
       .innerJoin(
         consultations,
-        eq(restPeriods.consultationId, consultations.id),
+        eq(consultationDiagnostics.consultationId, consultations.id),
       )
       .innerJoin(requests, eq(consultations.requestId, requests.id))
       .innerJoin(patients, eq(requests.patientId, patients.cedula))
-      .leftJoin(
-        diseaseCategories,
-        eq(restPeriods.categoryId, diseaseCategories.id),
-      )
       .where(
         whereClause
-          ? and(whereClause, eq(restPeriods.requiresRest, true))
-          : eq(restPeriods.requiresRest, true),
+          ? and(whereClause, eq(consultationDiagnostics.requiresRest, true))
+          : eq(consultationDiagnostics.requiresRest, true),
       )
-      .groupBy(diseaseCategories.name, restPeriods.reason)
+      .groupBy(diseaseCategories.name)
       .orderBy(diseaseCategories.name);
 
-    // Agregar en memoria usando nombre de categoría o motivo legacy
-    const map = new Map<string, number>();
-    for (const r of data) {
-      const key = r.categoryName ?? r.legacyReason ?? 'Sin especificar';
-      map.set(key, (map.get(key) ?? 0) + Number(r.count));
-    }
-
-    return Array.from(map.entries()).map(([reason, cnt]) => ({
-      reason,
-      count: cnt,
+    return data.map((r) => ({
+      reason: r.categoryName ?? 'Sin especificar',
+      count: Number(r.count),
     }));
   }
 
