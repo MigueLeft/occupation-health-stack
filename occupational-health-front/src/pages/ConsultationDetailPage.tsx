@@ -78,7 +78,7 @@ export function ConsultationDetailPage() {
 
   const getName = (list: { id: string; name: string }[], itemId: string | null | undefined) => list.find((x) => x.id === itemId)?.name ?? '—';
   const getUserName = (uid?: string | null, freeText?: string | null) => {
-    if (uid) return users.find((u) => u.id === uid)?.name ?? uid;
+    if (uid) return users.find((u) => u.id === uid)?.name ?? '—';
     if (freeText) return freeText;
     return '—';
   };
@@ -259,8 +259,8 @@ export function ConsultationDetailPage() {
                   {/* Reposo médico */}
                   {(() => {
                     const restDiags = data.consultationDiagnostics.filter((d) => d.requiresRest);
-                    if (!data.restPeriod?.requiresRest && restDiags.length === 0) return null;
-                    const totalDays = data.restPeriod?.days;
+                    if (restDiags.length === 0 && !data.restPeriod?.requiresRest) return null;
+                    const totalDays = restDiags[0]?.restDays ?? data.restPeriod?.days;
                     return (
                       <SectionCard title="Reposo Médico">
                         <Stack spacing={1.5}>

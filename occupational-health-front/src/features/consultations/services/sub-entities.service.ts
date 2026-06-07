@@ -25,6 +25,7 @@ export type DiagnosticPayload = Omit<ConsultationDiagnostic, 'id'>;
 
 export const diagnosticsService = {
   create: (p: DiagnosticPayload) => apiClient.post<{ consultationDiagnostic: ConsultationDiagnostic }>('/consultation-diagnostics', p).then((r) => r.data),
+  update: (id: string, p: { requiresRest?: boolean; restDays?: number | null }) => apiClient.patch<{ consultationDiagnostic: ConsultationDiagnostic }>(`/consultation-diagnostics/${id}`, p).then((r) => r.data),
   remove: (id: string) => apiClient.delete(`/consultation-diagnostics/${id}`),
 };
 

@@ -29,7 +29,7 @@ COPY package.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/drizzle ./drizzle
-COPY migrate.mjs ./
+COPY migrate.mjs sync-journal.mjs ./
 
 COPY entrypoint.sh ./
 RUN chmod +x entrypoint.sh

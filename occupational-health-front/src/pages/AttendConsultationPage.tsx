@@ -22,7 +22,7 @@ import { referralsService } from '@/features/consultations/services/referrals.se
 import { patientsService } from '@/features/patients/services/patients.service';
 import { PatientInfoBar } from '@/features/consultations/components/attend/PatientInfoBar';
 import { PhysicalExamSection } from '@/features/consultations/components/attend/PhysicalExamSection';
-import { DiagnosticSection, type RestEntry } from '@/features/consultations/components/attend/DiagnosticSection';
+import { DiagnosticSection } from '@/features/consultations/components/attend/DiagnosticSection';
 import { ExamResultsSection } from '@/features/consultations/components/attend/ExamResultsSection';
 import { PsicologicaSection } from '@/features/consultations/components/attend/PsicologicaSection';
 import { ChronicDiseasesSection } from '@/features/consultations/components/attend/ChronicDiseasesSection';
@@ -83,8 +83,10 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   const [psychologicalAttendedByFreeText, setPsychologicalAttendedByFreeText] = useState('');
   const [isHealthy, setIsHealthy] = useState(false);
 
-  // Reposo por diagnóstico — cada entrada tiene el id temporal/real del diagnóstico y los días
-  const [restEntries, setRestEntries] = useState<RestEntry[]>([]);
+  // Reposo médico general — un único valor de días compartido entre todos los diagnósticos seleccionados
+  const [restEnabled, setRestEnabled] = useState(false);
+  const [restDays, setRestDays] = useState<number | ''>('');
+  const [restDiagIds, setRestDiagIds] = useState<Set<string>>(new Set());
 
   const [requiresReferral, setRequiresReferral] = useState(false);
   const [referralSpecialtyId, setReferralSpecialtyId] = useState('');
@@ -147,16 +149,18 @@ export function AttendConsultationPage({ editMode = false }: Props) {
       const { id: _id, consultationId: _cid, ...physExamFields } = data.physicalExam;
       setPhysExam(physExamFields);
     }
-    // Cargar reposos desde los diagnósticos existentes
+    // Inicializar estado de reposo desde diagnósticos existentes
     const diagsWithRest = data.consultationDiagnostics.filter((d) => d.requiresRest && d.restDays);
     if (diagsWithRest.length > 0) {
-      setRestEntries(diagsWithRest.map((d) => ({ diagId: d.id, days: d.restDays! })));
+      setRestEnabled(true);
+      setRestDays(diagsWithRest[0].restDays!); // todos tienen los mismos días en el nuevo modelo
+      setRestDiagIds(new Set(diagsWithRest.map((d) => d.id)));
     } else if (data.restPeriod?.requiresRest && data.restPeriod.days) {
-      // Compatibilidad con datos legados: asignar al primer diagnóstico existente
+      // Compatibilidad con datos legados: asignar reposo al primer diagnóstico
+      setRestEnabled(true);
+      setRestDays(data.restPeriod.days);
       const firstDiag = data.consultationDiagnostics[0];
-      if (firstDiag) {
-        setRestEntries([{ diagId: firstDiag.id, days: data.restPeriod.days }]);
-      }
+      if (firstDiag) setRestDiagIds(new Set([firstDiag.id]));
     }
     if (data.referral) {
       setRequiresReferral(data.referral.requiresReferral);
@@ -182,23 +186,18 @@ export function AttendConsultationPage({ editMode = false }: Props) {
 
   const handleAddDiagnostic = (
     { categoryId, diseaseId, accidentTypeId, bodySystemId }: { categoryId: string; diseaseId?: string; accidentTypeId?: string; bodySystemId?: string },
-    isRest: boolean,
-    days: number | '',
   ) => {
     const tempId = `new-${Date.now()}`;
     setLocalDiagnostics((prev) => [
       ...prev,
-      { id: tempId, consultationId: id, categoryId, diseaseId: diseaseId ?? null, accidentTypeId: accidentTypeId ?? null, bodySystemId: bodySystemId ?? null, requiresRest: isRest, restDays: isRest && days !== '' ? Number(days) : null, _isNew: true },
+      { id: tempId, consultationId: id, categoryId, diseaseId: diseaseId ?? null, accidentTypeId: accidentTypeId ?? null, bodySystemId: bodySystemId ?? null, requiresRest: false, restDays: null, _isNew: true },
     ]);
-    if (isRest && days !== '') {
-      setRestEntries((prev) => [...prev, { diagId: tempId, days: Number(days) }]);
-    }
   };
 
   const handleRemoveDiagnostic = (itemId: string) => {
     const item = localDiagnostics.find((d) => d.id === itemId);
     if (item && !item._isNew) setRemovedDiagnosticIds((prev) => [...prev, itemId]);
-    setRestEntries((prev) => prev.filter((e) => e.diagId !== itemId));
+    setRestDiagIds((prev) => { const next = new Set(prev); next.delete(itemId); return next; });
     setLocalDiagnostics((prev) => prev.filter((d) => d.id !== itemId));
   };
 
@@ -259,18 +258,26 @@ export function AttendConsultationPage({ editMode = false }: Props) {
     if (!data) return;
     setIsSaving(true);
     try {
+      const generalDays = restEnabled && restDays !== '' ? Number(restDays) : null;
       await Promise.all([
-        ...localDiagnostics.filter((d) => d._isNew).map((d) =>
-          diagnosticsService.create({
+        ...localDiagnostics.filter((d) => d._isNew).map((d) => {
+          const hasRest = restEnabled && restDiagIds.has(d.id);
+          return diagnosticsService.create({
             categoryId: d.categoryId,
             diseaseId: d.diseaseId ?? undefined,
             accidentTypeId: d.accidentTypeId ?? undefined,
             bodySystemId: d.bodySystemId ?? undefined,
             consultationId: id,
-            requiresRest: d.requiresRest ?? false,
-            restDays: d.restDays ?? undefined,
-          }),
-        ),
+            requiresRest: hasRest,
+            restDays: hasRest ? generalDays ?? undefined : undefined,
+          });
+        }),
+        ...localDiagnostics.filter((d) => !d._isNew).map((d) => {
+          const hasRest = restEnabled && restDiagIds.has(d.id);
+          const restChanged = hasRest !== (d.requiresRest ?? false) || (hasRest && generalDays !== (d.restDays ?? null));
+          if (!restChanged) return Promise.resolve();
+          return diagnosticsService.update(d.id, { requiresRest: hasRest, restDays: hasRest ? generalDays : null });
+        }),
         ...removedDiagnosticIds.map((dId) => diagnosticsService.remove(dId)),
         ...localExamResults.filter((er) => er._isNew).map((er) =>
           examResultsService.create({ consultationId: id, examId: er.examId, resultValue: er.resultValue, observation: er.observation, url: null, result: er.result ?? null }),
@@ -489,7 +496,9 @@ export function AttendConsultationPage({ editMode = false }: Props) {
                   result={consultResult} onResultChange={setConsultResult}
                   description={diagDescription} onDescriptionChange={setDiagDescription}
                   isHealthy={isHealthy} onIsHealthyChange={setIsHealthy}
-                  restEntries={restEntries}
+                  restEnabled={restEnabled} onRestEnabledChange={setRestEnabled}
+                  restDays={restDays} onRestDaysChange={setRestDays}
+                  restDiagIds={restDiagIds} onRestDiagIdsChange={setRestDiagIds}
                 />
                 <Box sx={{ mt: 3 }}>
                   <ReferralSection

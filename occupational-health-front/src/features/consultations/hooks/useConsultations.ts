@@ -15,13 +15,14 @@ export function useConsultations() {
   const requestsQ = useQuery({ queryKey: REQUESTS_KEY, queryFn: () => requestsService.getAll(), refetchInterval: 30_000, refetchOnWindowFocus: true });
   const patientsQ = useQuery({ queryKey: PATIENTS_KEY, queryFn: () => patientsService.getAll(), refetchInterval: 30_000, refetchOnWindowFocus: true });
 
-  const isLoading = consultationsQ.isLoading || requestsQ.isLoading || patientsQ.isLoading;
+  // Solo consultas bloquean el spinner — requests/patients son datos suplementarios
+  const isLoading = consultationsQ.isLoading;
 
   const data: ConsultationWithDetails[] | undefined =
-    consultationsQ.data && requestsQ.data && patientsQ.data
+    consultationsQ.data
       ? consultationsQ.data.consultations.map((c) => {
-          const req = requestsQ.data.requests.find((r) => r.id === c.requestId);
-          const patient = req ? patientsQ.data.patients.find((p) => p.cedula === req.patientId) : null;
+          const req = requestsQ.data?.requests.find((r) => r.id === c.requestId);
+          const patient = req ? patientsQ.data?.patients.find((p) => p.cedula === req.patientId) : null;
           return {
             ...c,
             requestDate: req?.requestDate ?? '',

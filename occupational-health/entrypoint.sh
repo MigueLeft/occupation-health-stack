@@ -1,6 +1,9 @@
 #!/bin/sh
 set -e
 
+echo "Sincronizando esquemas..."
+node sync-journal.mjs
+
 echo "Aplicando migraciones..."
 node migrate.mjs
 
