@@ -7,7 +7,7 @@ import {
   CatalogLayout, ExamsPanel, RisksPanel, PsychometricTestsPanel,
   DiseasesPanel, AllergiesPanel, BodySystemsPanel, DiseaseCategoriesPanel,
   GeoCatalogPanel, MedicalSpecialtiesPanel, RiskExposureCategoriesPanel,
-  DisabilitiesPanel, AccidentTypesPanel,
+  DisabilitiesPanel, AccidentTypesPanel, PsychologicalIndicatorsPanel,
 } from '@/features/catalogs';
 import type { CatalogTab } from '@/features/catalogs';
 import { usePermissions } from '@/features/auth';
@@ -16,6 +16,7 @@ const PANEL_MAP: Record<CatalogTab, React.ReactNode> = {
   exams: <ExamsPanel />,
   risks: <RisksPanel />,
   psychometric: <PsychometricTestsPanel />,
+  'psychological-indicators': <PsychologicalIndicatorsPanel />,
   diseases: <DiseasesPanel />,
   allergies: <AllergiesPanel />,
   'body-systems': <BodySystemsPanel />,

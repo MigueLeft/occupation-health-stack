@@ -7,6 +7,8 @@ import { PathologiesReportDto } from './dto/pathologies-report.dto';
 import { BodySystemsReportDto } from './dto/body-systems-report.dto';
 import { MorbidityReportDto } from './dto/morbidity-report.dto';
 import { ConsolidacionReportDto } from './dto/consolidacion-report.dto';
+import { PsychologicalIndicatorsReportDto } from './dto/psychological-indicators-report.dto';
+import { PsychologicalMorbidityReportDto } from './dto/psychological-morbidity-report.dto';
 import { RequirePermission } from '../auth/require-permission.decorator';
 
 @Controller('reports')
@@ -109,6 +111,40 @@ export class ReportsController {
     const buffer =
       await this.reportsService.generateConsolidacionReport(filters);
     const filename = `reporte-consolidacion-${new Date().toISOString().slice(0, 10)}.pdf`;
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length': buffer.length,
+    });
+    res.end(buffer);
+  }
+
+  @Get('psychological-indicators')
+  @RequirePermission('reports', 'view')
+  async psychologicalIndicatorsReport(
+    @Query() filters: PsychologicalIndicatorsReportDto,
+    @Res() res: Response,
+  ) {
+    const buffer =
+      await this.reportsService.generatePsychologicalIndicatorsReport(filters);
+    const filename = `reporte-indicadores-psicologicos-${new Date().toISOString().slice(0, 10)}.pdf`;
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length': buffer.length,
+    });
+    res.end(buffer);
+  }
+
+  @Get('psychological-morbidity')
+  @RequirePermission('reports', 'view')
+  async psychologicalMorbidityReport(
+    @Query() filters: PsychologicalMorbidityReportDto,
+    @Res() res: Response,
+  ) {
+    const buffer =
+      await this.reportsService.generatePsychologicalMorbidityReport(filters);
+    const filename = `reporte-morbilidad-psicologica-${new Date().toISOString().slice(0, 10)}.pdf`;
     res.set({
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="${filename}"`,

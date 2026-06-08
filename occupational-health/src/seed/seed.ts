@@ -20,6 +20,10 @@ import { companies } from '../companies/companies.schema';
 import { positions } from '../positions/positions.schema';
 import { patients } from '../patients/patients.schema';
 import { riskExposureCategories } from '../risk-exposure-categories/risk-exposure-categories.schema';
+import {
+  psychologicalIndicators,
+  psychologicalIndicatorValues,
+} from '../psychological-indicators/psychological-indicators.schema';
 
 const MODULES = SYSTEM_MODULES.map((m) => m.key);
 
@@ -91,7 +95,7 @@ const ROLES_DATA = [
   {
     name: 'Admin',
     description: 'Administrador del sistema con todos los permisos',
-    isVisible: false,
+    isVisible: true,
     permissions: allPermissions(),
   },
   {
@@ -119,6 +123,9 @@ async function main() {
       `  ✓ ${roleData.name} (${roleData.isVisible ? 'visible' : 'oculto'})`,
     );
   }
+
+  // Asegurar que el rol Admin sea visible en bases de datos existentes
+  await db.update(roles).set({ isVisible: true }).where(eq(roles.name, 'Admin'));
 
   // Obtener el rol Admin para asignarlo al usuario por defecto
   const [adminRole] = await db
@@ -4075,6 +4082,63 @@ async function main() {
       .values({ riskType, name: riskType })
       .onConflictDoNothing({ target: riskExposureCategories.riskType });
     console.log(`  ✓ ${riskType}`);
+  }
+
+  // Crear indicadores psicológicos por defecto
+  console.log('\n🧠 Creando indicadores psicológicos...');
+  const PSYCH_INDICATORS_DATA = [
+    {
+      name: 'Ansiedad',
+      sortOrder: 0,
+      values: ['Ausente', 'Leve', 'Moderado', 'Alto'],
+    },
+    {
+      name: 'Depresión',
+      sortOrder: 1,
+      values: ['Ausente', 'Leve', 'Moderado', 'Alto'],
+    },
+    {
+      name: 'Estrés',
+      sortOrder: 2,
+      values: ['Ausente', 'Leve', 'Moderado', 'Alto'],
+    },
+    {
+      name: 'Agotamiento',
+      sortOrder: 3,
+      values: ['Ausente', 'Leve', 'Moderado', 'Alto'],
+    },
+  ];
+
+  for (const indData of PSYCH_INDICATORS_DATA) {
+    const [inserted] = await db
+      .insert(psychologicalIndicators)
+      .values({ name: indData.name, sortOrder: indData.sortOrder })
+      .onConflictDoNothing({ target: psychologicalIndicators.name })
+      .returning();
+
+    // Obtener el indicador (sea recién insertado o existente)
+    const [existing] = await db
+      .select()
+      .from(psychologicalIndicators)
+      .where(eq(psychologicalIndicators.name, indData.name));
+
+    const indicator = inserted ?? existing;
+    if (!indicator) continue;
+
+    console.log(`  ✓ Indicador: ${indData.name}`);
+
+    for (let vi = 0; vi < indData.values.length; vi++) {
+      const valueName = indData.values[vi];
+      await db
+        .insert(psychologicalIndicatorValues)
+        .values({
+          indicatorId: indicator.id,
+          name: valueName,
+          sortOrder: vi,
+        })
+        .onConflictDoNothing({ target: [psychologicalIndicatorValues.indicatorId, psychologicalIndicatorValues.name] });
+      console.log(`    ✓ Valor: ${valueName}`);
+    }
   }
 
   console.log('\n✅ Seed completado exitosamente!\n');

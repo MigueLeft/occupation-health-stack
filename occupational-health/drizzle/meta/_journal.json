@@ -148,6 +148,13 @@
       "when": 1780530528284,
       "tag": "0020_round_the_hunter",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1780920767235,
+      "tag": "0021_curly_randall_flagg",
+      "breakpoints": true
     }
   ]
 }

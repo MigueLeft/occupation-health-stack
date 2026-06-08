@@ -7,7 +7,7 @@ import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { and, gte, lte, eq, isNotNull, isNull, count, SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { DRIZZLE } from '../database/database.module';
-import { consultations } from '../consultations/consultations.schema';
+import { consultations, PSYCHOLOGICAL_APTITUDES } from '../consultations/consultations.schema';
 import { requests } from '../requests/requests.schema';
 import { patients } from '../patients/patients.schema';
 import { companies } from '../companies/companies.schema';
@@ -25,12 +25,19 @@ import { consultationDiagnostics } from '../consultation-diagnostics/consultatio
 import { diseases } from '../diseases/diseases.schema';
 import { bodySystems } from '../body-systems/body-systems.schema';
 import { diseaseCategories } from '../disease-categories/disease-categories.schema';
+import {
+  psychologicalIndicators,
+  psychologicalIndicatorValues,
+  consultationPsychologicalResults,
+} from '../psychological-indicators/psychological-indicators.schema';
 import type { ConsultationReportDto } from './dto/consultation-report.dto';
 import type { VigilanciaReportDto } from './dto/vigilancia-report.dto';
 import type { PathologiesReportDto } from './dto/pathologies-report.dto';
 import type { BodySystemsReportDto } from './dto/body-systems-report.dto';
 import type { MorbidityReportDto } from './dto/morbidity-report.dto';
 import type { ConsolidacionReportDto } from './dto/consolidacion-report.dto';
+import type { PsychologicalIndicatorsReportDto } from './dto/psychological-indicators-report.dto';
+import type { PsychologicalMorbidityReportDto } from './dto/psychological-morbidity-report.dto';
 import { ReportConfigService } from '../report-config/report-config.service';
 
 const LOGO_PATH = path.join(__dirname, 'assets', 'LogoCAPMIL.jpg');
@@ -1246,7 +1253,7 @@ export class ReportsService {
 
   private async fetchPathologyData(
     filters: PathologiesReportDto,
-  ): Promise<PathologyRow[]> {
+  ): Promise<{ rows: PathologyRow[]; trueRestDaysTotal: number }> {
     const conditions: SQL[] = [];
     if (filters.dateFrom)
       conditions.push(gte(requests.requestDate, filters.dateFrom));
@@ -1287,6 +1294,9 @@ export class ReportsService {
       .orderBy(diseases.name);
 
     const map = new Map<string, PathologyRow>();
+    // Tracks max rest days per consultation to avoid double-counting multi-diagnosis consultations
+    const consultationRestMap = new Map<string, number>();
+
     for (const r of rows) {
       if (!map.has(r.diseaseId)) {
         map.set(r.diseaseId, {
@@ -1304,6 +1314,8 @@ export class ReportsService {
       entry.totalCases++;
       if (r.diagRequiresRest) {
         entry.totalRestDays += r.diagRestDays ?? 0;
+        const prev = consultationRestMap.get(r.consultationId) ?? 0;
+        consultationRestMap.set(r.consultationId, Math.max(prev, r.diagRestDays ?? 0));
       }
       if (r.sex === 'M' || r.sex === 'Masculino') entry.maleCases++;
       else if (r.sex === 'F' || r.sex === 'Femenino') entry.femaleCases++;
@@ -1314,12 +1326,16 @@ export class ReportsService {
         entry.laborOrigin++;
     }
 
-    return Array.from(map.values()).sort((a, b) => b.totalCases - a.totalCases);
+    const trueRestDaysTotal = Array.from(consultationRestMap.values()).reduce((s, v) => s + v, 0);
+    return {
+      rows: Array.from(map.values()).sort((a, b) => b.totalCases - a.totalCases),
+      trueRestDaysTotal,
+    };
   }
 
   private async fetchBodySystemData(
     filters: BodySystemsReportDto,
-  ): Promise<BodySystemRow[]> {
+  ): Promise<{ rows: BodySystemRow[]; trueRestDaysTotal: number }> {
     const conditions: SQL[] = [];
     if (filters.dateFrom)
       conditions.push(gte(requests.requestDate, filters.dateFrom));
@@ -1369,6 +1385,9 @@ export class ReportsService {
       .orderBy(bodySystems.name);
 
     const map = new Map<string, BodySystemRow>();
+    // Tracks max rest days per consultation to avoid double-counting multi-diagnosis consultations
+    const consultationRestMap = new Map<string, number>();
+
     for (const r of rows) {
       if (!map.has(r.systemId)) {
         map.set(r.systemId, {
@@ -1386,6 +1405,8 @@ export class ReportsService {
       entry.totalCases++;
       if (r.diagRequiresRest) {
         entry.totalRestDays += r.diagRestDays ?? 0;
+        const prev = consultationRestMap.get(r.consultationId) ?? 0;
+        consultationRestMap.set(r.consultationId, Math.max(prev, r.diagRestDays ?? 0));
       }
       if (r.sex === 'M' || r.sex === 'Masculino') entry.maleCases++;
       else if (r.sex === 'F' || r.sex === 'Femenino') entry.femaleCases++;
@@ -1396,7 +1417,11 @@ export class ReportsService {
         entry.laborOrigin++;
     }
 
-    return Array.from(map.values()).sort((a, b) => b.totalCases - a.totalCases);
+    const trueRestDaysTotal = Array.from(consultationRestMap.values()).reduce((s, v) => s + v, 0);
+    return {
+      rows: Array.from(map.values()).sort((a, b) => b.totalCases - a.totalCases),
+      trueRestDaysTotal,
+    };
   }
 
   // Dibuja la tabla compartida para los reportes de patologías y sistemas corporales
@@ -1588,7 +1613,7 @@ export class ReportsService {
     filters: PathologiesReportDto,
   ): Promise<Buffer> {
     await this.loadSello();
-    const [data, companyInfo] = await Promise.all([
+    const [{ rows: data, trueRestDaysTotal }, companyInfo] = await Promise.all([
       this.fetchPathologyData(filters),
       filters.companyId
         ? this.fetchCompanyInfo(filters.companyId)
@@ -1596,7 +1621,7 @@ export class ReportsService {
     ]);
     const logoBuffer = await this.resolveLogoBuffer(companyInfo?.logo);
     const grandTotal = data.reduce((s, r) => s + r.totalCases, 0);
-    const totalRestDays = data.reduce((s, r) => s + r.totalRestDays, 0);
+    const totalRestDays = trueRestDaysTotal;
     const maleCases = data.reduce((s, r) => s + r.maleCases, 0);
     const femaleCases = data.reduce((s, r) => s + r.femaleCases, 0);
     const commonOrigin = data.reduce((s, r) => s + r.commonOrigin, 0);
@@ -1689,7 +1714,7 @@ export class ReportsService {
     filters: BodySystemsReportDto,
   ): Promise<Buffer> {
     await this.loadSello();
-    const [data, companyInfo] = await Promise.all([
+    const [{ rows: data, trueRestDaysTotal }, companyInfo] = await Promise.all([
       this.fetchBodySystemData(filters),
       filters.companyId
         ? this.fetchCompanyInfo(filters.companyId)
@@ -1697,7 +1722,7 @@ export class ReportsService {
     ]);
     const logoBuffer = await this.resolveLogoBuffer(companyInfo?.logo);
     const grandTotal = data.reduce((s, r) => s + r.totalCases, 0);
-    const totalRestDays = data.reduce((s, r) => s + r.totalRestDays, 0);
+    const totalRestDays = trueRestDaysTotal;
     const maleCases = data.reduce((s, r) => s + r.maleCases, 0);
     const femaleCases = data.reduce((s, r) => s + r.femaleCases, 0);
     const commonOrigin = data.reduce((s, r) => s + r.commonOrigin, 0);
@@ -2035,7 +2060,7 @@ export class ReportsService {
 
   private async fetchConsolidacionData(
     filters: ConsolidacionReportDto,
-  ): Promise<ConsolidacionRow[]> {
+  ): Promise<{ rows: ConsolidacionRow[]; trueRestDaysTotal: number }> {
     const conditions: SQL[] = [];
     if (filters.dateFrom)
       conditions.push(gte(requests.requestDate, filters.dateFrom));
@@ -2072,6 +2097,9 @@ export class ReportsService {
       .orderBy(diseases.name);
 
     const map = new Map<string, ConsolidacionRow>();
+    // Tracks max rest days per consultation to avoid double-counting multi-diagnosis consultations
+    const consultationRestMap = new Map<string, number>();
+
     for (const r of rows) {
       if (!map.has(r.diseaseId)) {
         map.set(r.diseaseId, {
@@ -2099,6 +2127,8 @@ export class ReportsService {
 
       if (r.requiresRest) {
         entry.totalRestDays += r.restDays ?? 0;
+        const prev = consultationRestMap.get(r.consultationId) ?? 0;
+        consultationRestMap.set(r.consultationId, Math.max(prev, r.restDays ?? 0));
       }
 
       const origin = r.diagnosticCategoryName ?? '';
@@ -2108,7 +2138,11 @@ export class ReportsService {
         entry.laborOrigin++;
     }
 
-    return Array.from(map.values()).sort((a, b) => b.total - a.total);
+    const trueRestDaysTotal = Array.from(consultationRestMap.values()).reduce((s, v) => s + v, 0);
+    return {
+      rows: Array.from(map.values()).sort((a, b) => b.total - a.total),
+      trueRestDaysTotal,
+    };
   }
 
   private computeVisibleMonths(dateFrom?: string, dateTo?: string): number[] {
@@ -2338,14 +2372,14 @@ export class ReportsService {
     filters: ConsolidacionReportDto,
   ): Promise<Buffer> {
     await this.loadSello();
-    const [data, companyInfo] = await Promise.all([
+    const [{ rows: data, trueRestDaysTotal }, companyInfo] = await Promise.all([
       this.fetchConsolidacionData(filters),
       filters.companyId
         ? this.fetchCompanyInfo(filters.companyId)
         : Promise.resolve(null),
     ]);
     const logoBuffer = await this.resolveLogoBuffer(companyInfo?.logo);
-    const totalRestDays = data.reduce((s, r) => s + r.totalRestDays, 0);
+    const totalRestDays = trueRestDaysTotal;
 
     const nroPatologias = data.length;
     const nroPatMasc = data.filter((r) => r.maleCases > 0).length;
@@ -2486,6 +2520,909 @@ export class ReportsService {
       doc.moveDown(0.8);
 
       this.drawMorbidityTable(doc, data, grandTotal);
+
+      const range = doc.bufferedPageRange();
+      for (let i = 0; i < range.count; i++) {
+        doc.switchToPage(range.start + i);
+        this.drawFooter(doc, i + 1, range.count);
+      }
+
+      doc.flushPages();
+      doc.end();
+    });
+  }
+
+  // ─── Indicadores Psicológicos ─────────────────────────────────────────────────
+
+  async generatePsychologicalIndicatorsReport(
+    filters: PsychologicalIndicatorsReportDto,
+  ): Promise<Buffer> {
+    await this.loadSello();
+
+    // a) Obtener todos los indicadores activos con sus valores activos
+    const allIndicators = await this.db
+      .select({
+        id: psychologicalIndicators.id,
+        name: psychologicalIndicators.name,
+        sortOrder: psychologicalIndicators.sortOrder,
+      })
+      .from(psychologicalIndicators)
+      .where(eq(psychologicalIndicators.isActive, true))
+      .orderBy(psychologicalIndicators.sortOrder);
+
+    const allValues = await this.db
+      .select({
+        id: psychologicalIndicatorValues.id,
+        indicatorId: psychologicalIndicatorValues.indicatorId,
+        name: psychologicalIndicatorValues.name,
+        sortOrder: psychologicalIndicatorValues.sortOrder,
+      })
+      .from(psychologicalIndicatorValues)
+      .where(eq(psychologicalIndicatorValues.isActive, true))
+      .orderBy(psychologicalIndicatorValues.sortOrder);
+
+    // Construir mapa de valores por indicador
+    const valuesByIndicator = new Map<
+      string,
+      Array<{ id: string; name: string; sortOrder: number }>
+    >();
+    for (const v of allValues) {
+      if (!valuesByIndicator.has(v.indicatorId)) {
+        valuesByIndicator.set(v.indicatorId, []);
+      }
+      valuesByIndicator.get(v.indicatorId)!.push(v);
+    }
+
+    const indicatorsWithValues = allIndicators.map((ind) => ({
+      ...ind,
+      values: valuesByIndicator.get(ind.id) ?? [],
+    }));
+
+    // b) Construir condiciones de filtro base (fecha y empresa)
+    const baseConditions: SQL[] = [];
+    if (filters.dateFrom)
+      baseConditions.push(gte(requests.requestDate, filters.dateFrom));
+    if (filters.dateTo)
+      baseConditions.push(lte(requests.requestDate, filters.dateTo));
+    if (filters.companyId)
+      baseConditions.push(eq(patients.companyId, filters.companyId));
+
+    // Obtener resultados filtrando por motivo de evaluación Pre o Post vacacional
+    const whereAll =
+      baseConditions.length > 0 ? and(...baseConditions) : undefined;
+
+    const rawResults = await this.db
+      .select({
+        consultationId: consultationPsychologicalResults.consultationId,
+        indicatorId: consultationPsychologicalResults.indicatorId,
+        valueId: consultationPsychologicalResults.valueId,
+        evaluationReason: requests.evaluationReason,
+        companyId: patients.companyId,
+        companyName: companies.name,
+      })
+      .from(consultationPsychologicalResults)
+      .innerJoin(
+        consultations,
+        eq(consultationPsychologicalResults.consultationId, consultations.id),
+      )
+      .innerJoin(requests, eq(consultations.requestId, requests.id))
+      .innerJoin(patients, eq(requests.patientId, patients.cedula))
+      .leftJoin(companies, eq(patients.companyId, companies.id))
+      .where(
+        whereAll
+          ? and(whereAll, eq(requests.evaluationReason, 'Pre-vacacional'))
+          : eq(requests.evaluationReason, 'Pre-vacacional'),
+      );
+
+    const rawResultsPost = await this.db
+      .select({
+        consultationId: consultationPsychologicalResults.consultationId,
+        indicatorId: consultationPsychologicalResults.indicatorId,
+        valueId: consultationPsychologicalResults.valueId,
+        evaluationReason: requests.evaluationReason,
+        companyId: patients.companyId,
+        companyName: companies.name,
+      })
+      .from(consultationPsychologicalResults)
+      .innerJoin(
+        consultations,
+        eq(consultationPsychologicalResults.consultationId, consultations.id),
+      )
+      .innerJoin(requests, eq(consultations.requestId, requests.id))
+      .innerJoin(patients, eq(requests.patientId, patients.cedula))
+      .leftJoin(companies, eq(patients.companyId, companies.id))
+      .where(
+        whereAll
+          ? and(whereAll, eq(requests.evaluationReason, 'Post-vacacional'))
+          : eq(requests.evaluationReason, 'Post-vacacional'),
+      );
+
+    // c) Agregar conteos por empresa × indicador × valor
+    type IndicatorCounts = Map<string, number>; // valueId → count
+    type CompanyData = {
+      companyId: string;
+      companyName: string;
+      counts: Map<string, IndicatorCounts>;
+    }; // indicatorId → IndicatorCounts
+
+    const aggregateResults = (
+      rows: typeof rawResults,
+      isSingleCompany: boolean,
+    ): CompanyData[] => {
+      const companyMap = new Map<string, CompanyData>();
+
+      for (const row of rows) {
+        const key = isSingleCompany
+          ? (row.companyId ?? 'all')
+          : (row.companyId ?? 'sin-empresa');
+        const companyName = isSingleCompany
+          ? (row.companyName ?? 'Sin empresa')
+          : (row.companyName ?? 'Sin empresa');
+
+        if (!companyMap.has(key)) {
+          companyMap.set(key, {
+            companyId: key,
+            companyName,
+            counts: new Map(),
+          });
+        }
+        const companyData = companyMap.get(key)!;
+        if (!companyData.counts.has(row.indicatorId)) {
+          companyData.counts.set(row.indicatorId, new Map());
+        }
+        const indCounts = companyData.counts.get(row.indicatorId)!;
+        indCounts.set(row.valueId, (indCounts.get(row.valueId) ?? 0) + 1);
+      }
+
+      return Array.from(companyMap.values()).sort((a, b) =>
+        a.companyName.localeCompare(b.companyName),
+      );
+    };
+
+    const isSingleCompany = !!filters.companyId;
+    const preData = aggregateResults(rawResults, isSingleCompany);
+    const postData = aggregateResults(rawResultsPost, isSingleCompany);
+
+    const [companyInfo] = await Promise.all([
+      filters.companyId
+        ? this.fetchCompanyInfo(filters.companyId)
+        : Promise.resolve(null),
+    ]);
+    const logoBuffer = await this.resolveLogoBuffer(companyInfo?.logo);
+
+    // d) Generar PDF en formato landscape A4
+    const LANDSCAPE_MARGIN = 30;
+    const LANDSCAPE_USABLE = 841 - LANDSCAPE_MARGIN * 2; // ~781
+
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({
+        size: 'A4',
+        layout: 'landscape',
+        margins: {
+          top: HEADER_HEIGHT + 10,
+          bottom: FOOTER_HEIGHT + 10,
+          left: LANDSCAPE_MARGIN,
+          right: LANDSCAPE_MARGIN,
+        },
+        bufferPages: true,
+      });
+
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      // Header y footer usando los mismos helpers
+      const drawLandscapeHeader = () => {
+        const topY = 15;
+        if (fs.existsSync(LOGO_PATH)) {
+          doc.image(LOGO_PATH, LANDSCAPE_MARGIN, topY, {
+            height: 75,
+            fit: [170, 75],
+          });
+        }
+        doc
+          .font('Helvetica-BoldOblique')
+          .fontSize(13)
+          .fillColor(PRIMARY_COLOR)
+          .text(
+            'Por trabajadores\nsanos, felices y\nseguros',
+            LANDSCAPE_MARGIN,
+            topY + 10,
+            { width: LANDSCAPE_USABLE, align: 'right' },
+          );
+        const lineY = HEADER_HEIGHT + 2;
+        doc
+          .moveTo(LANDSCAPE_MARGIN, lineY)
+          .lineTo(LANDSCAPE_MARGIN + LANDSCAPE_USABLE, lineY)
+          .strokeColor(PRIMARY_COLOR)
+          .lineWidth(1.5)
+          .stroke();
+        doc.font('Helvetica').fillColor('#000000');
+      };
+
+      const drawLandscapeFooter = (pageNum: number, totalPages: number) => {
+        const pageHeight = doc.page.height;
+        const footerY = pageHeight - FOOTER_HEIGHT + 4;
+        const lineSpacing = 9;
+        const savedBottom = doc.page.margins.bottom;
+        doc.page.margins.bottom = 0;
+
+        doc
+          .moveTo(LANDSCAPE_MARGIN, footerY - 4)
+          .lineTo(LANDSCAPE_MARGIN + LANDSCAPE_USABLE, footerY - 4)
+          .strokeColor('#BBBBBB')
+          .lineWidth(0.8)
+          .stroke();
+
+        doc
+          .font('Helvetica')
+          .fontSize(7)
+          .fillColor('#888888')
+          .text(`Página ${pageNum} de ${totalPages}`, LANDSCAPE_MARGIN, footerY, {
+            width: LANDSCAPE_USABLE / 2,
+          });
+
+        if (this.selloMedico) {
+          try {
+            const selloBase64 = this.selloMedico.replace(/^data:.+;base64,/, '');
+            const selloBuffer = Buffer.from(selloBase64, 'base64');
+            doc.image(selloBuffer, LANDSCAPE_MARGIN, footerY + 14, {
+              fit: [90, 90],
+              align: 'center',
+              valign: 'center',
+            });
+          } catch {
+            // Ignorar
+          }
+        }
+
+        doc
+          .font('Helvetica-Bold')
+          .fontSize(7.5)
+          .fillColor('#1A1A1A')
+          .text(FOOTER_LINES[0], LANDSCAPE_MARGIN, footerY, {
+            width: LANDSCAPE_USABLE,
+            align: 'right',
+          });
+        doc.font('Helvetica').fontSize(6.5).fillColor('#444444');
+        for (let i = 1; i < FOOTER_LINES.length; i++) {
+          doc.text(
+            FOOTER_LINES[i],
+            LANDSCAPE_MARGIN,
+            footerY + i * lineSpacing,
+            { width: LANDSCAPE_USABLE, align: 'right' },
+          );
+        }
+
+        doc.page.margins.bottom = savedBottom;
+        doc.fillColor('#000000');
+      };
+
+      drawLandscapeHeader();
+      doc.on('pageAdded', () => drawLandscapeHeader());
+
+      if (companyInfo)
+        this.drawCompanyInfoBlock(doc, companyInfo, logoBuffer);
+
+      // Título
+      const titleY = Math.max(doc.y, HEADER_HEIGHT + 14);
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(13)
+        .fillColor(PRIMARY_COLOR)
+        .text('Reporte de Indicadores Psicológicos', LANDSCAPE_MARGIN, titleY, {
+          width: LANDSCAPE_USABLE,
+          align: 'center',
+        });
+
+      const parts: string[] = [];
+      if (filters.dateFrom) parts.push(`Desde: ${filters.dateFrom}`);
+      if (filters.dateTo) parts.push(`Hasta: ${filters.dateTo}`);
+      if (!parts.length) parts.push('Todas las fechas');
+
+      doc
+        .font('Helvetica')
+        .fontSize(9)
+        .fillColor('#555555')
+        .text(parts.join('   ·   '), LANDSCAPE_MARGIN, titleY + 18, {
+          width: LANDSCAPE_USABLE,
+          align: 'center',
+        });
+
+      doc.fillColor('#000000');
+      doc.moveDown(0.8);
+
+      // Sección Pre-vacacional
+      this.drawIndicatorsTable(
+        doc,
+        'Resultados Pre-Vacacionales',
+        preData,
+        indicatorsWithValues,
+        !isSingleCompany,
+        LANDSCAPE_MARGIN,
+        LANDSCAPE_USABLE,
+      );
+
+      doc.moveDown(1);
+
+      // Divisor entre secciones
+      if (doc.y + 60 > doc.page.height - FOOTER_HEIGHT - 20) {
+        doc.addPage();
+      } else {
+        doc
+          .moveTo(LANDSCAPE_MARGIN, doc.y)
+          .lineTo(LANDSCAPE_MARGIN + LANDSCAPE_USABLE, doc.y)
+          .strokeColor('#BBBBBB')
+          .lineWidth(1)
+          .stroke();
+        doc.moveDown(0.5);
+      }
+
+      // Sección Post-vacacional
+      this.drawIndicatorsTable(
+        doc,
+        'Resultados Post-Vacacionales',
+        postData,
+        indicatorsWithValues,
+        !isSingleCompany,
+        LANDSCAPE_MARGIN,
+        LANDSCAPE_USABLE,
+      );
+
+      // Footer en todas las páginas
+      const range = doc.bufferedPageRange();
+      for (let i = 0; i < range.count; i++) {
+        doc.switchToPage(range.start + i);
+        drawLandscapeFooter(i + 1, range.count);
+      }
+
+      doc.flushPages();
+      doc.end();
+    });
+  }
+
+  private drawIndicatorsTable(
+    doc: PDFKit.PDFDocument,
+    title: string,
+    rows: Array<{
+      companyId: string;
+      companyName: string;
+      counts: Map<string, Map<string, number>>;
+    }>,
+    indicators: Array<{
+      id: string;
+      name: string;
+      sortOrder: number;
+      values: Array<{ id: string; name: string; sortOrder: number }>;
+    }>,
+    includeCompanyCol: boolean,
+    margin: number,
+    usableWidth: number,
+  ) {
+    // Calcular ancho de columnas
+    const companyColWidth = includeCompanyCol ? 120 : 0;
+    const totalValueCols = indicators.reduce(
+      (s, ind) => s + (ind.values.length || 1),
+      0,
+    );
+    const valueColWidth =
+      totalValueCols > 0
+        ? Math.max(
+            30,
+            Math.floor((usableWidth - companyColWidth) / totalValueCols),
+          )
+        : 60;
+
+    const CELL_PADDING = 2;
+    const HEADER_H = 20;
+    const ROW_H = 18;
+    const FONT_SIZE = 7;
+
+    // Título de sección
+    const secY = doc.y;
+    doc.rect(margin, secY, usableWidth, HEADER_H).fill(PRIMARY_COLOR);
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(9)
+      .fillColor('#FFFFFF')
+      .text(title, margin + 6, secY + 5, {
+        width: usableWidth - 12,
+        lineBreak: false,
+      });
+    doc.fillColor('#000000');
+    let y = secY + HEADER_H;
+
+    // Fila de encabezados fila 1: empresa (opcional) + nombres de indicadores (merged)
+    doc.rect(margin, y, usableWidth, HEADER_H).fill('#D0D9EF');
+    let x = margin;
+
+    if (includeCompanyCol) {
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(FONT_SIZE)
+        .fillColor('#1A1A1A')
+        .text('Empresa', x + CELL_PADDING, y + 6, {
+          width: companyColWidth - CELL_PADDING * 2,
+          align: 'center',
+          lineBreak: false,
+        });
+      x += companyColWidth;
+    }
+
+    for (const ind of indicators) {
+      const spanWidth = valueColWidth * (ind.values.length || 1);
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(FONT_SIZE)
+        .fillColor('#1A1A1A')
+        .text(ind.name, x + CELL_PADDING, y + 6, {
+          width: spanWidth - CELL_PADDING * 2,
+          align: 'center',
+          lineBreak: false,
+        });
+      // Borde derecho del indicador
+      doc
+        .moveTo(x + spanWidth, y)
+        .lineTo(x + spanWidth, y + HEADER_H)
+        .strokeColor('#AAAAAA')
+        .lineWidth(0.5)
+        .stroke();
+      x += spanWidth;
+    }
+    y += HEADER_H;
+
+    // Fila de encabezados fila 2: empresa vacía + nombres de valores
+    doc.rect(margin, y, usableWidth, HEADER_H).fill('#E3EAF6');
+    x = margin;
+
+    if (includeCompanyCol) {
+      x += companyColWidth;
+    }
+
+    for (const ind of indicators) {
+      for (const val of ind.values.length > 0 ? ind.values : [{ id: '', name: '-', sortOrder: 0 }]) {
+        doc
+          .font('Helvetica-Oblique')
+          .fontSize(FONT_SIZE - 1)
+          .fillColor('#333333')
+          .text(val.name, x + CELL_PADDING, y + 6, {
+            width: valueColWidth - CELL_PADDING * 2,
+            align: 'center',
+            lineBreak: false,
+          });
+        doc
+          .moveTo(x + valueColWidth, y)
+          .lineTo(x + valueColWidth, y + HEADER_H)
+          .strokeColor('#CCCCCC')
+          .lineWidth(0.3)
+          .stroke();
+        x += valueColWidth;
+      }
+    }
+    y += HEADER_H;
+
+    // Filas de datos
+    if (rows.length === 0) {
+      doc
+        .font('Helvetica-Oblique')
+        .fontSize(8)
+        .fillColor('#888888')
+        .text('Sin datos para el período seleccionado.', margin, y + 6, {
+          width: usableWidth,
+          align: 'center',
+        });
+      doc.fillColor('#000000');
+      doc.y = y + 24;
+      return;
+    }
+
+    for (let ri = 0; ri < rows.length; ri++) {
+      const row = rows[ri];
+      const isAlt = ri % 2 === 1;
+
+      if (y + ROW_H > doc.page.height - FOOTER_HEIGHT - 20) {
+        doc.addPage();
+        y = HEADER_HEIGHT + 14;
+      }
+
+      if (isAlt) {
+        doc.rect(margin, y, usableWidth, ROW_H).fill(ALT_ROW_COLOR);
+      }
+
+      x = margin;
+      doc.font('Helvetica').fontSize(FONT_SIZE).fillColor('#1A1A1A');
+
+      if (includeCompanyCol) {
+        doc.text(row.companyName, x + CELL_PADDING, y + 5, {
+          width: companyColWidth - CELL_PADDING * 2,
+          lineBreak: false,
+        });
+        x += companyColWidth;
+      }
+
+      for (const ind of indicators) {
+        const indCounts = row.counts.get(ind.id);
+        for (const val of ind.values.length > 0 ? ind.values : [{ id: '', name: '-', sortOrder: 0 }]) {
+          const cnt = val.id ? (indCounts?.get(val.id) ?? 0) : 0;
+          doc.text(cnt > 0 ? String(cnt) : '—', x + CELL_PADDING, y + 5, {
+            width: valueColWidth - CELL_PADDING * 2,
+            align: 'center',
+            lineBreak: false,
+          });
+          x += valueColWidth;
+        }
+      }
+
+      doc
+        .moveTo(margin, y + ROW_H)
+        .lineTo(margin + usableWidth, y + ROW_H)
+        .strokeColor('#E0E0E0')
+        .lineWidth(0.5)
+        .stroke();
+
+      y += ROW_H;
+    }
+
+    doc.fillColor('#000000');
+    doc.y = y + 8;
+  }
+
+  private readonly REASON_LABELS: Record<string, string> = {
+    'Pre-empleo': 'Pre-empleo',
+    'Egreso': 'Egreso',
+    'Pre-vacacional': 'Pre-vacacional',
+    'Post-vacacional': 'Post-vacacional',
+    'Periodica': 'Periódica',
+    'Consulta': 'Consulta',
+    'Post-reposo': 'Post-reposo',
+  };
+
+  private drawAptitudeByReasonTable(
+    doc: PDFKit.PDFDocument,
+    aptitudeMap: Map<string, Map<string, number>>,
+  ): void {
+    const aptitudes = PSYCHOLOGICAL_APTITUDES as unknown as string[];
+    const colWidths = [190, 80, 80, 115, 50];
+    const headers = ['Motivo de Evaluación', ...aptitudes, 'Total'];
+
+    let y = doc.y;
+
+    // Header row
+    doc.fillColor(PRIMARY_COLOR).rect(MARGIN, y, USABLE_WIDTH, HEADER_ROW_HEIGHT).fill();
+    doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(9);
+    let curX = MARGIN;
+    headers.forEach((h, i) => {
+      doc.text(h, curX + 4, y + 7, { width: colWidths[i] - 8, align: i === 0 ? 'left' : 'center' });
+      curX += colWidths[i];
+    });
+    y += HEADER_ROW_HEIGHT;
+
+    const reasons = Array.from(aptitudeMap.keys()).sort();
+    let rowIdx = 0;
+    const grandTotals: number[] = new Array(aptitudes.length).fill(0);
+
+    for (const reason of reasons) {
+      const counts = aptitudeMap.get(reason)!;
+      const rowTotal = aptitudes.reduce((s, a) => s + (counts.get(a) ?? 0), 0);
+      const bg = rowIdx % 2 === 1 ? ALT_ROW_COLOR : '#FFFFFF';
+
+      doc.fillColor(bg).rect(MARGIN, y, USABLE_WIDTH, ROW_HEIGHT).fill();
+      curX = MARGIN;
+      doc.fillColor('#000000').font('Helvetica').fontSize(8);
+      doc.text(this.REASON_LABELS[reason] ?? reason, curX + 4, y + 6, { width: colWidths[0] - 8, align: 'left' });
+      curX += colWidths[0];
+
+      aptitudes.forEach((a, i) => {
+        const val = counts.get(a) ?? 0;
+        grandTotals[i] += val;
+        doc.text(String(val), curX + 4, y + 6, { width: colWidths[i + 1] - 8, align: 'center' });
+        curX += colWidths[i + 1];
+      });
+      doc.text(String(rowTotal), curX + 4, y + 6, { width: colWidths[colWidths.length - 1] - 8, align: 'center' });
+
+      doc.moveTo(MARGIN, y + ROW_HEIGHT).lineTo(MARGIN + USABLE_WIDTH, y + ROW_HEIGHT).strokeColor('#E0E0E0').lineWidth(0.5).stroke();
+      y += ROW_HEIGHT;
+      rowIdx++;
+    }
+
+    // Total row
+    const grandTotal = grandTotals.reduce((s, v) => s + v, 0);
+    doc.fillColor('#E3F2FD').rect(MARGIN, y, USABLE_WIDTH, ROW_HEIGHT).fill();
+    curX = MARGIN;
+    doc.fillColor('#000000').font('Helvetica-Bold').fontSize(8);
+    doc.text('Total', curX + 4, y + 6, { width: colWidths[0] - 8, align: 'left' });
+    curX += colWidths[0];
+    grandTotals.forEach((v, i) => {
+      doc.text(String(v), curX + 4, y + 6, { width: colWidths[i + 1] - 8, align: 'center' });
+      curX += colWidths[i + 1];
+    });
+    doc.text(String(grandTotal), curX + 4, y + 6, { width: colWidths[colWidths.length - 1] - 8, align: 'center' });
+
+    doc.moveTo(MARGIN, y + ROW_HEIGHT).lineTo(MARGIN + USABLE_WIDTH, y + ROW_HEIGHT).strokeColor('#E0E0E0').lineWidth(0.5).stroke();
+    doc.fillColor('#000000');
+    doc.y = y + ROW_HEIGHT + 8;
+  }
+
+  private drawIndicatorMiniTable(
+    doc: PDFKit.PDFDocument,
+    x: number,
+    startY: number,
+    indicatorName: string,
+    valueNames: string[],
+    genderCounts: Map<string, { M: number; F: number }>,
+  ): number {
+    const W = 245;
+    const colWidths = [93, 52, 50, 50];
+    const MINI_ROW_H = 20;
+    const IND_ROW_H = 22;
+
+    let y = startY;
+
+    doc.fillColor(PRIMARY_COLOR).rect(x, y, W, IND_ROW_H).fill();
+    doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(8);
+    doc.text(indicatorName, x + 4, y + 6, { width: W - 8, align: 'center' });
+    y += IND_ROW_H;
+
+    doc.fillColor('#90CAF9').rect(x, y, W, MINI_ROW_H).fill();
+    doc.fillColor('#000000').font('Helvetica-Bold').fontSize(7.5);
+    let curX = x;
+    ['Resultado', 'Masc.', 'Fem.', 'Total'].forEach((h, i) => {
+      doc.text(h, curX + 2, y + 5, { width: colWidths[i] - 4, align: i === 0 ? 'left' : 'center' });
+      curX += colWidths[i];
+    });
+    y += MINI_ROW_H;
+
+    let totalM = 0;
+    let totalF = 0;
+
+    valueNames.forEach((valName, rowIdx) => {
+      const c = genderCounts.get(valName) ?? { M: 0, F: 0 };
+      totalM += c.M;
+      totalF += c.F;
+      const bg = rowIdx % 2 === 1 ? ALT_ROW_COLOR : '#FFFFFF';
+      doc.fillColor(bg).rect(x, y, W, MINI_ROW_H).fill();
+      doc.fillColor('#000000').font('Helvetica').fontSize(7.5);
+      curX = x;
+      doc.text(valName, curX + 2, y + 5, { width: colWidths[0] - 4, align: 'left' });
+      curX += colWidths[0];
+      doc.text(String(c.M), curX + 2, y + 5, { width: colWidths[1] - 4, align: 'center' });
+      curX += colWidths[1];
+      doc.text(String(c.F), curX + 2, y + 5, { width: colWidths[2] - 4, align: 'center' });
+      curX += colWidths[2];
+      doc.text(String(c.M + c.F), curX + 2, y + 5, { width: colWidths[3] - 4, align: 'center' });
+      doc.moveTo(x, y + MINI_ROW_H).lineTo(x + W, y + MINI_ROW_H).strokeColor('#E0E0E0').lineWidth(0.5).stroke();
+      y += MINI_ROW_H;
+    });
+
+    doc.fillColor('#E3F2FD').rect(x, y, W, MINI_ROW_H).fill();
+    doc.fillColor('#000000').font('Helvetica-Bold').fontSize(7.5);
+    curX = x;
+    doc.text('Total', curX + 2, y + 5, { width: colWidths[0] - 4, align: 'left' });
+    curX += colWidths[0];
+    doc.text(String(totalM), curX + 2, y + 5, { width: colWidths[1] - 4, align: 'center' });
+    curX += colWidths[1];
+    doc.text(String(totalF), curX + 2, y + 5, { width: colWidths[2] - 4, align: 'center' });
+    curX += colWidths[2];
+    doc.text(String(totalM + totalF), curX + 2, y + 5, { width: colWidths[3] - 4, align: 'center' });
+    doc.moveTo(x, y + MINI_ROW_H).lineTo(x + W, y + MINI_ROW_H).strokeColor('#E0E0E0').lineWidth(0.5).stroke();
+    y += MINI_ROW_H;
+
+    return y - startY;
+  }
+
+  private drawIndicatorGenderSection(
+    doc: PDFKit.PDFDocument,
+    sectionTitle: string,
+    indicators: Array<{ id: string; name: string; values: Array<{ id: string; name: string }> }>,
+    genderData: Map<string, Map<string, { M: number; F: number }>>,
+  ): void {
+    const LEFT_X = MARGIN;
+    const RIGHT_X = MARGIN + 245 + 25;
+    const ROW_GAP = 12;
+
+    this.drawSectionHeader(doc, sectionTitle);
+
+    let y = doc.y;
+
+    for (let i = 0; i < indicators.length; i += 2) {
+      const ind1 = indicators[i];
+      const ind2 = indicators[i + 1];
+
+      const h1 = this.drawIndicatorMiniTable(
+        doc, LEFT_X, y, ind1.name,
+        ind1.values.map((v) => v.name),
+        genderData.get(ind1.id) ?? new Map(),
+      );
+
+      let h2 = 0;
+      if (ind2) {
+        h2 = this.drawIndicatorMiniTable(
+          doc, RIGHT_X, y, ind2.name,
+          ind2.values.map((v) => v.name),
+          genderData.get(ind2.id) ?? new Map(),
+        );
+      }
+
+      y += Math.max(h1, h2) + ROW_GAP;
+      doc.y = y;
+    }
+  }
+
+  async generatePsychologicalMorbidityReport(
+    filters: PsychologicalMorbidityReportDto,
+  ): Promise<Buffer> {
+    await this.loadSello();
+
+    const [allIndicators, allValues, companyInfo] = await Promise.all([
+      this.db
+        .select({ id: psychologicalIndicators.id, name: psychologicalIndicators.name, sortOrder: psychologicalIndicators.sortOrder })
+        .from(psychologicalIndicators)
+        .where(eq(psychologicalIndicators.isActive, true))
+        .orderBy(psychologicalIndicators.sortOrder),
+      this.db
+        .select({ id: psychologicalIndicatorValues.id, indicatorId: psychologicalIndicatorValues.indicatorId, name: psychologicalIndicatorValues.name, sortOrder: psychologicalIndicatorValues.sortOrder })
+        .from(psychologicalIndicatorValues)
+        .where(eq(psychologicalIndicatorValues.isActive, true))
+        .orderBy(psychologicalIndicatorValues.sortOrder),
+      filters.companyId ? this.fetchCompanyInfo(filters.companyId) : Promise.resolve(null),
+    ]);
+
+    const logoBuffer = await this.resolveLogoBuffer(companyInfo?.logo);
+
+    const valuesByIndicator = new Map<string, Array<{ id: string; name: string }>>();
+    for (const v of allValues) {
+      if (!valuesByIndicator.has(v.indicatorId)) valuesByIndicator.set(v.indicatorId, []);
+      valuesByIndicator.get(v.indicatorId)!.push({ id: v.id, name: v.name });
+    }
+    const indicatorsWithValues = allIndicators.map((ind) => ({
+      ...ind,
+      values: valuesByIndicator.get(ind.id) ?? [],
+    }));
+
+    const baseConditions: SQL[] = [];
+    if (filters.dateFrom) baseConditions.push(gte(requests.requestDate, filters.dateFrom));
+    if (filters.dateTo) baseConditions.push(lte(requests.requestDate, filters.dateTo));
+    if (filters.companyId) baseConditions.push(eq(patients.companyId, filters.companyId));
+
+    // Aptitude counts by evaluation reason
+    const aptConds: SQL[] = [...baseConditions, isNotNull(consultations.psychologicalAptitude)];
+    const aptRaw = await this.db
+      .select({
+        evaluationReason: requests.evaluationReason,
+        aptitude: consultations.psychologicalAptitude,
+        total: count(),
+      })
+      .from(consultations)
+      .innerJoin(requests, eq(consultations.requestId, requests.id))
+      .innerJoin(patients, eq(requests.patientId, patients.cedula))
+      .where(and(...aptConds))
+      .groupBy(requests.evaluationReason, consultations.psychologicalAptitude);
+
+    const aptitudeMap = new Map<string, Map<string, number>>();
+    for (const row of aptRaw) {
+      const reason = row.evaluationReason ?? 'Sin motivo';
+      const apt = row.aptitude ?? '';
+      if (!aptitudeMap.has(reason)) aptitudeMap.set(reason, new Map());
+      aptitudeMap.get(reason)!.set(apt, Number(row.total));
+    }
+
+    // Indicator results by sex helper
+    const valueIdToName = new Map<string, string>();
+    for (const v of allValues) valueIdToName.set(v.id, v.name);
+
+    const fetchIndicatorBySex = async (
+      extraCond?: SQL,
+    ): Promise<Map<string, Map<string, { M: number; F: number }>>> => {
+      const conds: SQL[] = [...baseConditions];
+      if (extraCond) conds.push(extraCond);
+
+      const rows = await this.db
+        .select({
+          indicatorId: consultationPsychologicalResults.indicatorId,
+          valueId: consultationPsychologicalResults.valueId,
+          sex: patients.sex,
+          total: count(),
+        })
+        .from(consultationPsychologicalResults)
+        .innerJoin(consultations, eq(consultationPsychologicalResults.consultationId, consultations.id))
+        .innerJoin(requests, eq(consultations.requestId, requests.id))
+        .innerJoin(patients, eq(requests.patientId, patients.cedula))
+        .where(conds.length > 0 ? and(...conds) : undefined)
+        .groupBy(
+          consultationPsychologicalResults.indicatorId,
+          consultationPsychologicalResults.valueId,
+          patients.sex,
+        );
+
+      const result = new Map<string, Map<string, { M: number; F: number }>>();
+      for (const row of rows) {
+        if (!result.has(row.indicatorId)) result.set(row.indicatorId, new Map());
+        const valueName = valueIdToName.get(row.valueId) ?? row.valueId;
+        const indMap = result.get(row.indicatorId)!;
+        if (!indMap.has(valueName)) indMap.set(valueName, { M: 0, F: 0 });
+        const entry = indMap.get(valueName)!;
+        if (row.sex === 'M' || row.sex === 'Masculino') entry.M += Number(row.total);
+        else if (row.sex === 'F' || row.sex === 'Femenino') entry.F += Number(row.total);
+      }
+      return result;
+    };
+
+    const [globalSex, preSex, postSex] = await Promise.all([
+      fetchIndicatorBySex(),
+      fetchIndicatorBySex(eq(requests.evaluationReason, 'Pre-vacacional')),
+      fetchIndicatorBySex(eq(requests.evaluationReason, 'Post-vacacional')),
+    ]);
+
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({
+        size: 'A4',
+        margins: { top: HEADER_HEIGHT + 10, bottom: FOOTER_HEIGHT + 10, left: MARGIN, right: MARGIN },
+        bufferPages: true,
+      });
+
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      this.drawHeader(doc);
+      doc.on('pageAdded', () => this.drawHeader(doc));
+
+      if (companyInfo) this.drawCompanyInfoBlock(doc, companyInfo, logoBuffer);
+
+      const titleY = Math.max(doc.y, HEADER_HEIGHT + 14);
+      doc
+        .font('Helvetica-Bold').fontSize(13).fillColor(PRIMARY_COLOR)
+        .text('Reporte de Morbilidad Psicológica', MARGIN, titleY, { width: USABLE_WIDTH, align: 'center' });
+
+      const parts: string[] = [];
+      if (filters.dateFrom) parts.push(`Desde: ${filters.dateFrom}`);
+      if (filters.dateTo) parts.push(`Hasta: ${filters.dateTo}`);
+      if (!parts.length) parts.push('Todas las fechas');
+      doc
+        .font('Helvetica').fontSize(9).fillColor('#555555')
+        .text(parts.join('   ·   '), MARGIN, titleY + 18, { width: USABLE_WIDTH, align: 'center' });
+
+      doc.fillColor('#000000').moveDown(1);
+
+      // Sección 1: Aptitud por motivo de evaluación
+      this.drawSectionHeader(doc, 'I. Resultados de Aptitud por Motivo de Evaluación');
+      this.drawAptitudeByReasonTable(doc, aptitudeMap);
+
+      // Sección 2: Indicadores globales por sexo
+      doc.addPage();
+      this.drawIndicatorGenderSection(
+        doc,
+        'II. Resultados de Indicadores Psicológicos por Género (Global)',
+        indicatorsWithValues,
+        globalSex,
+      );
+
+      // Sección 3: Pre-vacacional
+      doc.addPage();
+      this.drawIndicatorGenderSection(
+        doc,
+        'III. Indicadores Psicológicos por Género – Pre-vacacional',
+        indicatorsWithValues,
+        preSex,
+      );
+
+      // Sección 4: Post-vacacional — nueva página si no hay espacio suficiente
+      const neededSpace = indicatorsWithValues.length > 0
+        ? Math.ceil(indicatorsWithValues.length / 2) * (22 + 20 + indicatorsWithValues[0].values.length * 20 + 20 + 12) + 40
+        : 100;
+      if (doc.y + neededSpace > doc.page.height - FOOTER_HEIGHT - 20) {
+        doc.addPage();
+      } else {
+        doc.moveDown(1);
+      }
+      this.drawIndicatorGenderSection(
+        doc,
+        'IV. Indicadores Psicológicos por Género – Post-vacacional',
+        indicatorsWithValues,
+        postSex,
+      );
 
       const range = doc.bufferedPageRange();
       for (let i = 0; i < range.count; i++) {

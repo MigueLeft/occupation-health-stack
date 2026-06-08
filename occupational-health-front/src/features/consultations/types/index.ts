@@ -1,4 +1,5 @@
 import type { EvaluationReason, RequestStatus } from '@/features/requests/types';
+import type { PsychologicalIndicatorResult } from '@/features/psychological-indicators';
 
 export const CONSULTATION_TYPES = ['Medica', 'Psicologica', 'Medica/Psicologica'] as const;
 export type ConsultationType = (typeof CONSULTATION_TYPES)[number];
@@ -72,6 +73,14 @@ export interface Consultation {
   id: string;
   requestId: string;
   status: ConsultationStatus;
+  // Embedded from backend — populated regardless of requests/patients permissions
+  requestDate?: string | null;
+  evaluationReason?: EvaluationReason | null;
+  patientId?: string | null;
+  requestStatus?: RequestStatus | null;
+  patientName?: string | null;
+  companyName?: string | null;
+  positionName?: string | null;
   type: ConsultationType;
   currentTreatment?: string | null;
   interviewConducted?: boolean | null;
@@ -125,4 +134,5 @@ export type UpdateConsultationPayload = Omit<CreateConsultationPayload, 'request
   status?: ConsultationStatus;
   type?: ConsultationType;
   chronicDiseasesSnapshot?: { id: string; name: string }[];
+  psychologicalIndicatorResults?: PsychologicalIndicatorResult[];
 };

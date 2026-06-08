@@ -47,43 +47,65 @@ export class BackupService {
   restoreDatabase(data: Buffer): Promise<void> {
     const dbUrl = this.config.getOrThrow<string>('DATABASE_URL');
 
-    return new Promise<void>((resolve, reject) => {
-      // pg_restore ordena correctamente los DROPs y CREATEs respetando FKs
-      const child = spawn('pg_restore', [
-        '--clean',
-        '--if-exists',
-        '--no-acl',
-        '--no-owner',
-        '--single-transaction',
-        '-d',
-        dbUrl,
-      ]);
-
-      const errors: string[] = [];
-      child.stderr.on('data', (chunk: Buffer) => errors.push(chunk.toString()));
-
-      child.on('error', (err) =>
-        reject(
-          new InternalServerErrorException(
-            `pg_restore no encontrado: ${err.message}`,
-          ),
-        ),
-      );
-
-      child.on('close', (code) => {
-        if (code !== 0) {
+    const dropSchema = (): Promise<void> =>
+      new Promise((resolve, reject) => {
+        // DROP CASCADE elimina todas las dependencias (FKs, índices, etc.) antes del restore
+        const psql = spawn('psql', [
+          dbUrl,
+          '-c',
+          'DROP SCHEMA public CASCADE; CREATE SCHEMA public;',
+        ]);
+        const errors: string[] = [];
+        psql.stderr.on('data', (chunk: Buffer) => errors.push(chunk.toString()));
+        psql.on('error', (err) =>
           reject(
             new InternalServerErrorException(
-              `Error al restaurar respaldo: ${errors.join('')}`,
+              `psql no encontrado: ${err.message}`,
             ),
-          );
-        } else {
-          resolve();
-        }
+          ),
+        );
+        psql.on('close', (code) => {
+          if (code !== 0)
+            reject(
+              new InternalServerErrorException(
+                `Error al limpiar base de datos: ${errors.join('')}`,
+              ),
+            );
+          else resolve();
+        });
       });
 
-      child.stdin.write(data);
-      child.stdin.end();
-    });
+    const runRestore = (): Promise<void> =>
+      new Promise((resolve, reject) => {
+        const child = spawn('pg_restore', ['--no-acl', '--no-owner', '-d', dbUrl]);
+
+        const errors: string[] = [];
+        child.stderr.on('data', (chunk: Buffer) => errors.push(chunk.toString()));
+
+        child.on('error', (err) =>
+          reject(
+            new InternalServerErrorException(
+              `pg_restore no encontrado: ${err.message}`,
+            ),
+          ),
+        );
+
+        child.on('close', (code) => {
+          if (code !== 0) {
+            reject(
+              new InternalServerErrorException(
+                `Error al restaurar respaldo: ${errors.join('')}`,
+              ),
+            );
+          } else {
+            resolve();
+          }
+        });
+
+        child.stdin.write(data);
+        child.stdin.end();
+      });
+
+    return dropSchema().then(runRestore);
   }
 }

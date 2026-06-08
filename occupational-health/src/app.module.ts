@@ -35,6 +35,7 @@ import { ConsultationDisabilitiesModule } from './consultation-disabilities/cons
 import { BackupModule } from './backup/backup.module';
 import { ReportConfigModule } from './report-config/report-config.module';
 import { AccidentTypesModule } from './accident-types/accident-types.module';
+import { PsychologicalIndicatorsModule } from './psychological-indicators/psychological-indicators.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { AccidentTypesModule } from './accident-types/accident-types.module';
     RiskExposureCategoriesModule,
     DisabilitiesModule,
     AccidentTypesModule,
+    PsychologicalIndicatorsModule,
     // Estructura de empresa
     CompaniesModule,
     PositionsModule,

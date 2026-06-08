@@ -35,6 +35,9 @@ import { useMedicalSpecialties } from '@/features/catalogs/hooks/useMedicalSpeci
 import { useDisabilities } from '@/features/catalogs/hooks/useDisabilities';
 import { consultationDisabilitiesService } from '@/features/consultations/services/disabilities.service';
 import { SavePartialModal } from '@/features/consultations/components/attend/SavePartialModal';
+import { PsychologicalIndicatorsSection } from '@/features/consultations/components/attend/PsychologicalIndicatorsSection';
+import { usePsychologicalIndicators } from '@/features/psychological-indicators';
+import type { PsychologicalIndicatorResult } from '@/features/psychological-indicators';
 import type { PhysicalExamPayload, ConsultationDiagnostic, ExamResult, PsychometricTestResult } from '@/features/consultations/services/sub-entities.service';
 import type { ConsultationResult, ConsultationType, PsychologicalResult, PsychologicalAptitude } from '@/features/consultations/types';
 
@@ -98,6 +101,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   const [localExamResults, setLocalExamResults] = useState<LocalExamResult[]>([]);
   const [localPsychTests, setLocalPsychTests] = useState<LocalPsychTest[]>([]);
   const [localDiseases, setLocalDiseases] = useState<{ id: string; name: string }[]>([]);
+  const [psychIndicatorResults, setPsychIndicatorResults] = useState<PsychologicalIndicatorResult[]>([]);
   const [removedDiagnosticIds, setRemovedDiagnosticIds] = useState<string[]>([]);
   const [removedExamResultIds, setRemovedExamResultIds] = useState<string[]>([]);
   const [removedPsychTestIds, setRemovedPsychTestIds] = useState<string[]>([]);
@@ -114,6 +118,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   const { data: medicalSpecialties = [] } = useMedicalSpecialties();
   const { data: disabilities = [] } = useDisabilities();
   const { data: accidentTypes = [] } = useAccidentTypes();
+  const { data: psychIndicatorsCatalog = [] } = usePsychologicalIndicators();
 
   useEffect(() => {
     if (!data || !currentUser?.id) return;
@@ -171,6 +176,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
     setLocalExamResults(data.examResults);
     setLocalPsychTests(data.psychometricTests);
     setLocalDiseases(data.patientDiseases);
+    setPsychIndicatorResults(data.psychologicalIndicatorResults ?? []);
 
     if (!editMode) {
       if (data.status === 'En Proceso' && data.type === 'Medica' && data.consultationResult) {
@@ -335,6 +341,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
         psychologicalAttendedById: psychologicalAttendedById || undefined,
         psychologicalAttendedByFreeText: psychologicalAttendedByFreeText || undefined,
         chronicDiseasesSnapshot: localDiseases,
+        psychologicalIndicatorResults: psychIndicatorResults,
       });
 
       await Promise.all([
@@ -545,6 +552,13 @@ export function AttendConsultationPage({ editMode = false }: Props) {
                   onAddTest={handleAddPsychTest}
                   onRemoveTest={handleRemovePsychTest}
                 />
+                {(data.evaluationReason === 'Pre-vacacional' || data.evaluationReason === 'Post-vacacional') && (
+                  <PsychologicalIndicatorsSection
+                    indicators={psychIndicatorsCatalog}
+                    results={psychIndicatorResults}
+                    onChange={setPsychIndicatorResults}
+                  />
+                )}
               </Grid>
               <Grid size={4}>
                 <AttendedBySection tab="psicologica" systemAttendedByName={systemAttendedByName} medicalAttendedById={medicalAttendedById} medicalAttendedByFreeText={medicalAttendedByFreeText} psychologicalAttendedById={psychologicalAttendedById} psychologicalAttendedByFreeText={psychologicalAttendedByFreeText} onMedicalChange={setMedicalAttendedById} onMedicalFreeTextChange={setMedicalAttendedByFreeText} onPsychologicalChange={setPsychologicalAttendedById} onPsychologicalFreeTextChange={setPsychologicalAttendedByFreeText} users={users} />

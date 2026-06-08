@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { consultationsService } from '../services/consultations.service';
 import { requestsService } from '@/features/requests/services/requests.service';
 import { patientsService } from '@/features/patients/services/patients.service';
+import { usePermissions } from '@/features/auth';
 import type { ConsultationWithDetails, CreateConsultationPayload, UpdateConsultationPayload } from '../types';
 import type { EvaluationReason, RequestStatus } from '@/features/requests/types';
 
@@ -11,9 +12,13 @@ const REQUESTS_KEY = ['requests'] as const;
 const PATIENTS_KEY = ['patients'] as const;
 
 export function useConsultations() {
+  const { can } = usePermissions();
+  const hasRequestsPerm = can('requests', 'view');
+  const hasPatientsPerm = can('patients', 'view');
+
   const consultationsQ = useQuery({ queryKey: CONSULTATIONS_KEY, queryFn: () => consultationsService.getAll(), refetchInterval: 30_000, refetchOnWindowFocus: true });
-  const requestsQ = useQuery({ queryKey: REQUESTS_KEY, queryFn: () => requestsService.getAll(), refetchInterval: 30_000, refetchOnWindowFocus: true });
-  const patientsQ = useQuery({ queryKey: PATIENTS_KEY, queryFn: () => patientsService.getAll(), refetchInterval: 30_000, refetchOnWindowFocus: true });
+  const requestsQ = useQuery({ queryKey: REQUESTS_KEY, queryFn: () => requestsService.getAll(), refetchInterval: 30_000, refetchOnWindowFocus: true, enabled: hasRequestsPerm });
+  const patientsQ = useQuery({ queryKey: PATIENTS_KEY, queryFn: () => patientsService.getAll(), refetchInterval: 30_000, refetchOnWindowFocus: true, enabled: hasPatientsPerm });
 
   // Solo consultas bloquean el spinner — requests/patients son datos suplementarios
   const isLoading = consultationsQ.isLoading;
@@ -25,13 +30,13 @@ export function useConsultations() {
           const patient = req ? patientsQ.data?.patients.find((p) => p.cedula === req.patientId) : null;
           return {
             ...c,
-            requestDate: req?.requestDate ?? '',
-            evaluationReason: (req?.evaluationReason ?? '') as EvaluationReason,
-            requestStatus: (req?.status ?? 'Pendiente') as RequestStatus,
-            patientId: req?.patientId ?? '',
-            patientName: patient ? `${patient.firstName} ${patient.lastName}` : (req?.patientId ?? ''),
-            companyName: patient?.company?.name ?? '',
-            positionName: patient?.position?.name ?? '',
+            requestDate: req?.requestDate ?? c.requestDate ?? '',
+            evaluationReason: (req?.evaluationReason ?? c.evaluationReason ?? '') as EvaluationReason,
+            requestStatus: (req?.status ?? c.requestStatus ?? 'Pendiente') as RequestStatus,
+            patientId: req?.patientId ?? c.patientId ?? '',
+            patientName: patient ? `${patient.firstName} ${patient.lastName}` : (c.patientName ?? req?.patientId ?? ''),
+            companyName: patient?.company?.name ?? c.companyName ?? '',
+            positionName: patient?.position?.name ?? c.positionName ?? '',
           } as ConsultationWithDetails;
         })
       : undefined;

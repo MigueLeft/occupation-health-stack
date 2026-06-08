@@ -4,6 +4,8 @@ import {
   IsString,
   IsBoolean,
   ValidateNested,
+  IsArray,
+  IsUUID,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import {
@@ -102,4 +104,18 @@ export class UpdateConsultationDto {
 
   @IsOptional()
   chronicDiseasesSnapshot?: { id: string; name: string }[];
+
+  @IsOptional()
+  @IsArray({ message: 'Los resultados de indicadores psicológicos deben ser un arreglo.' })
+  @ValidateNested({ each: true })
+  @Type(() => PsychologicalIndicatorResultItemDto)
+  psychologicalIndicatorResults?: PsychologicalIndicatorResultItemDto[];
+}
+
+export class PsychologicalIndicatorResultItemDto {
+  @IsUUID('4', { message: 'El ID del indicador debe ser un UUID válido.' })
+  indicatorId: string;
+
+  @IsUUID('4', { message: 'El ID del valor debe ser un UUID válido.' })
+  valueId: string;
 }

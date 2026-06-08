@@ -5,6 +5,7 @@ export type CatalogTab =
   | 'exams'
   | 'risks'
   | 'psychometric'
+  | 'psychological-indicators'
   | 'diseases'
   | 'allergies'
   | 'body-systems'
@@ -21,6 +22,7 @@ const NAV_ITEMS: { id: CatalogTab; label: string }[] = [
   { id: 'exposure-categories', label: 'Tipos de Riesgo' },
   { id: 'medical-specialties', label: 'Especialidades Médicas' },
   { id: 'psychometric', label: 'Tests Psicométricos' },
+  { id: 'psychological-indicators', label: 'Indicadores Psicológicos' },
   { id: 'diseases', label: 'Enfermedades' },
   { id: 'allergies', label: 'Alergias' },
   { id: 'body-systems', label: 'Aparatos y Sistemas' },

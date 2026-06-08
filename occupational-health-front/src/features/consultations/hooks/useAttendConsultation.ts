@@ -2,12 +2,14 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/axios';
 import { requestsService } from '@/features/requests/services/requests.service';
 import { patientsService } from '@/features/patients/services/patients.service';
+import { usePermissions } from '@/features/auth';
 import { referralsService } from '../services/referrals.service';
 import { consultationDisabilitiesService } from '../services/disabilities.service';
 import type { Consultation, ConsultationWithDetails, RestPeriod, ConsultationReferral, ConsultationDisability } from '../types';
 import type { PhysicalExam, ConsultationDiagnostic, ExamResult, PsychometricTestResult } from '../services/sub-entities.service';
 import type { EvaluationReason, RequestStatus } from '@/features/requests/types';
 import type { Patient } from '@/features/patients/types';
+import type { PsychologicalIndicatorResult } from '@/features/psychological-indicators';
 
 interface PositionRisk { id: string; name: string; type: string; }
 
@@ -22,6 +24,7 @@ interface FullConsultation extends ConsultationWithDetails {
   restPeriod: RestPeriod | null;
   referral: ConsultationReferral | null;
   disabilities: ConsultationDisability[];
+  psychologicalIndicatorResults: PsychologicalIndicatorResult[];
 }
 
 async function getConsultation(id: string): Promise<{ consultation: Consultation & { physicalExam: PhysicalExam | null; examResults: ExamResult[]; restPeriod: RestPeriod | null } }> {
@@ -45,16 +48,21 @@ async function getPositionRisks(positionId: string): Promise<PositionRisk[]> {
 }
 
 export function useAttendConsultation(consultationId: string) {
+  const { can } = usePermissions();
+  const hasRequestsPerm = can('requests', 'view');
+  const hasPatientsPerm = can('patients', 'view');
+
   const consultationQ = useQuery({ queryKey: ['consultation', consultationId], queryFn: () => getConsultation(consultationId) });
-  const requestsQ = useQuery({ queryKey: ['requests'], queryFn: () => requestsService.getAll() });
-  const patientsQ = useQuery({ queryKey: ['patients'], queryFn: () => patientsService.getAll() });
+  const requestsQ = useQuery({ queryKey: ['requests'], queryFn: () => requestsService.getAll(), enabled: hasRequestsPerm });
+  const patientsQ = useQuery({ queryKey: ['patients'], queryFn: () => patientsService.getAll(), enabled: hasPatientsPerm });
   const diagnosticsQ = useQuery({ queryKey: ['consultation-diagnostics', consultationId], queryFn: () => getConsultationDiagnostics(consultationId) });
   const psychometricQ = useQuery({ queryKey: ['psychometric-tests', consultationId], queryFn: () => getPsychometricTests(consultationId) });
   const referralQ = useQuery({ queryKey: ['consultation-referral', consultationId], queryFn: () => referralsService.getByConsultation(consultationId) });
   const disabilitiesQ = useQuery({ queryKey: ['consultation-disability', consultationId], queryFn: () => consultationDisabilitiesService.getByConsultation(consultationId) });
 
   const patient = (() => {
-    if (!consultationQ.data || !requestsQ.data || !patientsQ.data) return null;
+    if (!consultationQ.data) return null;
+    if (!requestsQ.data || !patientsQ.data) return null;
     const req = requestsQ.data.requests.find((r) => r.id === consultationQ.data!.consultation.requestId);
     return req ? patientsQ.data.patients.find((p) => p.cedula === req.patientId) : null;
   })();
@@ -65,28 +73,30 @@ export function useAttendConsultation(consultationId: string) {
     enabled: !!patient?.positionId,
   });
 
+  const patientCedula = patient?.cedula ?? consultationQ.data?.consultation.patientId ?? null;
+
   const patientDisabilitiesQ = useQuery({
-    queryKey: ['patient-disabilities', patient?.cedula],
-    queryFn: () => consultationDisabilitiesService.getByPatient(patient!.cedula),
-    enabled: !!patient?.cedula,
+    queryKey: ['patient-disabilities', patientCedula],
+    queryFn: () => consultationDisabilitiesService.getByPatient(patientCedula!),
+    enabled: !!patientCedula,
   });
 
-  const isLoading = consultationQ.isLoading || requestsQ.isLoading || patientsQ.isLoading || psychometricQ.isLoading || referralQ.isLoading || disabilitiesQ.isLoading;
+  const isLoading = consultationQ.isLoading || psychometricQ.isLoading || referralQ.isLoading || disabilitiesQ.isLoading;
 
   const data: FullConsultation | null = (() => {
-    if (!consultationQ.data || !requestsQ.data || !patientsQ.data) return null;
+    if (!consultationQ.data) return null;
     const c = consultationQ.data.consultation;
-    const req = requestsQ.data.requests.find((r) => r.id === c.requestId);
-    const pat = req ? patientsQ.data.patients.find((p) => p.cedula === req.patientId) : null;
+    const req = requestsQ.data?.requests.find((r) => r.id === c.requestId);
+    const pat = req ? patientsQ.data?.patients.find((p) => p.cedula === req.patientId) : null;
     return {
       ...c,
-      requestDate: req?.requestDate ?? '',
-      evaluationReason: (req?.evaluationReason ?? '') as EvaluationReason,
-      requestStatus: (req?.status ?? 'Pendiente') as RequestStatus,
-      patientId: req?.patientId ?? '',
-      patientName: pat ? `${pat.firstName} ${pat.lastName}` : (req?.patientId ?? ''),
-      company: pat?.company?.name ?? '',
-      position: pat?.position?.name ?? '',
+      requestDate: req?.requestDate ?? c.requestDate ?? '',
+      evaluationReason: (req?.evaluationReason ?? c.evaluationReason ?? '') as EvaluationReason,
+      requestStatus: (req?.status ?? c.requestStatus ?? 'Pendiente') as RequestStatus,
+      patientId: req?.patientId ?? c.patientId ?? '',
+      patientName: pat ? `${pat.firstName} ${pat.lastName}` : (c.patientName ?? req?.patientId ?? ''),
+      company: pat?.company?.name ?? c.companyName ?? '',
+      position: pat?.position?.name ?? c.positionName ?? '',
       physicalExam: c.physicalExam ?? null,
       consultationDiagnostics: diagnosticsQ.data ?? [],
       examResults: c.examResults ?? [],
@@ -99,10 +109,13 @@ export function useAttendConsultation(consultationId: string) {
       restPeriod: c.restPeriod ?? null,
       referral: referralQ.data ?? null,
       disabilities: disabilitiesQ.data ?? [],
-      companyName: pat?.company?.name ?? '',
-      positionName: pat?.position?.name ?? '',
+      psychologicalIndicatorResults: (c as { psychologicalIndicatorResults?: PsychologicalIndicatorResult[] }).psychologicalIndicatorResults ?? [],
+      companyName: pat?.company?.name ?? c.companyName ?? '',
+      positionName: pat?.position?.name ?? c.positionName ?? '',
     };
   })();
 
-  return { data, isLoading, isReferralLoading: referralQ.isLoading, isDisabilitiesLoading: disabilitiesQ.isLoading, isPsychometricFetching: psychometricQ.isFetching, refetchPatient: patientsQ.refetch, patientDisabilities: patientDisabilitiesQ.data ?? [] };
+  const refetchPatient = hasPatientsPerm ? patientsQ.refetch : () => Promise.resolve();
+
+  return { data, isLoading, isReferralLoading: referralQ.isLoading, isDisabilitiesLoading: disabilitiesQ.isLoading, isPsychometricFetching: psychometricQ.isFetching, refetchPatient, patientDisabilities: patientDisabilitiesQ.data ?? [] };
 }

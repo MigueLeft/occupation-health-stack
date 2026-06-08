@@ -92,6 +92,28 @@ async function downloadConsolidacionReport(filters: ConsultationReportFilters): 
   );
 }
 
+async function downloadPsychologicalIndicatorsReport(filters: ConsultationReportFilters): Promise<void> {
+  const response = await apiClient.get('/reports/psychological-indicators', {
+    params: cleanBody(filters),
+    responseType: 'blob',
+  });
+  triggerDownload(
+    new Blob([response.data], { type: 'application/pdf' }),
+    `reporte-indicadores-psicologicos-${new Date().toISOString().slice(0, 10)}.pdf`,
+  );
+}
+
+async function downloadPsychologicalMorbidityReport(filters: ConsultationReportFilters): Promise<void> {
+  const response = await apiClient.get('/reports/psychological-morbidity', {
+    params: cleanBody(filters),
+    responseType: 'blob',
+  });
+  triggerDownload(
+    new Blob([response.data], { type: 'application/pdf' }),
+    `reporte-morbilidad-psicologica-${new Date().toISOString().slice(0, 10)}.pdf`,
+  );
+}
+
 export const reportsService = {
   fetchVigilanciaBlob,
   downloadVigilanciaReport,
@@ -99,4 +121,6 @@ export const reportsService = {
   downloadBodySystemsReport,
   downloadMorbidityReport,
   downloadConsolidacionReport,
+  downloadPsychologicalIndicatorsReport,
+  downloadPsychologicalMorbidityReport,
 };

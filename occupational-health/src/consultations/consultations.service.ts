@@ -12,9 +12,11 @@ import { consultations, Consultation } from './consultations.schema';
 import { requests, Request } from '../requests/requests.schema';
 import { physicalExams } from '../physical-exams/physical-exams.schema';
 import { consultationDiagnostics } from '../consultation-diagnostics/consultation-diagnostics.schema';
+import { consultationPsychologicalResults } from '../psychological-indicators/psychological-indicators.schema';
 import { examResults } from '../exam-results/exam-results.schema';
 import { patients } from '../patients/patients.schema';
-import { positionRisks } from '../positions/positions.schema';
+import { companies } from '../companies/companies.schema';
+import { positions, positionRisks } from '../positions/positions.schema';
 import { risks as risksTable } from '../risks/risks.schema';
 import { CreateConsultationDto } from './dto/create-consultation.dto';
 import { UpdateConsultationDto } from './dto/update-consultation.dto';
@@ -31,20 +33,45 @@ export class ConsultationsService {
 
     if (!consultation) return null;
 
-    const [[physicalExam], examResultsList, diagnosticsList] = await Promise.all([
-      this.db
-        .select()
-        .from(physicalExams)
-        .where(eq(physicalExams.consultationId, id)),
-      this.db
-        .select()
-        .from(examResults)
-        .where(eq(examResults.consultationId, id)),
-      this.db
-        .select()
-        .from(consultationDiagnostics)
-        .where(eq(consultationDiagnostics.consultationId, id)),
-    ]);
+    const [[physicalExam], examResultsList, diagnosticsList, psychResultsList, [enrichment]] =
+      await Promise.all([
+        this.db
+          .select()
+          .from(physicalExams)
+          .where(eq(physicalExams.consultationId, id)),
+        this.db
+          .select()
+          .from(examResults)
+          .where(eq(examResults.consultationId, id)),
+        this.db
+          .select()
+          .from(consultationDiagnostics)
+          .where(eq(consultationDiagnostics.consultationId, id)),
+        this.db
+          .select({
+            indicatorId: consultationPsychologicalResults.indicatorId,
+            valueId: consultationPsychologicalResults.valueId,
+          })
+          .from(consultationPsychologicalResults)
+          .where(eq(consultationPsychologicalResults.consultationId, id)),
+        this.db
+          .select({
+            requestDate: requests.requestDate,
+            evaluationReason: requests.evaluationReason,
+            patientId: requests.patientId,
+            requestStatus: requests.status,
+            patientFirstName: patients.firstName,
+            patientLastName: patients.lastName,
+            companyName: companies.name,
+            positionName: positions.name,
+          })
+          .from(requests)
+          .leftJoin(patients, eq(requests.patientId, patients.cedula))
+          .leftJoin(companies, eq(patients.companyId, companies.id))
+          .leftJoin(positions, eq(patients.positionId, positions.id))
+          .where(eq(requests.id, consultation.requestId))
+          .limit(1),
+      ]);
 
     // Compute rest period from ALL diagnostics with rest (accidents included), days = MAX
     const diagsWithRest = diagnosticsList.filter((d) => d.requiresRest);
@@ -62,6 +89,14 @@ export class ConsultationsService {
       physicalExam: physicalExam ?? null,
       restPeriod,
       examResults: examResultsList,
+      psychologicalIndicatorResults: psychResultsList,
+      requestDate: enrichment?.requestDate ?? null,
+      evaluationReason: enrichment?.evaluationReason ?? null,
+      patientId: enrichment?.patientId ?? null,
+      requestStatus: enrichment?.requestStatus ?? null,
+      patientName: enrichment ? `${enrichment.patientFirstName} ${enrichment.patientLastName}` : null,
+      companyName: enrichment?.companyName ?? null,
+      positionName: enrichment?.positionName ?? null,
     };
   }
 
@@ -205,6 +240,22 @@ export class ConsultationsService {
       .set(updatePayload)
       .where(eq(consultations.id, id))
       .returning();
+
+    // Actualizar resultados de indicadores psicológicos si se enviaron
+    if (dto.psychologicalIndicatorResults !== undefined) {
+      await this.db
+        .delete(consultationPsychologicalResults)
+        .where(eq(consultationPsychologicalResults.consultationId, id));
+      if (dto.psychologicalIndicatorResults.length > 0) {
+        await this.db.insert(consultationPsychologicalResults).values(
+          dto.psychologicalIndicatorResults.map((r) => ({
+            consultationId: id,
+            indicatorId: r.indicatorId,
+            valueId: r.valueId,
+          })),
+        );
+      }
+    }
 
     if (dto.status === 'En Proceso' || dto.status === 'Finalizada') {
       await this.db

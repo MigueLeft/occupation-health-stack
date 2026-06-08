@@ -16,6 +16,8 @@ import { useAccidentTypes } from '@/features/catalogs/hooks/useAccidentTypes';
 import { EVALUATION_REASON_LABELS } from '@/features/requests/types';
 import { ConsultationResultChip } from '@/features/consultations/components/ConsultationResultChip';
 import { AccessibilityNewOutlined } from '@mui/icons-material';
+import { usePsychologicalIndicators } from '@/features/psychological-indicators';
+import { usePermissions } from '@/features/auth';
 
 const RISK_TYPE_COLOR: Record<string, 'error' | 'warning' | 'info' | 'success' | 'secondary' | 'default'> = {
   Fisico: 'error', Quimico: 'warning', Biologico: 'success',
@@ -57,6 +59,7 @@ export function ConsultationDetailPage() {
 
   const { cedula, id } = useParams({ strict: false }) as { cedula: string; id: string };
   const navigate = useNavigate();
+  const { can } = usePermissions();
   const { data, isLoading } = useAttendConsultation(id);
   const { data: users = [] } = useUsers();
   const { data: categories = [] } = useDiseaseCategories();
@@ -66,11 +69,18 @@ export function ConsultationDetailPage() {
   const { data: psychCatalog = [] } = usePsychometricCatalog();
   const { data: disabilities = [] } = useDisabilities();
   const { data: accidentTypes = [] } = useAccidentTypes();
+  const { data: psychIndicators = [] } = usePsychologicalIndicators();
 
-  const hasMedica = data?.type === 'Medica' || data?.type === 'Medica/Psicologica';
-  const hasPsicologica = data?.type === 'Psicologica' || data?.type === 'Medica/Psicologica';
+  const canSeeMedical = can('es-medico', 'view');
+  const canSeePsychological = can('es-psicologo', 'view');
+  const hasRoleRestriction = canSeeMedical || canSeePsychological;
 
-  const [activeTab, setActiveTab] = useState<'medica' | 'psicologica'>('medica');
+  const hasMedica = (data?.type === 'Medica' || data?.type === 'Medica/Psicologica') && (!hasRoleRestriction || canSeeMedical);
+  const hasPsicologica = (data?.type === 'Psicologica' || data?.type === 'Medica/Psicologica') && (!hasRoleRestriction || canSeePsychological);
+
+  const [activeTab, setActiveTab] = useState<'medica' | 'psicologica'>(() =>
+    !canSeeMedical && canSeePsychological ? 'psicologica' : 'medica',
+  );
 
   if (isLoading || !data) {
     return <AppLayout><Box sx={{ display: 'flex', justifyContent: 'center', pt: 10 }}><CircularProgress /></Box></AppLayout>;
@@ -360,6 +370,27 @@ export function ConsultationDetailPage() {
                           </Stack>
                         </Box>
                       )}
+                      {(data.evaluationReason === 'Pre-vacacional' || data.evaluationReason === 'Post-vacacional') &&
+                        data.psychologicalIndicatorResults.length > 0 && (
+                          <Box>
+                            <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 700, fontSize: '0.68rem' }}>
+                              Indicadores Psicológicos
+                            </Typography>
+                            <Stack spacing={1} sx={{ mt: 0.75 }}>
+                              {psychIndicators.map((indicator) => {
+                                const result = data.psychologicalIndicatorResults.find((r) => r.indicatorId === indicator.id);
+                                if (!result) return null;
+                                const valueName = indicator.values.find((v) => v.id === result.valueId)?.name ?? '—';
+                                return (
+                                  <Box key={indicator.id} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 1.25, bgcolor: 'action.hover', borderRadius: 1 }}>
+                                    <Typography variant="body2" sx={{ fontWeight: 500 }}>{indicator.name}</Typography>
+                                    <Chip label={valueName} size="small" color="primary" variant="outlined" />
+                                  </Box>
+                                );
+                              })}
+                            </Stack>
+                          </Box>
+                        )}
                       {data.observations?.psicologica && <ReadField label="Observaciones Psicológicas" value={data.observations.psicologica} />}
                     </Stack>
                   </SectionCard>

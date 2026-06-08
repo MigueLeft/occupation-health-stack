@@ -3,7 +3,7 @@ import { Box, Typography, Grid, Stack, TextField, MenuItem, Autocomplete } from 
 import { usePageTitle } from '@/hooks/usePageTitle';
 import {
   CoronavirusOutlined, AccessibilityNewOutlined,
-  TrendingUpOutlined, SummarizeOutlined,
+  TrendingUpOutlined, SummarizeOutlined, PsychologyOutlined,
 } from '@mui/icons-material';
 import { Navigate } from '@tanstack/react-router';
 import { AppLayout } from '@/components/AppLayout';
@@ -215,6 +215,28 @@ export function ReportsPage() {
               icon={<SummarizeOutlined sx={{ color: '#2E7D32', fontSize: 22 }} />}
               downloadFn={reportsService.downloadConsolidacionReport}
               successMsg="Reporte de consolidación epidemiológica generado exitosamente."
+              {...sharedFilters}
+            />
+          </Grid>
+          <Grid size={6}>
+            <ReportCard
+              title="Indicadores Psicológicos"
+              subtitle="Resumen de resultados de indicadores psicológicos (ansiedad, depresión, estrés y agotamiento) para evaluaciones pre y post vacacionales."
+              accentColor="#7B1FA2"
+              icon={<PsychologyOutlined sx={{ color: '#7B1FA2', fontSize: 22 }} />}
+              downloadFn={reportsService.downloadPsychologicalIndicatorsReport}
+              successMsg="Reporte de indicadores psicológicos generado exitosamente."
+              {...sharedFilters}
+            />
+          </Grid>
+          <Grid size={6}>
+            <ReportCard
+              title="Morbilidad Psicológica"
+              subtitle="Resultados de aptitud por motivo de evaluación e indicadores psicológicos segmentados por género, incluyendo análisis pre y post vacacional."
+              accentColor="#6A1B9A"
+              icon={<PsychologyOutlined sx={{ color: '#6A1B9A', fontSize: 22 }} />}
+              downloadFn={reportsService.downloadPsychologicalMorbidityReport}
+              successMsg="Reporte de morbilidad psicológica generado exitosamente."
               {...sharedFilters}
             />
           </Grid>

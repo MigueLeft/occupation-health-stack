@@ -11,4 +11,5 @@ export { MedicalSpecialtiesPanel } from './components/MedicalSpecialtiesPanel';
 export { RiskExposureCategoriesPanel } from './components/RiskExposureCategoriesPanel';
 export { DisabilitiesPanel } from './components/DisabilitiesPanel';
 export { AccidentTypesPanel } from './components/AccidentTypesPanel';
+export { PsychologicalIndicatorsPanel } from './components/PsychologicalIndicatorsPanel';
 export type { CatalogTab } from './components/CatalogLayout';
