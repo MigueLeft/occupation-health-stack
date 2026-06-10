@@ -58,7 +58,7 @@ export function ConsultationRow({ consultation }: Props) {
           )}
         </Box>
       </TableCell>
-      <TableCell sx={{ whiteSpace: 'nowrap' }}><ConsultationTypeChip type={consultation.type} /></TableCell>
+      <TableCell><ConsultationTypeChip type={consultation.type} /></TableCell>
       <TableCell sx={{ whiteSpace: 'nowrap' }}><RequestStatusChip status={consultation.requestStatus} /></TableCell>
       <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
         {canAttend && (
