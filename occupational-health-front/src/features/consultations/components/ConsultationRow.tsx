@@ -42,8 +42,8 @@ export function ConsultationRow({ consultation }: Props) {
           </Typography>
         </Tooltip>
       </TableCell>
-      <TableCell sx={{ maxWidth: 180 }}>
-        <Box sx={{ minWidth: 0 }}>
+      <TableCell sx={{ maxWidth: 180, overflow: 'hidden' }}>
+        <Box sx={{ minWidth: 0, overflow: 'hidden' }}>
           <Tooltip title={consultation.companyName ?? ''} placement="top-start">
             <Typography variant="body2" sx={{ fontWeight: 500, ...TRUNCATE }}>
               {consultation.companyName || '—'}
