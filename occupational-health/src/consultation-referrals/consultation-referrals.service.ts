@@ -6,6 +6,7 @@ import {
   consultationReferrals,
   ConsultationReferral,
 } from './consultation-referrals.schema';
+import { medicalSpecialties } from '../medical-specialties/medical-specialties.schema';
 import { UpsertConsultationReferralDto } from './dto/upsert-consultation-referral.dto';
 
 @Injectable()
@@ -14,13 +15,20 @@ export class ConsultationReferralsService {
 
   async findByConsultation(
     consultationId: string,
-  ): Promise<ConsultationReferral | null> {
-    const [referral] = await this.db
-      .select()
+  ): Promise<(ConsultationReferral & { specialtyName: string | null }) | null> {
+    const [row] = await this.db
+      .select({
+        id: consultationReferrals.id,
+        consultationId: consultationReferrals.consultationId,
+        requiresReferral: consultationReferrals.requiresReferral,
+        specialtyId: consultationReferrals.specialtyId,
+        specialtyName: medicalSpecialties.name,
+      })
       .from(consultationReferrals)
+      .leftJoin(medicalSpecialties, eq(consultationReferrals.specialtyId, medicalSpecialties.id))
       .where(eq(consultationReferrals.consultationId, consultationId));
 
-    return referral ?? null;
+    return row ? { ...row, specialtyName: row.specialtyName ?? null } : null;
   }
 
   async upsert(
