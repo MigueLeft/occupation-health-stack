@@ -1,9 +1,8 @@
-import { Box, Typography, Paper, TextField, Divider } from '@mui/material';
+import { Box, Typography, Paper, TextField } from '@mui/material';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import type { AppUser } from '@/features/users/types';
 
 interface Props {
-  systemAttendedByName?: string;
   medicalAttendedById: string;
   medicalAttendedByFreeText: string;
   psychologicalAttendedById: string;
@@ -17,7 +16,6 @@ interface Props {
 }
 
 export function AttendedBySection({
-  systemAttendedByName,
   medicalAttendedById,
   medicalAttendedByFreeText,
   psychologicalAttendedById,
@@ -33,13 +31,6 @@ export function AttendedBySection({
     <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
       <Typography variant="h3" sx={{ mb: 2, fontSize: '1rem' }}>Atendido por</Typography>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-        <Box>
-          <Typography variant="caption" color="text.secondary">Registrado en sistema por</Typography>
-          <Typography variant="body2" sx={{ fontWeight: 500 }}>{systemAttendedByName ?? '—'}</Typography>
-        </Box>
-
-        <Divider />
-
         {tab === 'medica' && (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
             <SearchableSelect

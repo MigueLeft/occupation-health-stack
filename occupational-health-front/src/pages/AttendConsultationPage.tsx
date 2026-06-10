@@ -404,8 +404,6 @@ export function AttendConsultationPage({ editMode = false }: Props) {
     await performSave(type, 'Finalizada');
   };
 
-  const systemAttendedByName = users.find((u) => u.id === data?.systemAttendedById)?.name;
-
   // En modo edición solo se muestran las discapacidades de esta consulta; en modo atender se muestra el historial del paciente como referencia
   const previousPatientDisabilities = !editMode
     ? patientDisabilities.filter((pd) => !localDisabilities.some((ld) => ld.disabilityId === pd.id))
@@ -534,7 +532,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
                   </Box>
                 </Paper>
                 <Box sx={{ mt: 3 }}>
-                  <AttendedBySection tab="medica" systemAttendedByName={systemAttendedByName} medicalAttendedById={medicalAttendedById} medicalAttendedByFreeText={medicalAttendedByFreeText} psychologicalAttendedById={psychologicalAttendedById} psychologicalAttendedByFreeText={psychologicalAttendedByFreeText} onMedicalChange={setMedicalAttendedById} onMedicalFreeTextChange={setMedicalAttendedByFreeText} onPsychologicalChange={setPsychologicalAttendedById} onPsychologicalFreeTextChange={setPsychologicalAttendedByFreeText} users={users} />
+                  <AttendedBySection tab="medica"medicalAttendedById={medicalAttendedById} medicalAttendedByFreeText={medicalAttendedByFreeText} psychologicalAttendedById={psychologicalAttendedById} psychologicalAttendedByFreeText={psychologicalAttendedByFreeText} onMedicalChange={setMedicalAttendedById} onMedicalFreeTextChange={setMedicalAttendedByFreeText} onPsychologicalChange={setPsychologicalAttendedById} onPsychologicalFreeTextChange={setPsychologicalAttendedByFreeText} users={users} />
                 </Box>
               </Grid>
             </Grid>
@@ -561,7 +559,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
                 )}
               </Grid>
               <Grid size={4}>
-                <AttendedBySection tab="psicologica" systemAttendedByName={systemAttendedByName} medicalAttendedById={medicalAttendedById} medicalAttendedByFreeText={medicalAttendedByFreeText} psychologicalAttendedById={psychologicalAttendedById} psychologicalAttendedByFreeText={psychologicalAttendedByFreeText} onMedicalChange={setMedicalAttendedById} onMedicalFreeTextChange={setMedicalAttendedByFreeText} onPsychologicalChange={setPsychologicalAttendedById} onPsychologicalFreeTextChange={setPsychologicalAttendedByFreeText} users={users} />
+                <AttendedBySection tab="psicologica"medicalAttendedById={medicalAttendedById} medicalAttendedByFreeText={medicalAttendedByFreeText} psychologicalAttendedById={psychologicalAttendedById} psychologicalAttendedByFreeText={psychologicalAttendedByFreeText} onMedicalChange={setMedicalAttendedById} onMedicalFreeTextChange={setMedicalAttendedByFreeText} onPsychologicalChange={setPsychologicalAttendedById} onPsychologicalFreeTextChange={setPsychologicalAttendedByFreeText} users={users} />
               </Grid>
             </Grid>
           ) : null}
