@@ -191,8 +191,6 @@ export class ConsultationsService {
     if (dto.status !== undefined) updatePayload.status = dto.status;
     if (dto.systemAttendedById !== undefined)
       updatePayload.systemAttendedById = dto.systemAttendedById;
-    if (dto.psychologicalSystemAttendedById !== undefined)
-      updatePayload.psychologicalSystemAttendedById = dto.psychologicalSystemAttendedById;
     if (dto.medicalAttendedById !== undefined)
       updatePayload.medicalAttendedById = dto.medicalAttendedById;
     if (dto.medicalAttendedByFreeText !== undefined)

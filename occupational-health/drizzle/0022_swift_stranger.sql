@@ -1,2 +1,0 @@
-ALTER TABLE "consultations" ADD COLUMN "psychological_system_attended_by_id" text;--> statement-breakpoint
-ALTER TABLE "consultations" ADD CONSTRAINT "consultations_psychological_system_attended_by_id_user_id_fk" FOREIGN KEY ("psychological_system_attended_by_id") REFERENCES "public"."user"("id") ON DELETE set null ON UPDATE no action;

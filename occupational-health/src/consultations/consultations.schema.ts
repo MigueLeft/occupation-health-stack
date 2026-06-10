@@ -77,10 +77,6 @@ export const consultations = pgTable(
       () => user.id,
       { onDelete: 'set null' },
     ),
-    psychologicalSystemAttendedById: text('psychological_system_attended_by_id').references(
-      () => user.id,
-      { onDelete: 'set null' },
-    ),
     medicalAttendedById: text('medical_attended_by_id').references(
       () => user.id,
       { onDelete: 'set null' },

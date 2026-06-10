@@ -92,7 +92,6 @@ export interface Consultation {
   recommendations?: Recommendations | null;
   observations?: Observations | null;
   systemAttendedById?: string | null;
-  psychologicalSystemAttendedById?: string | null;
   medicalAttendedById?: string | null;
   medicalAttendedByFreeText?: string | null;
   psychologicalAttendedById?: string | null;
@@ -125,7 +124,6 @@ export interface CreateConsultationPayload {
   recommendations?: Recommendations;
   observations?: Observations;
   systemAttendedById?: string;
-  psychologicalSystemAttendedById?: string;
   medicalAttendedById?: string;
   medicalAttendedByFreeText?: string;
   psychologicalAttendedById?: string;

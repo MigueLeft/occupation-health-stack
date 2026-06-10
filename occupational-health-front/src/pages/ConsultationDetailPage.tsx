@@ -355,8 +355,9 @@ export function ConsultationDetailPage() {
 
                   <SectionCard title="Atendido por">
                     <Stack spacing={1.5} divider={<Divider />}>
-                      <ReadField label="Registrado en sistema (Médica)" value={getUserName(data.systemAttendedById)} />
+                      <ReadField label="Registrado en sistema por" value={getUserName(data.systemAttendedById)} />
                       <ReadField label="Atendido presencialmente (Médica)" value={getUserName(data.medicalAttendedById, data.medicalAttendedByFreeText)} />
+                      <ReadField label="Atendido presencialmente (Psicológica)" value={getUserName(data.psychologicalAttendedById, data.psychologicalAttendedByFreeText)} />
                     </Stack>
                   </SectionCard>
                 </Stack>
@@ -425,7 +426,8 @@ export function ConsultationDetailPage() {
               <Grid size={4}>
                 <SectionCard title="Atendido por">
                   <Stack spacing={1.5} divider={<Divider />}>
-                    <ReadField label="Registrado en sistema (Psicológica)" value={getUserName(data.psychologicalSystemAttendedById)} />
+                    <ReadField label="Registrado en sistema por" value={getUserName(data.systemAttendedById)} />
+                    <ReadField label="Atendido presencialmente (Médica)" value={getUserName(data.medicalAttendedById, data.medicalAttendedByFreeText)} />
                     <ReadField label="Atendido presencialmente (Psicológica)" value={getUserName(data.psychologicalAttendedById, data.psychologicalAttendedByFreeText)} />
                   </Stack>
                 </SectionCard>

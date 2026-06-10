@@ -340,10 +340,6 @@ export function AttendConsultationPage({ editMode = false }: Props) {
         medicalAttendedByFreeText: medicalAttendedByFreeText || undefined,
         psychologicalAttendedById: psychologicalAttendedById || undefined,
         psychologicalAttendedByFreeText: psychologicalAttendedByFreeText || undefined,
-        psychologicalSystemAttendedById:
-          (type === 'Psicologica' || type === 'Medica/Psicologica') && !data.psychologicalSystemAttendedById
-            ? currentUser?.id
-            : undefined,
         chronicDiseasesSnapshot: localDiseases,
         psychologicalIndicatorResults: psychIndicatorResults,
       });
