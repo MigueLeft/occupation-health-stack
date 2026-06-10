@@ -155,6 +155,13 @@
       "when": 1780920767235,
       "tag": "0021_curly_randall_flagg",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1781100821469,
+      "tag": "0022_swift_stranger",
+      "breakpoints": true
     }
   ]
 }

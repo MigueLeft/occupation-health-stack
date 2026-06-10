@@ -14,8 +14,6 @@ COPY . .
 
 RUN pnpm run build
 
-RUN pnpm run db:generate
-
 # Eliminar devDependencies antes de copiar al stage final
 RUN pnpm prune --prod
 
