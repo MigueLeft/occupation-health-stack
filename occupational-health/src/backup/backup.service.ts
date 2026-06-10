@@ -53,7 +53,7 @@ export class BackupService {
         const psql = spawn('psql', [
           dbUrl,
           '-c',
-          'DROP SCHEMA public CASCADE; CREATE SCHEMA public;',
+          'DROP SCHEMA public CASCADE; CREATE SCHEMA public; DROP SCHEMA IF EXISTS drizzle CASCADE;',
         ]);
         const errors: string[] = [];
         psql.stderr.on('data', (chunk: Buffer) => errors.push(chunk.toString()));
