@@ -321,6 +321,28 @@ export function ConsultationDetailPage() {
                     </SectionCard>
                   )}
 
+                  {data.referral && (
+                    <SectionCard title="Referencia a Especialista">
+                      <Stack spacing={1.5}>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em', fontSize: '0.68rem' }}>
+                            ¿Requiere Referencia?
+                          </Typography>
+                          <Box sx={{ mt: 0.5 }}>
+                            <Chip
+                              label={data.referral.requiresReferral ? 'Sí, fue referido' : 'No fue referido'}
+                              size="small"
+                              color={data.referral.requiresReferral ? 'primary' : 'default'}
+                            />
+                          </Box>
+                        </Box>
+                        {data.referral.requiresReferral && data.referral.specialtyName && (
+                          <ReadField label="Especialidad" value={data.referral.specialtyName} />
+                        )}
+                      </Stack>
+                    </SectionCard>
+                  )}
+
                   {(data.recommendations?.suggestedPPE || data.recommendations?.medicalAdequacyMeasures) && (
                     <SectionCard title="Recomendaciones">
                       <Stack spacing={2}>
@@ -358,18 +380,23 @@ export function ConsultationDetailPage() {
                         </Box>
                       )}
                       <ReadField label="Entrevista realizada" value={data.interviewConducted ? 'Sí' : 'No'} />
-                      {data.psychometricTests.length > 0 && (
-                        <Box>
-                          <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 700, fontSize: '0.68rem' }}>Tests Psicométricos</Typography>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 700, fontSize: '0.68rem' }}>Tests Psicométricos</Typography>
+                        {data.psychometricTests.length === 0 ? (
+                          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontStyle: 'italic' }}>Sin tests aplicados</Typography>
+                        ) : (
                           <Stack spacing={1} sx={{ mt: 0.5 }}>
                             {data.psychometricTests.map((pt) => (
                               <Box key={pt.id} sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 1 }}>
                                 <Typography variant="body2" sx={{ fontWeight: 600 }}>{getName(psychCatalog, pt.catalogTestId)}</Typography>
+                                {pt.observations && (
+                                  <Typography variant="caption" color="text.secondary" sx={{ mt: 0.25, display: 'block' }}>{pt.observations}</Typography>
+                                )}
                               </Box>
                             ))}
                           </Stack>
-                        </Box>
-                      )}
+                        )}
+                      </Box>
                       {(data.evaluationReason === 'Pre-vacacional' || data.evaluationReason === 'Post-vacacional') &&
                         data.psychologicalIndicatorResults.length > 0 && (
                           <Box>
