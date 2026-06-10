@@ -58,8 +58,12 @@ export function ConsultationRow({ consultation }: Props) {
           )}
         </Box>
       </TableCell>
-      <TableCell><ConsultationTypeChip type={consultation.type} /></TableCell>
-      <TableCell sx={{ whiteSpace: 'nowrap' }}><RequestStatusChip status={consultation.requestStatus} /></TableCell>
+      <TableCell>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          <ConsultationTypeChip type={consultation.type} />
+          <RequestStatusChip status={consultation.requestStatus} />
+        </Box>
+      </TableCell>
       <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
         {canAttend && (
           <Button variant="contained" size="medium"
