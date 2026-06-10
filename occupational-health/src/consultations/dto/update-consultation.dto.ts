@@ -88,6 +88,10 @@ export class UpdateConsultationDto {
 
   @IsOptional()
   @IsString()
+  psychologicalSystemAttendedById?: string;
+
+  @IsOptional()
+  @IsString()
   medicalAttendedById?: string;
 
   @IsOptional()
