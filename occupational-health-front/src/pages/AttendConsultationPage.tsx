@@ -390,6 +390,11 @@ export function AttendConsultationPage({ editMode = false }: Props) {
       return;
     }
 
+    if (restEnabled && (restDays === '' || Number(restDays) <= 0)) {
+      toast.error('Debe ingresar el número de días de reposo médico.');
+      return;
+    }
+
     if (!isPartialSaveScenario) {
       if (hasMedResult && !hasPsychDone) {
         setSaveEmptySection('psicologica');
