@@ -385,6 +385,11 @@ export function AttendConsultationPage({ editMode = false }: Props) {
       return;
     }
 
+    if (restEnabled && restDiagIds.size === 0) {
+      toast.error('Debe seleccionar al menos un diagnóstico para asignar el reposo médico.');
+      return;
+    }
+
     if (!isPartialSaveScenario) {
       if (hasMedResult && !hasPsychDone) {
         setSaveEmptySection('psicologica');
