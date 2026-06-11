@@ -262,6 +262,22 @@ export function AttendConsultationPage({ editMode = false }: Props) {
 
   const performSave = async (type: ConsultationType, status: 'Finalizada' | 'En Proceso') => {
     if (!data) return;
+
+    if (requiresReferral && !referralSpecialtyId) {
+      toast.error('Debe seleccionar una especialidad médica para la referencia a especialista.');
+      return;
+    }
+
+    if (restEnabled && restDiagIds.size === 0) {
+      toast.error('Debe seleccionar al menos un diagnóstico para asignar el reposo médico.');
+      return;
+    }
+
+    if (restEnabled && (restDays === '' || Number(restDays) <= 0)) {
+      toast.error('Debe ingresar el número de días de reposo médico.');
+      return;
+    }
+
     setIsSaving(true);
     try {
       const generalDays = restEnabled && restDays !== '' ? Number(restDays) : null;
@@ -379,21 +395,6 @@ export function AttendConsultationPage({ editMode = false }: Props) {
 
   const handleSave = async () => {
     if (!data) return;
-
-    if (requiresReferral && !referralSpecialtyId) {
-      toast.error('Debe seleccionar una especialidad médica para la referencia a especialista.');
-      return;
-    }
-
-    if (restEnabled && restDiagIds.size === 0) {
-      toast.error('Debe seleccionar al menos un diagnóstico para asignar el reposo médico.');
-      return;
-    }
-
-    if (restEnabled && (restDays === '' || Number(restDays) <= 0)) {
-      toast.error('Debe ingresar el número de días de reposo médico.');
-      return;
-    }
 
     if (!isPartialSaveScenario) {
       if (hasMedResult && !hasPsychDone) {
