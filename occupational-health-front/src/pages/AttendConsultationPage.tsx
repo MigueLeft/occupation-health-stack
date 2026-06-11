@@ -370,17 +370,22 @@ export function AttendConsultationPage({ editMode = false }: Props) {
     }
   };
 
+  const hasMedResult = !!consultResult || isHealthy;
+  const hasPsychDone = !!psychResult || !!psychAptitude;
+  const isPartialSaveScenario = !!data && data.status === 'En Proceso' &&
+    ((data.type === 'Medica' && !!data.consultationResult) ||
+     (data.type === 'Psicologica' && !!data.psychologicalResult));
+  const isSaveDisabled = isSaving || (!hasMedResult && !hasPsychDone && !isPartialSaveScenario);
+
   const handleSave = async () => {
     if (!data) return;
 
-    const isPartialSave = data.status === 'En Proceso' &&
-      ((data.type === 'Medica' && !!data.consultationResult) ||
-       (data.type === 'Psicologica' && !!data.psychologicalResult));
+    if (requiresReferral && !referralSpecialtyId) {
+      toast.error('Debe seleccionar una especialidad médica para la referencia a especialista.');
+      return;
+    }
 
-    if (!isPartialSave) {
-      const hasMedResult = !!consultResult || isHealthy;
-      const hasPsychDone = !!psychResult || !!psychAptitude;
-
+    if (!isPartialSaveScenario) {
       if (hasMedResult && !hasPsychDone) {
         setSaveEmptySection('psicologica');
         setShowSaveModal(true);
@@ -435,7 +440,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
           </Box>
           <Box sx={{ display: 'flex', gap: 1.5 }}>
             <Button variant="outlined" onClick={() => editMode && data ? navigate({ to: '/expedientes/$cedula/consultas/$id', params: { cedula: data.patientId, id } }) : navigate({ to: '/consultas' })}>Cancelar</Button>
-            <Button variant="contained" startIcon={<SaveOutlined />} onClick={handleSave} disabled={isSaving}>
+            <Button variant="contained" startIcon={<SaveOutlined />} onClick={handleSave} disabled={isSaveDisabled}>
               {isSaving ? 'Guardando...' : 'Guardar Consulta'}
             </Button>
           </Box>
