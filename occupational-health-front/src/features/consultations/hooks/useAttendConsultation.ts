@@ -22,7 +22,7 @@ interface FullConsultation extends ConsultationWithDetails {
   patient: Patient | null;
   positionRisks: PositionRisk[];
   restPeriod: RestPeriod | null;
-  referral: ConsultationReferral | null;
+  referrals: ConsultationReferral[];
   disabilities: ConsultationDisability[];
   psychologicalIndicatorResults: PsychologicalIndicatorResult[];
 }
@@ -107,7 +107,7 @@ export function useAttendConsultation(consultationId: string) {
         ? c.positionRisksSnapshot
         : positionRisksQ.data ?? [],
       restPeriod: c.restPeriod ?? null,
-      referral: referralQ.data ?? null,
+      referrals: referralQ.data ?? [],
       disabilities: disabilitiesQ.data ?? [],
       psychologicalIndicatorResults: (c as { psychologicalIndicatorResults?: PsychologicalIndicatorResult[] }).psychologicalIndicatorResults ?? [],
       companyName: pat?.company?.name ?? c.companyName ?? '',

@@ -1,19 +1,30 @@
-import { Box, Typography, Paper, FormControlLabel, Checkbox, Stack, Autocomplete, TextField } from '@mui/material';
+import { useState } from 'react';
+import { Box, Typography, Paper, Chip } from '@mui/material';
 import { LocalHospitalOutlined } from '@mui/icons-material';
+import { SearchableSelect } from '@/components/SearchableSelect';
 import type { MedicalSpecialty } from '@/features/catalogs/types';
 
+interface LocalReferral { id: string; specialtyId: string; }
+
 interface Props {
-  requiresReferral: boolean;
-  onRequiresReferralChange: (v: boolean) => void;
-  specialtyId: string;
-  onSpecialtyIdChange: (v: string) => void;
+  localReferrals: LocalReferral[];
   specialties: MedicalSpecialty[];
+  onAdd: (specialtyId: string) => void;
+  onRemove: (recordId: string) => void;
 }
 
-export function ReferralSection({
-  requiresReferral, onRequiresReferralChange, specialtyId, onSpecialtyIdChange, specialties,
-}: Props) {
-  const selected = specialties.find((s) => s.id === specialtyId) ?? null;
+export function ReferralSection({ localReferrals, specialties, onAdd, onRemove }: Props) {
+  const [selectorKey, setSelectorKey] = useState(0);
+
+  const available = specialties.filter(
+    (s) => !localReferrals.some((lr) => lr.specialtyId === s.id),
+  );
+
+  const handleAdd = (id: string) => {
+    if (!id) return;
+    onAdd(id);
+    setSelectorKey((k) => k + 1);
+  };
 
   return (
     <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
@@ -22,34 +33,25 @@ export function ReferralSection({
         <Typography variant="h3" sx={{ fontSize: '1rem' }}>Referir a Especialista</Typography>
       </Box>
 
-      <Stack spacing={2}>
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={requiresReferral}
-              onChange={(e) => {
-                onRequiresReferralChange(e.target.checked);
-                if (!e.target.checked) onSpecialtyIdChange('');
-              }}
-            />
-          }
-          label="El paciente requiere referencia a especialista"
-        />
+      <SearchableSelect
+        key={selectorKey}
+        options={available}
+        value=""
+        onChange={handleAdd}
+        label="Agregar especialidad"
+        disabled={available.length === 0}
+        noOptionsText="Sin especialidades disponibles"
+      />
 
-        {requiresReferral && (
-          <Autocomplete
-            options={specialties}
-            getOptionLabel={(s) => s.name}
-            value={selected}
-            onChange={(_, s) => onSpecialtyIdChange(s?.id ?? '')}
-            size="small"
-            sx={{ maxWidth: 320 }}
-            renderInput={(params) => (
-              <TextField {...params} label="Especialidad médica" placeholder="Buscar especialidad..." />
-            )}
-          />
-        )}
-      </Stack>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 1.5 }}>
+        {localReferrals.length === 0
+          ? <Typography variant="caption" color="text.disabled">Sin referencias registradas</Typography>
+          : localReferrals.map((lr) => {
+              const name = specialties.find((s) => s.id === lr.specialtyId)?.name ?? lr.specialtyId;
+              return <Chip key={lr.id} label={name} size="small" onDelete={() => onRemove(lr.id)} />;
+            })
+        }
+      </Box>
     </Paper>
   );
 }

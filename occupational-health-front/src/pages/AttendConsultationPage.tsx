@@ -91,8 +91,8 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   const [restDays, setRestDays] = useState<number | ''>('');
   const [restDiagIds, setRestDiagIds] = useState<Set<string>>(new Set());
 
-  const [requiresReferral, setRequiresReferral] = useState(false);
-  const [referralSpecialtyId, setReferralSpecialtyId] = useState('');
+  const [localReferrals, setLocalReferrals] = useState<{ id: string; consultationId: string; specialtyId: string; _isNew?: boolean }[]>([]);
+  const [removedReferralIds, setRemovedReferralIds] = useState<string[]>([]);
 
   const [localDisabilities, setLocalDisabilities] = useState<{ id: string; consultationId: string; disabilityId: string; _isNew?: boolean }[]>([]);
   const [removedDisabilityIds, setRemovedDisabilityIds] = useState<string[]>([]);
@@ -167,10 +167,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
       const firstDiag = data.consultationDiagnostics[0];
       if (firstDiag) setRestDiagIds(new Set([firstDiag.id]));
     }
-    if (data.referral) {
-      setRequiresReferral(data.referral.requiresReferral);
-      setReferralSpecialtyId(data.referral.specialtyId ?? '');
-    }
+    setLocalReferrals(data.referrals);
     setLocalDisabilities(data.disabilities);
     setLocalDiagnostics(data.consultationDiagnostics);
     setLocalExamResults(data.examResults);
@@ -253,6 +250,17 @@ export function AttendConsultationPage({ editMode = false }: Props) {
     setLocalDisabilities((prev) => prev.filter((d) => d.id !== recordId));
   };
 
+  const handleAddReferral = (specialtyId: string) => {
+    const tempId = `new-${Date.now()}`;
+    setLocalReferrals((prev) => [...prev, { id: tempId, consultationId: id, specialtyId, _isNew: true }]);
+  };
+
+  const handleRemoveReferral = (recordId: string) => {
+    const item = localReferrals.find((r) => r.id === recordId);
+    if (item && !item._isNew) setRemovedReferralIds((prev) => [...prev, recordId]);
+    setLocalReferrals((prev) => prev.filter((r) => r.id !== recordId));
+  };
+
   const handleSavePatientInitialData = async (patch: { bloodType?: string; dominantHand?: string; usesGlasses?: boolean; allergyIds?: string[] }) => {
     if (!data) return;
     await patientsService.update(data.patientId, patch);
@@ -262,11 +270,6 @@ export function AttendConsultationPage({ editMode = false }: Props) {
 
   const performSave = async (type: ConsultationType, status: 'Finalizada' | 'En Proceso') => {
     if (!data) return;
-
-    if (requiresReferral && !referralSpecialtyId) {
-      toast.error('Debe seleccionar una especialidad médica para la referencia a especialista.');
-      return;
-    }
 
     if (restEnabled && restDiagIds.size === 0) {
       toast.error('Debe seleccionar al menos un diagnóstico para asignar el reposo médico.');
@@ -319,17 +322,15 @@ export function AttendConsultationPage({ editMode = false }: Props) {
         await physicalExamService.create({ ...physExam, consultationId: id });
       }
 
-      await referralsService.upsert({
-        consultationId: id,
-        requiresReferral,
-        specialtyId: requiresReferral && referralSpecialtyId ? referralSpecialtyId : undefined,
-      });
-
       await Promise.all([
         ...localDisabilities.filter((d) => d._isNew).map((d) =>
           consultationDisabilitiesService.add({ consultationId: id, disabilityId: d.disabilityId }),
         ),
         ...removedDisabilityIds.map((dId) => consultationDisabilitiesService.remove(dId)),
+        ...localReferrals.filter((r) => r._isNew).map((r) =>
+          referralsService.add({ consultationId: id, specialtyId: r.specialtyId }),
+        ),
+        ...removedReferralIds.map((rId) => referralsService.remove(rId)),
       ]);
 
       await consultationsService.update(id, {
@@ -523,11 +524,10 @@ export function AttendConsultationPage({ editMode = false }: Props) {
                 />
                 <Box sx={{ mt: 3 }}>
                   <ReferralSection
-                    requiresReferral={requiresReferral}
-                    onRequiresReferralChange={setRequiresReferral}
-                    specialtyId={referralSpecialtyId}
-                    onSpecialtyIdChange={setReferralSpecialtyId}
+                    localReferrals={localReferrals}
                     specialties={medicalSpecialties}
+                    onAdd={handleAddReferral}
+                    onRemove={handleRemoveReferral}
                   />
                 </Box>
                 <Box sx={{ mt: 3 }}>

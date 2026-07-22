@@ -1,4 +1,4 @@
-import { pgTable, uuid, boolean, unique } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, unique } from 'drizzle-orm/pg-core';
 import { consultations } from '../consultations/consultations.schema';
 import { medicalSpecialties } from '../medical-specialties/medical-specialties.schema';
 
@@ -6,17 +6,17 @@ export const consultationReferrals = pgTable(
   'consultation_referrals',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    // Una consulta solo puede tener un registro de referencia
+    // Una consulta puede tener varias referencias, una por especialidad
     consultationId: uuid('consultation_id')
       .notNull()
       .references(() => consultations.id, { onDelete: 'cascade' }),
-    requiresReferral: boolean('requires_referral').notNull().default(false),
-    // La especialidad médica es opcional (solo aplica si requiere referencia)
-    specialtyId: uuid('specialty_id').references(() => medicalSpecialties.id, {
-      onDelete: 'set null',
-    }),
+    specialtyId: uuid('specialty_id')
+      .notNull()
+      .references(() => medicalSpecialties.id, { onDelete: 'cascade' }),
   },
-  (t) => [unique('uq_referral_consultation').on(t.consultationId)],
+  (t) => [
+    unique('uq_cr_consultation_specialty').on(t.consultationId, t.specialtyId),
+  ],
 );
 
 export type ConsultationReferral = typeof consultationReferrals.$inferSelect;

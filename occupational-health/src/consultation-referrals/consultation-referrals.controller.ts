@@ -1,6 +1,15 @@
-import { Controller, Get, Post, Query, Body } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Query,
+  Body,
+  Param,
+  ParseUUIDPipe,
+} from '@nestjs/common';
 import { ConsultationReferralsService } from './consultation-referrals.service';
-import { UpsertConsultationReferralDto } from './dto/upsert-consultation-referral.dto';
+import { AddConsultationReferralDto } from './dto/add-consultation-referral.dto';
 
 @Controller('consultation-referrals')
 export class ConsultationReferralsController {
@@ -10,17 +19,23 @@ export class ConsultationReferralsController {
 
   @Get()
   async findByConsultation(@Query('consultationId') consultationId: string) {
-    const consultationReferral =
+    const consultationReferrals =
       await this.consultationReferralsService.findByConsultation(
         consultationId,
       );
-    return { consultationReferral };
+    return { consultationReferrals };
   }
 
   @Post()
-  async upsert(@Body() dto: UpsertConsultationReferralDto) {
+  async add(@Body() dto: AddConsultationReferralDto) {
     const consultationReferral =
-      await this.consultationReferralsService.upsert(dto);
+      await this.consultationReferralsService.add(dto);
     return { consultationReferral };
+  }
+
+  @Delete(':id')
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
+    await this.consultationReferralsService.remove(id);
+    return {};
   }
 }

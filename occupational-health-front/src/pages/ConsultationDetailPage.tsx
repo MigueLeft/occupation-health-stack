@@ -15,7 +15,7 @@ import { usePsychometricTests as usePsychometricCatalog } from '@/features/catal
 import { useAccidentTypes } from '@/features/catalogs/hooks/useAccidentTypes';
 import { EVALUATION_REASON_LABELS } from '@/features/requests/types';
 import { ConsultationResultChip } from '@/features/consultations/components/ConsultationResultChip';
-import { AccessibilityNewOutlined } from '@mui/icons-material';
+import { AccessibilityNewOutlined, LocalHospitalOutlined } from '@mui/icons-material';
 import { usePsychologicalIndicators } from '@/features/psychological-indicators';
 import { usePermissions } from '@/features/auth';
 
@@ -321,25 +321,17 @@ export function ConsultationDetailPage() {
                     </SectionCard>
                   )}
 
-                  {data.referral && (
-                    <SectionCard title="Referencia a Especialista">
-                      <Stack spacing={1.5}>
-                        <Box>
-                          <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em', fontSize: '0.68rem' }}>
-                            ¿Requiere Referencia?
-                          </Typography>
-                          <Box sx={{ mt: 0.5 }}>
-                            <Chip
-                              label={data.referral.requiresReferral ? 'Sí, fue referido' : 'No fue referido'}
-                              size="small"
-                              color={data.referral.requiresReferral ? 'primary' : 'default'}
-                            />
-                          </Box>
-                        </Box>
-                        {data.referral.requiresReferral && data.referral.specialtyName && (
-                          <ReadField label="Especialidad" value={data.referral.specialtyName} />
-                        )}
-                      </Stack>
+                  {data.referrals.length > 0 && (
+                    <SectionCard title="Referencias a Especialista">
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                        <LocalHospitalOutlined sx={{ color: 'primary.main' }} />
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary' }}>Especialidades referidas</Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                        {data.referrals.map((r) => (
+                          <Chip key={r.id} label={r.specialtyName ?? r.specialtyId} size="small" />
+                        ))}
+                      </Box>
                     </SectionCard>
                   )}
 

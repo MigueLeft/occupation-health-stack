@@ -52,8 +52,7 @@ export interface RestPeriod {
 export interface ConsultationReferral {
   id: string;
   consultationId: string;
-  requiresReferral: boolean;
-  specialtyId?: string | null;
+  specialtyId: string;
   specialtyName?: string | null;
 }
 

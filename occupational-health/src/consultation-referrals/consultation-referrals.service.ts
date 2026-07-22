@@ -1,5 +1,10 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import {
+  Injectable,
+  Inject,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
+import { eq, and } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DRIZZLE } from '../database/database.module';
 import {
@@ -7,7 +12,7 @@ import {
   ConsultationReferral,
 } from './consultation-referrals.schema';
 import { medicalSpecialties } from '../medical-specialties/medical-specialties.schema';
-import { UpsertConsultationReferralDto } from './dto/upsert-consultation-referral.dto';
+import { AddConsultationReferralDto } from './dto/add-consultation-referral.dto';
 
 @Injectable()
 export class ConsultationReferralsService {
@@ -15,49 +20,69 @@ export class ConsultationReferralsService {
 
   async findByConsultation(
     consultationId: string,
-  ): Promise<(ConsultationReferral & { specialtyName: string | null }) | null> {
-    const [row] = await this.db
+  ): Promise<(ConsultationReferral & { specialtyName: string | null })[]> {
+    const rows = await this.db
       .select({
         id: consultationReferrals.id,
         consultationId: consultationReferrals.consultationId,
-        requiresReferral: consultationReferrals.requiresReferral,
         specialtyId: consultationReferrals.specialtyId,
         specialtyName: medicalSpecialties.name,
       })
       .from(consultationReferrals)
-      .leftJoin(medicalSpecialties, eq(consultationReferrals.specialtyId, medicalSpecialties.id))
+      .leftJoin(
+        medicalSpecialties,
+        eq(consultationReferrals.specialtyId, medicalSpecialties.id),
+      )
       .where(eq(consultationReferrals.consultationId, consultationId));
 
-    return row ? { ...row, specialtyName: row.specialtyName ?? null } : null;
+    return rows.map((row) => ({
+      ...row,
+      specialtyName: row.specialtyName ?? null,
+    }));
   }
 
-  async upsert(
-    dto: UpsertConsultationReferralDto,
-  ): Promise<ConsultationReferral> {
-    // Intentar actualizar si ya existe, si no, insertar
-    const existing = await this.findByConsultation(dto.consultationId);
+  async add(dto: AddConsultationReferralDto): Promise<ConsultationReferral> {
+    const [existing] = await this.db
+      .select()
+      .from(consultationReferrals)
+      .where(
+        and(
+          eq(consultationReferrals.consultationId, dto.consultationId),
+          eq(consultationReferrals.specialtyId, dto.specialtyId),
+        ),
+      );
 
     if (existing) {
-      const [updated] = await this.db
-        .update(consultationReferrals)
-        .set({
-          requiresReferral: dto.requiresReferral,
-          specialtyId: dto.specialtyId ?? null,
-        })
-        .where(eq(consultationReferrals.consultationId, dto.consultationId))
-        .returning();
-      return updated;
+      throw new ConflictException(
+        'Esta especialidad ya está registrada como referencia en la consulta.',
+      );
     }
 
     const [created] = await this.db
       .insert(consultationReferrals)
       .values({
         consultationId: dto.consultationId,
-        requiresReferral: dto.requiresReferral,
-        specialtyId: dto.specialtyId ?? null,
+        specialtyId: dto.specialtyId,
       })
       .returning();
 
     return created;
+  }
+
+  async remove(id: string): Promise<void> {
+    const [record] = await this.db
+      .select()
+      .from(consultationReferrals)
+      .where(eq(consultationReferrals.id, id));
+
+    if (!record) {
+      throw new NotFoundException(
+        `No se encontró el registro de referencia con ID "${id}".`,
+      );
+    }
+
+    await this.db
+      .delete(consultationReferrals)
+      .where(eq(consultationReferrals.id, id));
   }
 }
