@@ -10,9 +10,10 @@ export const consultationReferrals = pgTable(
     consultationId: uuid('consultation_id')
       .notNull()
       .references(() => consultations.id, { onDelete: 'cascade' }),
-    specialtyId: uuid('specialty_id')
-      .notNull()
-      .references(() => medicalSpecialties.id, { onDelete: 'cascade' }),
+    // Nullable para preservar referencias históricas registradas antes de exigir especialidad
+    specialtyId: uuid('specialty_id').references(() => medicalSpecialties.id, {
+      onDelete: 'set null',
+    }),
   },
   (t) => [
     unique('uq_cr_consultation_specialty').on(t.consultationId, t.specialtyId),

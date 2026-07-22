@@ -4,7 +4,7 @@ import { LocalHospitalOutlined } from '@mui/icons-material';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import type { MedicalSpecialty } from '@/features/catalogs/types';
 
-interface LocalReferral { id: string; specialtyId: string; }
+interface LocalReferral { id: string; specialtyId: string | null; }
 
 interface Props {
   localReferrals: LocalReferral[];
@@ -47,7 +47,7 @@ export function ReferralSection({ localReferrals, specialties, onAdd, onRemove }
         {localReferrals.length === 0
           ? <Typography variant="caption" color="text.disabled">Sin referencias registradas</Typography>
           : localReferrals.map((lr) => {
-              const name = specialties.find((s) => s.id === lr.specialtyId)?.name ?? lr.specialtyId;
+              const name = specialties.find((s) => s.id === lr.specialtyId)?.name ?? lr.specialtyId ?? 'Especialidad no especificada';
               return <Chip key={lr.id} label={name} size="small" onDelete={() => onRemove(lr.id)} />;
             })
         }

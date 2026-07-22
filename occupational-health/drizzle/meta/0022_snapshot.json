@@ -1,5 +1,5 @@
 {
-  "id": "569f72b7-df95-4353-9b53-564cd41d7b10",
+  "id": "fd71cbfc-5a2e-42e8-a415-bb2f14aa7d74",
   "prevId": "7949d63c-bcd5-4d9d-9ec7-dbbb00eeef40",
   "version": "7",
   "dialect": "postgresql",
@@ -827,7 +827,7 @@
           "name": "specialty_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         }
       },
       "indexes": {},
@@ -855,7 +855,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },

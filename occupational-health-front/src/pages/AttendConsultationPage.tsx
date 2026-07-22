@@ -91,7 +91,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   const [restDays, setRestDays] = useState<number | ''>('');
   const [restDiagIds, setRestDiagIds] = useState<Set<string>>(new Set());
 
-  const [localReferrals, setLocalReferrals] = useState<{ id: string; consultationId: string; specialtyId: string; _isNew?: boolean }[]>([]);
+  const [localReferrals, setLocalReferrals] = useState<{ id: string; consultationId: string; specialtyId: string | null; _isNew?: boolean }[]>([]);
   const [removedReferralIds, setRemovedReferralIds] = useState<string[]>([]);
 
   const [localDisabilities, setLocalDisabilities] = useState<{ id: string; consultationId: string; disabilityId: string; _isNew?: boolean }[]>([]);
@@ -327,7 +327,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
           consultationDisabilitiesService.add({ consultationId: id, disabilityId: d.disabilityId }),
         ),
         ...removedDisabilityIds.map((dId) => consultationDisabilitiesService.remove(dId)),
-        ...localReferrals.filter((r) => r._isNew).map((r) =>
+        ...localReferrals.filter((r): r is typeof r & { specialtyId: string } => r._isNew === true && r.specialtyId !== null).map((r) =>
           referralsService.add({ consultationId: id, specialtyId: r.specialtyId }),
         ),
         ...removedReferralIds.map((rId) => referralsService.remove(rId)),

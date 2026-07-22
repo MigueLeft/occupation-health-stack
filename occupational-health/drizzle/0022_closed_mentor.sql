@@ -1,0 +1,2 @@
+ALTER TABLE "consultation_referrals" DROP CONSTRAINT "uq_referral_consultation";--> statement-breakpoint
+ALTER TABLE "consultation_referrals" ADD CONSTRAINT "uq_cr_consultation_specialty" UNIQUE("consultation_id","specialty_id");
