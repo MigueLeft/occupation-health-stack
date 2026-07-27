@@ -242,6 +242,20 @@ export class PatientsService {
 
     const { allergyIds, diseaseIds, ...patientData } = dto;
 
+    // Si se actualiza la cédula, validar que no esté en uso por otro paciente
+    if (patientData.cedula && patientData.cedula !== cedula) {
+      const [duplicate] = await this.db
+        .select({ cedula: patients.cedula })
+        .from(patients)
+        .where(eq(patients.cedula, patientData.cedula));
+
+      if (duplicate) {
+        throw new ConflictException(
+          `Ya existe otro paciente con la cédula "${patientData.cedula}".`,
+        );
+      }
+    }
+
     // Si se actualiza empresa o cargo, validar la combinación
     if (patientData.companyId || patientData.positionId) {
       const companyId = patientData.companyId ?? existing.companyId ?? '';
@@ -262,20 +276,24 @@ export class PatientsService {
         .where(eq(patients.cedula, cedula));
     }
 
+    // A partir de aquí, usar la cédula nueva (la cascada de FK ya propagó el cambio)
+    const newCedula = patientData.cedula ?? cedula;
+
     // Si se envían alergias, reemplazar las existentes
     if (allergyIds !== undefined) {
       if (allergyIds.length) await this.validateAllergies(allergyIds);
 
       await this.db
         .delete(patientAllergies)
-        .where(eq(patientAllergies.patientId, cedula));
+        .where(eq(patientAllergies.patientId, newCedula));
 
       if (allergyIds.length) {
-        await this.db
-          .insert(patientAllergies)
-          .values(
-            allergyIds.map((allergyId) => ({ patientId: cedula, allergyId })),
-          );
+        await this.db.insert(patientAllergies).values(
+          allergyIds.map((allergyId) => ({
+            patientId: newCedula,
+            allergyId,
+          })),
+        );
       }
     }
 
@@ -285,18 +303,19 @@ export class PatientsService {
 
       await this.db
         .delete(patientDiseases)
-        .where(eq(patientDiseases.patientId, cedula));
+        .where(eq(patientDiseases.patientId, newCedula));
 
       if (diseaseIds.length) {
-        await this.db
-          .insert(patientDiseases)
-          .values(
-            diseaseIds.map((diseaseId) => ({ patientId: cedula, diseaseId })),
-          );
+        await this.db.insert(patientDiseases).values(
+          diseaseIds.map((diseaseId) => ({
+            patientId: newCedula,
+            diseaseId,
+          })),
+        );
       }
     }
 
-    return this.buildPatientResponse(cedula);
+    return this.buildPatientResponse(newCedula);
   }
 
   async remove(cedula: string): Promise<Patient> {

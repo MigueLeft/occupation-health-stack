@@ -1,8 +1,10 @@
-import { Box, Typography, Avatar, CircularProgress, Chip, Table, TableHead, TableBody, TableRow, TableCell, IconButton, Tooltip } from '@mui/material';
+import { useState } from 'react';
+import { Box, Typography, Avatar, CircularProgress, Chip, Table, TableHead, TableBody, TableRow, TableCell, IconButton, Tooltip, Button } from '@mui/material';
 import { usePageTitle } from '@/hooks/usePageTitle';
-import { VisibilityOutlined } from '@mui/icons-material';
+import { VisibilityOutlined, FileDownloadOutlined } from '@mui/icons-material';
 import { useParams, useNavigate, Navigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { AppLayout } from '@/components/AppLayout';
 import { usePatient } from '@/features/patients/hooks/usePatient';
 import { useConsultations } from '@/features/consultations/hooks/useConsultations';
@@ -12,6 +14,7 @@ import { ConsultationResultChip } from '@/features/consultations/components/Cons
 import { RequestStatusChip } from '@/features/requests/components/RequestStatusChip';
 import { EVALUATION_REASON_LABELS } from '@/features/requests/types';
 import { usePermissions } from '@/features/auth';
+import { reportsService } from '@/features/reports';
 
 function calcAge(birthDate: string): number {
   const [y, m, d] = birthDate.split('-').map(Number);
@@ -62,6 +65,7 @@ export function ExpedientePage() {
   const { cedula } = useParams({ strict: false }) as { cedula: string };
   const navigate = useNavigate();
   const { can, isLoading: isPermLoading } = usePermissions();
+  const [isDownloading, setIsDownloading] = useState(false);
   const { data: patient, isLoading: patientLoading } = usePatient(cedula);
   const { data: consultations = [], isLoading: consultLoading } = useConsultations();
   const { data: patientDisabilities = [] } = useQuery({
@@ -97,6 +101,18 @@ export function ExpedientePage() {
 
   const initials = `${patient.firstName[0]}${patient.lastName[0]}`.toUpperCase();
   const age = patient.birthDate ? calcAge(patient.birthDate) : null;
+
+  const handleDownloadReport = async () => {
+    setIsDownloading(true);
+    try {
+      await reportsService.downloadPatientHistoryReport({ cedula });
+      toast.success('Reporte generado correctamente');
+    } catch {
+      toast.error('Error al generar el reporte. Intente nuevamente.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   return (
     <AppLayout>
@@ -170,8 +186,21 @@ export function ExpedientePage() {
         {/* Right panel */}
         <Box sx={{ flex: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-            <Typography variant="h2" sx={{ fontSize: '1.15rem' }}>Historial de Consultas</Typography>
-            <Chip label={`${patientConsultations.length} consulta${patientConsultations.length !== 1 ? 's' : ''}`} size="small" sx={{ bgcolor: 'primary.50', color: 'primary.main', fontWeight: 600 }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Typography variant="h2" sx={{ fontSize: '1.15rem' }}>Historial de Consultas</Typography>
+              <Chip label={`${patientConsultations.length} consulta${patientConsultations.length !== 1 ? 's' : ''}`} size="small" sx={{ bgcolor: 'primary.50', color: 'primary.main', fontWeight: 600 }} />
+            </Box>
+            {can('reports', 'view') && (
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={isDownloading ? <CircularProgress size={14} color="inherit" /> : <FileDownloadOutlined fontSize="small" />}
+                onClick={handleDownloadReport}
+                disabled={isDownloading}
+              >
+                {isDownloading ? 'Generando...' : 'Descargar Reporte'}
+              </Button>
+            )}
           </Box>
 
           <Box sx={{ bgcolor: 'background.paper', borderRadius: 3, border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
@@ -210,7 +239,13 @@ export function ExpedientePage() {
                               <ConsultationResultChip result={c.psychologicalAptitude as import('@/features/consultations/types').ConsultationResultUnion} />
                             </Box>
                           )}
-                          {!(canSeeMedical && c.consultationResult) && !(canSeePsychological && c.psychologicalAptitude) && (
+                          {canSeePsychological && c.psychologicalResult && (
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                              <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', minWidth: 18 }}>Ps:</Typography>
+                              <ConsultationResultChip result={c.psychologicalResult as import('@/features/consultations/types').ConsultationResultUnion} />
+                            </Box>
+                          )}
+                          {!(canSeeMedical && c.consultationResult) && !(canSeePsychological && c.psychologicalAptitude) && !(canSeePsychological && c.psychologicalResult) && (
                             <Typography variant="body2" color="text.secondary">—</Typography>
                           )}
                         </Box>

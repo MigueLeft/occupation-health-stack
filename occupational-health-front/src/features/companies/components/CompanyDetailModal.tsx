@@ -3,7 +3,7 @@ import {
   Dialog, DialogContent, Box, Typography,
   Button, IconButton, Divider, Stack, Tooltip, Avatar,
 } from '@mui/material';
-import { CloseOutlined, EditOutlined, AddOutlined, BusinessOutlined } from '@mui/icons-material';
+import { CloseOutlined, EditOutlined, AddOutlined, BusinessOutlined, DeleteOutlined } from '@mui/icons-material';
 import { formatRif } from '@/utils/rif';
 import { PositionsTable } from './PositionsTable';
 import { PositionFormModal } from './PositionFormModal';
@@ -14,8 +14,10 @@ interface CompanyDetailModalProps {
   open: boolean;
   onClose: () => void;
   company: CompanyWithPositions | null;
+  onDelete?: (company: CompanyWithPositions) => void;
   canEdit?: boolean;
   canCreate?: boolean;
+  canDelete?: boolean;
 }
 
 function InfoItem({ label, value }: { label: string; value: string }) {
@@ -41,7 +43,7 @@ function InfoItem({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function CompanyDetailModal({ open, onClose, company, canEdit = true, canCreate = true }: CompanyDetailModalProps) {
+export function CompanyDetailModal({ open, onClose, company, onDelete, canEdit = true, canCreate = true, canDelete = true }: CompanyDetailModalProps) {
   const [createPositionOpen, setCreatePositionOpen] = useState(false);
   const [editCompanyOpen, setEditCompanyOpen] = useState(false);
 
@@ -71,6 +73,18 @@ export function CompanyDetailModal({ open, onClose, company, canEdit = true, can
                 sx={{ color: 'inherit', borderColor: 'rgba(255,255,255,0.5)', '&:hover': { borderColor: 'white' } }}
               >
                 Editar
+              </Button>
+            )}
+            {canDelete && onDelete && (
+              <Button
+                variant="outlined"
+                startIcon={<DeleteOutlined />}
+                size="small"
+                color="error"
+                onClick={() => onDelete(company)}
+                sx={{ color: 'inherit', borderColor: 'rgba(255,255,255,0.5)', '&:hover': { borderColor: 'white' } }}
+              >
+                Eliminar
               </Button>
             )}
             <IconButton size="small" onClick={onClose} sx={{ color: 'inherit' }}>

@@ -37,7 +37,10 @@ export const patientAllergies = pgTable(
   {
     patientId: varchar('patient_id', { length: 20 })
       .notNull()
-      .references(() => patients.cedula, { onDelete: 'cascade' }),
+      .references(() => patients.cedula, {
+        onDelete: 'cascade',
+        onUpdate: 'cascade',
+      }),
     allergyId: uuid('allergy_id')
       .notNull()
       .references(() => allergies.id, { onDelete: 'cascade' }),
@@ -50,7 +53,10 @@ export const patientDiseases = pgTable(
   {
     patientId: varchar('patient_id', { length: 20 })
       .notNull()
-      .references(() => patients.cedula, { onDelete: 'cascade' }),
+      .references(() => patients.cedula, {
+        onDelete: 'cascade',
+        onUpdate: 'cascade',
+      }),
     diseaseId: uuid('disease_id')
       .notNull()
       .references(() => diseases.id, { onDelete: 'cascade' }),

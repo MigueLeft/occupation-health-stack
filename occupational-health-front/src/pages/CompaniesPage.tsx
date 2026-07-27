@@ -8,9 +8,11 @@ import {
 import { AddOutlined, SearchOutlined, SortByAlphaOutlined } from '@mui/icons-material';
 import { Navigate } from '@tanstack/react-router';
 import { AppLayout } from '@/components/AppLayout';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import {
-  CompanyRow, CompanyFormModal, CompanyDetailModal, useCompanies,
+  CompanyRow, CompanyFormModal, CompanyDetailModal, useCompanies, useDeleteCompany,
 } from '@/features/companies';
+import type { CompanyWithPositions } from '@/features/companies';
 import { normalizeRifSearch } from '@/utils/rif';
 import { usePermissions } from '@/features/auth';
 
@@ -21,11 +23,13 @@ export function CompaniesPage() {
 
   const { can, isLoading: isPermLoading } = usePermissions();
   const { data: companies = [], isLoading } = useCompanies();
+  const { mutate: deleteCompany, isPending: isDeleting } = useDeleteCompany();
 
   const [search, setSearch] = useState('');
   const [sortAZ, setSortAZ] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<CompanyWithPositions | null>(null);
 
   // Always read fresh data from the query so mutations update the detail modal
   const detailTarget = companies.find((c) => c.id === detailId) ?? null;
@@ -48,6 +52,19 @@ export function CompaniesPage() {
 
   if (isPermLoading) return null;
   if (!can('companies', 'view')) return <Navigate to="/" />;
+
+  const canDelete = can('companies', 'delete');
+
+  const handleDelete = (c: CompanyWithPositions) => setDeleteTarget(c);
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return;
+    deleteCompany(deleteTarget.id, {
+      onSuccess: () => {
+        setDeleteTarget(null);
+        setDetailId(null);
+      },
+    });
+  };
 
   return (
     <AppLayout>
@@ -114,7 +131,13 @@ export function CompaniesPage() {
                         </TableRow>
                       ))
                     : filtered.map((c) => (
-                        <CompanyRow key={c.id} company={c} onView={(co) => setDetailId(co.id)} />
+                        <CompanyRow
+                          key={c.id}
+                          company={c}
+                          onView={(co) => setDetailId(co.id)}
+                          onDelete={handleDelete}
+                          canDelete={canDelete}
+                        />
                       ))}
                   {!isLoading && filtered.length === 0 && (
                     <TableRow>
@@ -136,8 +159,21 @@ export function CompaniesPage() {
         open={detailId !== null}
         onClose={() => setDetailId(null)}
         company={detailTarget}
+        onDelete={handleDelete}
         canEdit={can('companies', 'edit')}
         canCreate={can('companies', 'create')}
+        canDelete={canDelete}
+      />
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Eliminar empresa"
+        message={`¿Estás seguro de que deseas eliminar la empresa "${deleteTarget?.name ?? ''}"? Esta acción es irreversible.`}
+        confirmLabel="Eliminar"
+        confirmColor="error"
+        loading={isDeleting}
+        onConfirm={handleConfirmDelete}
+        onClose={() => setDeleteTarget(null)}
       />
     </AppLayout>
   );

@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import * as path from 'path';
 import * as fs from 'fs';
 import PDFDocument from 'pdfkit';
@@ -41,6 +41,7 @@ import type { MorbidityReportDto } from './dto/morbidity-report.dto';
 import type { ConsolidacionReportDto } from './dto/consolidacion-report.dto';
 import type { PsychologicalIndicatorsReportDto } from './dto/psychological-indicators-report.dto';
 import type { PsychologicalMorbidityReportDto } from './dto/psychological-morbidity-report.dto';
+import type { PatientHistoryReportDto } from './dto/patient-history-report.dto';
 import { ReportConfigService } from '../report-config/report-config.service';
 
 const LOGO_PATH = path.join(__dirname, 'assets', 'LogoCAPMIL.jpg');
@@ -64,6 +65,16 @@ const COLS = [
   { label: 'Resultado', width: 40 },
 ];
 
+// Definición de columnas para el reporte de historial de paciente (suma = 515)
+const PATIENT_HISTORY_COLS = [
+  { label: 'Fecha', width: 60 },
+  { label: 'Motivo', width: 85 },
+  { label: 'Tipo', width: 70 },
+  { label: 'Result. Médico', width: 100 },
+  { label: 'Result. Psicológico', width: 100 },
+  { label: 'Estado Ps.', width: 100 },
+];
+
 const MARGIN = 40;
 const USABLE_WIDTH = 515;
 const HEADER_HEIGHT = 100;
@@ -81,6 +92,15 @@ type ReportRow = {
   evaluationReason: string;
   consultationType: string;
   result: string;
+};
+
+type PatientHistoryRow = {
+  requestDate: string;
+  evaluationReason: string;
+  consultationType: string;
+  consultationResult: string | null;
+  psychologicalAptitude: string | null;
+  psychologicalResult: string | null;
 };
 
 type PathologyRow = {
@@ -198,6 +218,63 @@ export class ReportsService {
       this.drawTable(doc, rows);
 
       // Agregar footer a cada página en el buffer
+      const range = doc.bufferedPageRange();
+      for (let i = 0; i < range.count; i++) {
+        doc.switchToPage(range.start + i);
+        this.drawFooter(doc, i + 1, range.count);
+      }
+
+      doc.flushPages();
+      doc.end();
+    });
+  }
+
+  async generatePatientHistoryReport(
+    filters: PatientHistoryReportDto,
+  ): Promise<Buffer> {
+    await this.loadSello();
+    const [patientInfo, rows] = await Promise.all([
+      this.fetchPatientInfo(filters.cedula),
+      this.fetchPatientHistoryRows(filters),
+    ]);
+
+    if (!patientInfo) {
+      throw new NotFoundException(
+        `No se encontró ningún paciente con la cédula "${filters.cedula}".`,
+      );
+    }
+
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({
+        size: 'A4',
+        margins: {
+          top: HEADER_HEIGHT + 10,
+          bottom: FOOTER_HEIGHT + 10,
+          left: MARGIN,
+          right: MARGIN,
+        },
+        bufferPages: true,
+      });
+
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      this.drawHeader(doc);
+      doc.on('pageAdded', () => this.drawHeader(doc));
+
+      this.drawPatientInfoBlock(doc, patientInfo);
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(13)
+        .fillColor('#1A1A1A')
+        .text('Historial de Consultas del Paciente', MARGIN, doc.y, {
+          width: USABLE_WIDTH,
+        });
+      doc.moveDown(0.5).fillColor('#000000');
+      this.drawPatientHistoryTable(doc, rows);
+
       const range = doc.bufferedPageRange();
       for (let i = 0; i < range.count; i++) {
         doc.switchToPage(range.start + i);
@@ -403,6 +480,31 @@ export class ReportsService {
     return result[0] ?? null;
   }
 
+  private async fetchPatientInfo(cedula: string): Promise<{
+    firstName: string;
+    lastName: string;
+    cedula: string;
+    birthDate: string | null;
+    companyName: string | null;
+    positionName: string | null;
+  } | null> {
+    const result = await this.db
+      .select({
+        firstName: patients.firstName,
+        lastName: patients.lastName,
+        cedula: patients.cedula,
+        birthDate: patients.birthDate,
+        companyName: companies.name,
+        positionName: positions.name,
+      })
+      .from(patients)
+      .leftJoin(companies, eq(patients.companyId, companies.id))
+      .leftJoin(positions, eq(patients.positionId, positions.id))
+      .where(eq(patients.cedula, cedula))
+      .limit(1);
+    return result[0] ?? null;
+  }
+
   private async resolveLogoBuffer(
     logo: string | null | undefined,
   ): Promise<Buffer | null> {
@@ -504,6 +606,80 @@ export class ReportsService {
         align: 'center',
         lineBreak: false,
       });
+  }
+
+  private calculateAge(birthDate: string): number {
+    const [y, m, d] = birthDate.split('-').map(Number);
+    const today = new Date();
+    let age = today.getFullYear() - y;
+    if (
+      today.getMonth() + 1 < m ||
+      (today.getMonth() + 1 === m && today.getDate() < d)
+    ) {
+      age--;
+    }
+    return age;
+  }
+
+  private drawPatientInfoBlock(
+    doc: PDFKit.PDFDocument,
+    patient: {
+      firstName: string;
+      lastName: string;
+      cedula: string;
+      birthDate: string | null;
+      companyName: string | null;
+      positionName: string | null;
+    },
+  ) {
+    const y = HEADER_HEIGHT + 14;
+    const blockHeight = 52;
+    const fullName = `${patient.firstName} ${patient.lastName}`;
+
+    doc.rect(MARGIN, y, USABLE_WIDTH, blockHeight).fill('#EEF4FB');
+
+    const avatarSize = 44;
+    const cx = MARGIN + avatarSize / 2 + 6;
+    const cy = y + blockHeight / 2;
+    this.drawCompanyInitialCircle(doc, fullName, cx, cy);
+
+    const age = patient.birthDate ? this.calculateAge(patient.birthDate) : null;
+    const textX = MARGIN + avatarSize + 14;
+    const textW = USABLE_WIDTH - avatarSize - 14;
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(11)
+      .fillColor('#1A1A1A')
+      .text(
+        `${fullName}${age !== null ? ` (${age} años)` : ''}`,
+        textX,
+        y + 7,
+        {
+          width: textW,
+          lineBreak: false,
+        },
+      );
+    doc
+      .font('Helvetica')
+      .fontSize(8)
+      .fillColor('#555555')
+      .text(
+        `Cédula: ${patient.cedula}   ·   Empresa: ${patient.companyName ?? '-'}`,
+        textX,
+        y + 23,
+        { width: textW, lineBreak: false },
+      );
+    doc
+      .font('Helvetica')
+      .fontSize(8)
+      .fillColor('#555555')
+      .text(`Cargo: ${patient.positionName ?? '-'}`, textX, y + 37, {
+        width: textW,
+        lineBreak: false,
+      });
+
+    doc.fillColor('#000000');
+    doc.y = y + blockHeight + 10;
   }
 
   private drawHeader(doc: PDFKit.PDFDocument) {
@@ -854,6 +1030,93 @@ export class ReportsService {
     doc.fillColor('#000000');
   }
 
+  private drawPatientHistoryTable(
+    doc: PDFKit.PDFDocument,
+    rows: PatientHistoryRow[],
+  ) {
+    const drawHeaderRow = (y: number) => {
+      let x = MARGIN;
+      doc.rect(x, y, USABLE_WIDTH, HEADER_ROW_HEIGHT).fill(PRIMARY_COLOR);
+      doc.font('Helvetica-Bold').fontSize(8).fillColor('#FFFFFF');
+      for (const col of PATIENT_HISTORY_COLS) {
+        doc.text(col.label, x + 3, y + 7, {
+          width: col.width - 6,
+          align: 'left',
+        });
+        x += col.width;
+      }
+      doc.font('Helvetica').fontSize(8).fillColor('#000000');
+    };
+
+    let y = doc.y + 6;
+    drawHeaderRow(y);
+    y += HEADER_ROW_HEIGHT;
+
+    if (rows.length === 0) {
+      doc
+        .font('Helvetica-Oblique')
+        .fontSize(9)
+        .fillColor('#888888')
+        .text(
+          'No se encontraron consultas para este paciente en el periodo seleccionado.',
+          MARGIN,
+          y + 10,
+          { width: USABLE_WIDTH, align: 'center' },
+        );
+      doc.fillColor('#000000');
+      return;
+    }
+
+    doc.font('Helvetica').fontSize(8).fillColor('#000000');
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const isAlt = i % 2 === 1;
+
+      if (y + ROW_HEIGHT > doc.page.height - FOOTER_HEIGHT - 20) {
+        doc.addPage();
+        y = HEADER_HEIGHT + 14;
+        drawHeaderRow(y);
+        y += HEADER_ROW_HEIGHT;
+        doc.font('Helvetica').fontSize(8).fillColor('#000000');
+      }
+
+      if (isAlt) {
+        doc.rect(MARGIN, y, USABLE_WIDTH, ROW_HEIGHT).fill(ALT_ROW_COLOR);
+      }
+
+      const cells = [
+        row.requestDate,
+        row.evaluationReason,
+        row.consultationType,
+        row.consultationResult,
+        row.psychologicalAptitude,
+        row.psychologicalResult,
+      ];
+
+      let x = MARGIN;
+      doc.fillColor('#1A1A1A');
+      for (let c = 0; c < PATIENT_HISTORY_COLS.length; c++) {
+        doc.text(cells[c] ?? '-', x + 3, y + 6, {
+          width: PATIENT_HISTORY_COLS[c].width - 6,
+          lineBreak: false,
+        });
+        x += PATIENT_HISTORY_COLS[c].width;
+      }
+
+      doc
+        .moveTo(MARGIN, y + ROW_HEIGHT)
+        .lineTo(MARGIN + USABLE_WIDTH, y + ROW_HEIGHT)
+        .strokeColor('#E0E0E0')
+        .lineWidth(0.5)
+        .stroke();
+
+      y += ROW_HEIGHT;
+    }
+
+    doc.fillColor('#000000');
+  }
+
   private drawFooter(
     doc: PDFKit.PDFDocument,
     pageNum: number,
@@ -970,6 +1233,43 @@ export class ReportsService {
       evaluationReason: row.evaluationReason,
       consultationType: row.type,
       result: row.consultationResult ?? row.psychologicalResult ?? 'Pendiente',
+    }));
+  }
+
+  private async fetchPatientHistoryRows(
+    filters: PatientHistoryReportDto,
+  ): Promise<PatientHistoryRow[]> {
+    const conditions: SQL[] = [eq(patients.cedula, filters.cedula)];
+
+    if (filters.dateFrom) {
+      conditions.push(gte(requests.requestDate, filters.dateFrom));
+    }
+    if (filters.dateTo) {
+      conditions.push(lte(requests.requestDate, filters.dateTo));
+    }
+
+    const data = await this.db
+      .select({
+        type: consultations.type,
+        consultationResult: consultations.consultationResult,
+        psychologicalAptitude: consultations.psychologicalAptitude,
+        psychologicalResult: consultations.psychologicalResult,
+        requestDate: requests.requestDate,
+        evaluationReason: requests.evaluationReason,
+      })
+      .from(consultations)
+      .innerJoin(requests, eq(consultations.requestId, requests.id))
+      .innerJoin(patients, eq(requests.patientId, patients.cedula))
+      .where(and(...conditions))
+      .orderBy(requests.requestDate);
+
+    return data.map((row) => ({
+      requestDate: row.requestDate ?? '-',
+      evaluationReason: row.evaluationReason,
+      consultationType: row.type,
+      consultationResult: row.consultationResult,
+      psychologicalAptitude: row.psychologicalAptitude,
+      psychologicalResult: row.psychologicalResult,
     }));
   }
 

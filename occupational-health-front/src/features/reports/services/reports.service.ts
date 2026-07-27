@@ -6,6 +6,12 @@ export interface ConsultationReportFilters {
   companyId?: string;
 }
 
+export interface PatientHistoryReportFilters {
+  cedula: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
 export interface VigilanciaReportFilters extends ConsultationReportFilters {
   recomendacion1?: string;
   recomendacion2?: string;
@@ -114,6 +120,17 @@ async function downloadPsychologicalMorbidityReport(filters: ConsultationReportF
   );
 }
 
+async function downloadPatientHistoryReport(filters: PatientHistoryReportFilters): Promise<void> {
+  const response = await apiClient.get('/reports/patient-history', {
+    params: cleanBody(filters),
+    responseType: 'blob',
+  });
+  triggerDownload(
+    new Blob([response.data], { type: 'application/pdf' }),
+    `reporte-historial-${filters.cedula}-${new Date().toISOString().slice(0, 10)}.pdf`,
+  );
+}
+
 export const reportsService = {
   fetchVigilanciaBlob,
   downloadVigilanciaReport,
@@ -123,4 +140,5 @@ export const reportsService = {
   downloadConsolidacionReport,
   downloadPsychologicalIndicatorsReport,
   downloadPsychologicalMorbidityReport,
+  downloadPatientHistoryReport,
 };

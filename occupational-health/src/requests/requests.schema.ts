@@ -37,7 +37,10 @@ export const requests = pgTable('requests', {
   status: varchar('status', { length: 30 }).notNull().default('Pendiente'),
   patientId: varchar('patient_id', { length: 20 })
     .notNull()
-    .references(() => patients.cedula, { onDelete: 'cascade' }),
+    .references(() => patients.cedula, {
+      onDelete: 'cascade',
+      onUpdate: 'cascade',
+    }),
   // Solo aplica cuando evaluationReason = 'Consulta'
   scheduledConsultationType: varchar('scheduled_consultation_type', {
     length: 30,

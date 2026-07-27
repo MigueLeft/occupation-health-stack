@@ -1,14 +1,16 @@
 import { TableRow, TableCell, Box, IconButton, Tooltip, Typography } from '@mui/material';
-import { VisibilityOutlined } from '@mui/icons-material';
+import { VisibilityOutlined, DeleteOutlined } from '@mui/icons-material';
 import { formatRif } from '@/utils/rif';
 import type { CompanyWithPositions } from '../types';
 
 interface CompanyRowProps {
   company: CompanyWithPositions;
   onView: (company: CompanyWithPositions) => void;
+  onDelete: (company: CompanyWithPositions) => void;
+  canDelete?: boolean;
 }
 
-export function CompanyRow({ company, onView }: CompanyRowProps) {
+export function CompanyRow({ company, onView, onDelete, canDelete = true }: CompanyRowProps) {
   return (
     <TableRow sx={{ '&:last-child td': { border: 0 }, '&:hover': { bgcolor: 'action.hover' } }}>
       <TableCell sx={{ maxWidth: 200 }}>
@@ -35,6 +37,13 @@ export function CompanyRow({ company, onView }: CompanyRowProps) {
               <VisibilityOutlined fontSize="small" />
             </IconButton>
           </Tooltip>
+          {canDelete && (
+            <Tooltip title="Eliminar empresa">
+              <IconButton size="small" color="error" onClick={() => onDelete(company)}>
+                <DeleteOutlined fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
         </Box>
       </TableCell>
     </TableRow>

@@ -10,6 +10,7 @@ import {
   IsArray,
   ValidateNested,
   ArrayUnique,
+  Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { EmergencyContactDto } from './emergency-contact.dto';
@@ -19,6 +20,15 @@ const DOMINANT_HANDS = ['right', 'left', 'both'];
 const SEX_OPTIONS = ['Masculino', 'Femenino'];
 
 export class UpdatePatientDto {
+  @IsOptional()
+  @IsString({ message: 'La cédula debe ser una cadena de texto.' })
+  @IsNotEmpty({ message: 'La cédula de identidad no puede estar vacía.' })
+  @Matches(/^[VEve]-?\d{7,}$/, {
+    message: 'La cédula debe tener al menos 7 dígitos y comenzar con V o E.',
+  })
+  @MaxLength(20, { message: 'La cédula no puede exceder los 20 caracteres.' })
+  cedula?: string;
+
   @IsOptional()
   @IsString({ message: 'El nombre debe ser una cadena de texto.' })
   @IsNotEmpty({ message: 'El nombre no puede estar vacío.' })

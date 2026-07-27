@@ -54,8 +54,8 @@ export function useDeletePatient() {
       queryClient.invalidateQueries({ queryKey: PATIENTS_KEY });
       toast.success('Paciente eliminado correctamente');
     },
-    onError: () => {
-      toast.error('Error al eliminar el paciente');
+    onError: (error: { response?: { data?: { message?: string } } }) => {
+      toast.error(error.response?.data?.message ?? 'Error al eliminar el paciente');
     },
   });
 }

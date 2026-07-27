@@ -54,6 +54,7 @@ export function PatientsPage() {
   const [editTarget, setEditTarget] = useState<Patient | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleteMultiOpen, setDeleteMultiOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Patient | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
@@ -128,6 +129,11 @@ export function PatientsPage() {
 
   const handleView = (p: Patient) => navigate({ to: '/expedientes/$cedula', params: { cedula: p.cedula } });
   const handleEdit = (p: Patient) => setEditTarget(p);
+  const handleDelete = (p: Patient) => setDeleteTarget(p);
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return;
+    deletePatient(deleteTarget.cedula, { onSuccess: () => setDeleteTarget(null) });
+  };
 
   return (
     <AppLayout>
@@ -230,6 +236,7 @@ export function PatientsPage() {
                           onToggleSelect={handleToggleOne}
                           onView={handleView}
                           onEdit={handleEdit}
+                          onDelete={handleDelete}
                           canEdit={canEdit}
                           canDelete={canDelete}
                           canViewExpediente={canViewExpediente}
@@ -272,6 +279,17 @@ export function PatientsPage() {
         loading={isDeleting}
         onConfirm={handleConfirmDeleteMulti}
         onClose={() => setDeleteMultiOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Eliminar paciente"
+        message={`¿Estás seguro de que deseas eliminar a ${deleteTarget ? `${deleteTarget.firstName} ${deleteTarget.lastName}` : ''}? Esta acción es irreversible.`}
+        confirmLabel="Eliminar"
+        confirmColor="error"
+        loading={isDeleting}
+        onConfirm={handleConfirmDelete}
+        onClose={() => setDeleteTarget(null)}
       />
     </AppLayout>
   );

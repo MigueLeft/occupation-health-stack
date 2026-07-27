@@ -9,6 +9,7 @@ import { MorbidityReportDto } from './dto/morbidity-report.dto';
 import { ConsolidacionReportDto } from './dto/consolidacion-report.dto';
 import { PsychologicalIndicatorsReportDto } from './dto/psychological-indicators-report.dto';
 import { PsychologicalMorbidityReportDto } from './dto/psychological-morbidity-report.dto';
+import { PatientHistoryReportDto } from './dto/patient-history-report.dto';
 import { RequirePermission } from '../auth/require-permission.decorator';
 
 @Controller('reports')
@@ -145,6 +146,23 @@ export class ReportsController {
     const buffer =
       await this.reportsService.generatePsychologicalMorbidityReport(filters);
     const filename = `reporte-morbilidad-psicologica-${new Date().toISOString().slice(0, 10)}.pdf`;
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length': buffer.length,
+    });
+    res.end(buffer);
+  }
+
+  @Get('patient-history')
+  @RequirePermission('reports', 'view')
+  async patientHistoryReport(
+    @Query() filters: PatientHistoryReportDto,
+    @Res() res: Response,
+  ) {
+    const buffer =
+      await this.reportsService.generatePatientHistoryReport(filters);
+    const filename = `reporte-historial-${filters.cedula}-${new Date().toISOString().slice(0, 10)}.pdf`;
     res.set({
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="${filename}"`,
