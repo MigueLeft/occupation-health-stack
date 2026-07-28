@@ -1,5 +1,5 @@
 import { TableRow, TableCell, Avatar, Typography, Box, IconButton, Tooltip, Checkbox } from '@mui/material';
-import { ArticleOutlined, ManageAccountsOutlined } from '@mui/icons-material';
+import { ArticleOutlined, ManageAccountsOutlined, DeleteOutlined } from '@mui/icons-material';
 import { formatCedula, calculateAge } from '@/utils/cedula';
 import type { Patient } from '../types';
 
@@ -16,12 +16,13 @@ interface PatientRowProps {
   onToggleSelect: (cedula: string) => void;
   onView: (patient: Patient) => void;
   onEdit: (patient: Patient) => void;
+  onDelete: (patient: Patient) => void;
   canEdit?: boolean;
   canDelete?: boolean;
   canViewExpediente?: boolean;
 }
 
-export function PatientRow({ patient, selected, onToggleSelect, onView, onEdit, canEdit = true, canDelete = true, canViewExpediente = true }: PatientRowProps) {
+export function PatientRow({ patient, selected, onToggleSelect, onView, onEdit, onDelete, canEdit = true, canDelete = true, canViewExpediente = true }: PatientRowProps) {
   const fullName = `${patient.firstName} ${patient.lastName}`;
   const age = patient.birthDate ? calculateAge(patient.birthDate) : '—';
 
@@ -90,6 +91,13 @@ export function PatientRow({ patient, selected, onToggleSelect, onView, onEdit, 
             <Tooltip title="Editar paciente">
               <IconButton size="small" color="primary" onClick={() => onEdit(patient)}>
                 <ManageAccountsOutlined fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+          {canDelete && (
+            <Tooltip title="Eliminar paciente">
+              <IconButton size="small" color="error" onClick={() => onDelete(patient)}>
+                <DeleteOutlined fontSize="small" />
               </IconButton>
             </Tooltip>
           )}

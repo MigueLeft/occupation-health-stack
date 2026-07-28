@@ -212,6 +212,7 @@ export class ReportsService {
     await this.loadSello();
     const [
       sectionI,
+      sectionIAptitude,
       sectionII,
       sectionIII,
       sectionIV,
@@ -221,6 +222,7 @@ export class ReportsService {
       companyInfo,
     ] = await Promise.all([
       this.fetchWorkersByReason(filters),
+      this.fetchMorbidityData(filters),
       this.fetchAccidentsDiseaseBySex(filters),
       this.fetchExamResults(filters),
       this.fetchRestPeriodReasons(filters),
@@ -231,6 +233,7 @@ export class ReportsService {
         ? this.fetchCompanyInfo(filters.companyId)
         : Promise.resolve(null),
     ]);
+    const sectionITotal = sectionIAptitude.reduce((acc, r) => acc + r.total, 0);
     const logoBuffer = await this.resolveLogoBuffer(companyInfo?.logo);
 
     return new Promise((resolve, reject) => {
@@ -264,6 +267,23 @@ export class ReportsService {
         [140, 80, 80],
         sectionI.map((r) => [r.reason, String(r.count), r.percentage]),
       );
+
+      // Sección I (cont.): Resultados de aptitud médica y psicológica por motivo
+      this.ensureSpace(doc, 80);
+      doc
+        .font('Helvetica-Bold')
+        .fontSize(9)
+        .fillColor(PRIMARY_COLOR)
+        .text(
+          'Resultados de Aptitud (Médica / Psicológica) por Motivo',
+          MARGIN,
+          doc.y,
+          {
+            width: USABLE_WIDTH,
+          },
+        );
+      doc.fillColor('#000000').moveDown(0.3);
+      this.drawMorbidityTable(doc, sectionIAptitude, sectionITotal);
 
       // Sección II: Accidentes y enfermedades por sexo
       this.ensureSpace(doc, 80);

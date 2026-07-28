@@ -232,7 +232,10 @@ export class PatientsService {
   }
 
   async update(cedula: string, dto: UpdatePatientDto) {
-    const existing = await this.buildPatientResponse(cedula);
+    const [existing] = await this.db
+      .select()
+      .from(patients)
+      .where(eq(patients.cedula, cedula));
 
     if (!existing) {
       throw new NotFoundException(
@@ -241,6 +244,20 @@ export class PatientsService {
     }
 
     const { allergyIds, diseaseIds, ...patientData } = dto;
+
+    // Si se actualiza la cédula, validar que no esté en uso por otro paciente
+    if (patientData.cedula && patientData.cedula !== cedula) {
+      const [duplicate] = await this.db
+        .select({ cedula: patients.cedula })
+        .from(patients)
+        .where(eq(patients.cedula, patientData.cedula));
+
+      if (duplicate) {
+        throw new ConflictException(
+          `Ya existe otro paciente con la cédula "${patientData.cedula}".`,
+        );
+      }
+    }
 
     // Si se actualiza empresa o cargo, validar la combinación
     if (patientData.companyId || patientData.positionId) {
@@ -252,10 +269,43 @@ export class PatientsService {
     }
 
     // Filtrar undefined para evitar "No values to set" de Drizzle
+    const { cedula: newCedulaValue, ...restPatientData } = patientData;
     const cleanPayload = Object.fromEntries(
-      Object.entries(patientData).filter(([, v]) => v !== undefined),
+      Object.entries(restPatientData).filter(([, v]) => v !== undefined),
     );
-    if (Object.keys(cleanPayload).length > 0) {
+    const newCedula = newCedulaValue ?? cedula;
+
+    if (newCedula !== cedula) {
+      // La cédula es la PK de patients y es referenciada por patient_allergies,
+      // patient_diseases y requests sin ON UPDATE CASCADE en la base de datos,
+      // así que no se puede hacer un UPDATE directo sobre ella. En su lugar,
+      // se reinserta el paciente bajo la nueva cédula, se reapuntan las tablas
+      // hijas y se borra la fila anterior, todo dentro de una transacción.
+      await this.db.transaction(async (tx) => {
+        await tx.insert(patients).values({
+          ...existing,
+          ...cleanPayload,
+          cedula: newCedula,
+        });
+
+        await tx
+          .update(patientAllergies)
+          .set({ patientId: newCedula })
+          .where(eq(patientAllergies.patientId, cedula));
+
+        await tx
+          .update(patientDiseases)
+          .set({ patientId: newCedula })
+          .where(eq(patientDiseases.patientId, cedula));
+
+        await tx
+          .update(requests)
+          .set({ patientId: newCedula })
+          .where(eq(requests.patientId, cedula));
+
+        await tx.delete(patients).where(eq(patients.cedula, cedula));
+      });
+    } else if (Object.keys(cleanPayload).length > 0) {
       await this.db
         .update(patients)
         .set(cleanPayload)
@@ -268,14 +318,15 @@ export class PatientsService {
 
       await this.db
         .delete(patientAllergies)
-        .where(eq(patientAllergies.patientId, cedula));
+        .where(eq(patientAllergies.patientId, newCedula));
 
       if (allergyIds.length) {
-        await this.db
-          .insert(patientAllergies)
-          .values(
-            allergyIds.map((allergyId) => ({ patientId: cedula, allergyId })),
-          );
+        await this.db.insert(patientAllergies).values(
+          allergyIds.map((allergyId) => ({
+            patientId: newCedula,
+            allergyId,
+          })),
+        );
       }
     }
 
@@ -285,18 +336,19 @@ export class PatientsService {
 
       await this.db
         .delete(patientDiseases)
-        .where(eq(patientDiseases.patientId, cedula));
+        .where(eq(patientDiseases.patientId, newCedula));
 
       if (diseaseIds.length) {
-        await this.db
-          .insert(patientDiseases)
-          .values(
-            diseaseIds.map((diseaseId) => ({ patientId: cedula, diseaseId })),
-          );
+        await this.db.insert(patientDiseases).values(
+          diseaseIds.map((diseaseId) => ({
+            patientId: newCedula,
+            diseaseId,
+          })),
+        );
       }
     }
 
-    return this.buildPatientResponse(cedula);
+    return this.buildPatientResponse(newCedula);
   }
 
   async remove(cedula: string): Promise<Patient> {

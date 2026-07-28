@@ -3,6 +3,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, IconButton, Box, Typography, Divider,
   TextField, MenuItem, FormControlLabel, Checkbox, Autocomplete,
+  Select, FormControl, InputLabel,
 } from '@mui/material';
 import { CloseOutlined } from '@mui/icons-material';
 import { useForm, useWatch, Controller } from 'react-hook-form';
@@ -23,6 +24,7 @@ const DOMINANT_HANDS = [
 const SEX_OPTIONS = ['Masculino', 'Femenino'];
 
 const schema = z.object({
+  cedula: z.string().regex(/^[VEve]-?\d{7,}$/, 'La cédula debe tener al menos 7 dígitos y comenzar con V o E'),
   firstName: z.string().min(1, 'El nombre es obligatorio').max(255)
     .regex(/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]+$/, 'Solo se permiten letras'),
   lastName: z.string().min(1, 'El apellido es obligatorio').max(255)
@@ -71,6 +73,7 @@ export function EditPatientModal({ open, patient, onClose }: EditPatientModalPro
   useEffect(() => {
     if (patient && open) {
       reset({
+        cedula: patient.cedula,
         firstName: patient.firstName,
         lastName: patient.lastName,
         birthDate: patient.birthDate ?? '',
@@ -96,6 +99,7 @@ export function EditPatientModal({ open, patient, onClose }: EditPatientModalPro
     const hasEmergency = !!(data.emergencyContact?.name || data.emergencyContact?.phone || data.emergencyContact?.relationship);
     const payload = {
       ...data,
+      cedula: data.cedula !== patient.cedula ? data.cedula : undefined,
       sex: data.sex || undefined,
       emergencyContact: hasEmergency ? data.emergencyContact : undefined,
     };
@@ -123,6 +127,40 @@ export function EditPatientModal({ open, patient, onClose }: EditPatientModalPro
             <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.72rem', letterSpacing: '0.07em' }}>
               Datos Básicos
             </Typography>
+            <Controller name="cedula" control={control} render={({ field }) => {
+              const match = (field.value ?? '').match(/^([VEve])-?(\d*)$/);
+              const prefix = match ? match[1].toUpperCase() : 'V';
+              const digits = match ? match[2] : (field.value ?? '').replace(/\D/g, '');
+              return (
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <FormControl size="medium" error={!!errors.cedula} sx={{ width: 110, flexShrink: 0 }}>
+                    <InputLabel>Tipo</InputLabel>
+                    <Select
+                      label="Tipo"
+                      value={prefix}
+                      onChange={(e) => field.onChange(`${e.target.value}-${digits}`)}
+                    >
+                      <MenuItem value="V">V</MenuItem>
+                      <MenuItem value="E">E</MenuItem>
+                    </Select>
+                  </FormControl>
+                  <TextField
+                    label="Número de Cédula"
+                    placeholder="Ej: 27736710"
+                    value={digits}
+                    error={!!errors.cedula}
+                    helperText={errors.cedula?.message}
+                    fullWidth
+                    slotProps={{ htmlInput: { inputMode: 'numeric' } }}
+                    onChange={(e) => {
+                      const onlyDigits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      field.onChange(`${prefix}-${onlyDigits}`);
+                    }}
+                    onBlur={() => field.onBlur()}
+                  />
+                </Box>
+              );
+            }} />
             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
               <Controller name="firstName" control={control} render={({ field }) => (
                 <TextField {...field} label="Nombre" error={!!errors.firstName} helperText={errors.firstName?.message} size="small" fullWidth
