@@ -2,6 +2,7 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { spawn } from 'child_process';
 import { PassThrough, Readable } from 'stream';
+import * as path from 'path';
 
 @Injectable()
 export class BackupService {
@@ -106,6 +107,44 @@ export class BackupService {
         child.stdin.end();
       });
 
-    return dropSchema().then(runRestore);
+    // El .pgdump puede ser de una fecha anterior a la última actualización del
+    // esquema (nuevas columnas/tablas). Tras restaurar sus datos, reaplicamos
+    // las migraciones para dejar el esquema al día sin perder los datos del
+    // respaldo — mismo mecanismo que corre al iniciar el contenedor.
+    const runScript = (scriptName: string): Promise<void> =>
+      new Promise((resolve, reject) => {
+        const scriptPath = path.resolve(process.cwd(), scriptName);
+        const child = spawn('node', [scriptPath], {
+          env: { ...process.env, DATABASE_URL: dbUrl },
+        });
+
+        const errors: string[] = [];
+        child.stderr.on('data', (chunk: Buffer) => errors.push(chunk.toString()));
+
+        child.on('error', (err) =>
+          reject(
+            new InternalServerErrorException(
+              `No se pudo ejecutar ${scriptName}: ${err.message}`,
+            ),
+          ),
+        );
+
+        child.on('close', (code) => {
+          if (code !== 0) {
+            reject(
+              new InternalServerErrorException(
+                `Error al sincronizar el esquema tras restaurar (${scriptName}, código ${code}): ${errors.join('')}`,
+              ),
+            );
+          } else {
+            resolve();
+          }
+        });
+      });
+
+    return dropSchema()
+      .then(runRestore)
+      .then(() => runScript('sync-journal.mjs'))
+      .then(() => runScript('migrate.mjs'));
   }
 }
