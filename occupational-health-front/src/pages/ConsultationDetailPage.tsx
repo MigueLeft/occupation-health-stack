@@ -336,8 +336,17 @@ export function ConsultationDetailPage() {
                             />
                           </Box>
                         </Box>
-                        {data.referral.requiresReferral && data.referral.specialtyName && (
-                          <ReadField label="Especialidad" value={data.referral.specialtyName} />
+                        {data.referral.requiresReferral && data.referral.specialties.length > 0 && (
+                          <Box>
+                            <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em', fontSize: '0.68rem' }}>
+                              {data.referral.specialties.length > 1 ? 'Especialidades' : 'Especialidad'}
+                            </Typography>
+                            <Box sx={{ mt: 0.5, display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                              {data.referral.specialties.map((s) => (
+                                <Chip key={s.id} label={s.name} size="small" />
+                              ))}
+                            </Box>
+                          </Box>
                         )}
                       </Stack>
                     </SectionCard>

@@ -92,7 +92,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   const [restDiagIds, setRestDiagIds] = useState<Set<string>>(new Set());
 
   const [requiresReferral, setRequiresReferral] = useState(false);
-  const [referralSpecialtyId, setReferralSpecialtyId] = useState('');
+  const [referralSpecialtyIds, setReferralSpecialtyIds] = useState<string[]>([]);
 
   const [localDisabilities, setLocalDisabilities] = useState<{ id: string; consultationId: string; disabilityId: string; _isNew?: boolean }[]>([]);
   const [removedDisabilityIds, setRemovedDisabilityIds] = useState<string[]>([]);
@@ -169,7 +169,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
     }
     if (data.referral) {
       setRequiresReferral(data.referral.requiresReferral);
-      setReferralSpecialtyId(data.referral.specialtyId ?? '');
+      setReferralSpecialtyIds(data.referral.effectiveSpecialtyIds ?? []);
     }
     setLocalDisabilities(data.disabilities);
     setLocalDiagnostics(data.consultationDiagnostics);
@@ -263,8 +263,8 @@ export function AttendConsultationPage({ editMode = false }: Props) {
   const performSave = async (type: ConsultationType, status: 'Finalizada' | 'En Proceso') => {
     if (!data) return;
 
-    if (requiresReferral && !referralSpecialtyId) {
-      toast.error('Debe seleccionar una especialidad médica para la referencia a especialista.');
+    if (requiresReferral && referralSpecialtyIds.length === 0) {
+      toast.error('Debe seleccionar al menos una especialidad médica para la referencia a especialista.');
       return;
     }
 
@@ -322,7 +322,7 @@ export function AttendConsultationPage({ editMode = false }: Props) {
       await referralsService.upsert({
         consultationId: id,
         requiresReferral,
-        specialtyId: requiresReferral && referralSpecialtyId ? referralSpecialtyId : undefined,
+        specialtyIds: requiresReferral ? referralSpecialtyIds : [],
       });
 
       await Promise.all([
@@ -525,8 +525,8 @@ export function AttendConsultationPage({ editMode = false }: Props) {
                   <ReferralSection
                     requiresReferral={requiresReferral}
                     onRequiresReferralChange={setRequiresReferral}
-                    specialtyId={referralSpecialtyId}
-                    onSpecialtyIdChange={setReferralSpecialtyId}
+                    specialtyIds={referralSpecialtyIds}
+                    onSpecialtyIdsChange={setReferralSpecialtyIds}
                     specialties={medicalSpecialties}
                   />
                 </Box>

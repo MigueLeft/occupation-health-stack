@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import PDFDocument from 'pdfkit';
 import sharp from 'sharp';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { and, gte, lte, eq, isNotNull, isNull, count, SQL } from 'drizzle-orm';
+import { and, gte, lte, eq, isNotNull, isNull, count, inArray, SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { DRIZZLE } from '../database/database.module';
 import { consultations, PSYCHOLOGICAL_APTITUDES } from '../consultations/consultations.schema';
@@ -1141,22 +1141,21 @@ export class ReportsService {
   }
 
   // Sección V: Referencias médicas por especialidad
+  // Cuenta tanto los referidos legados (columna specialtyId, un solo referido)
+  // como los nuevos (columna specialtyIds, uno o multiples referidos por
+  // consulta), usando la columna nueva cuando tiene datos.
   private async fetchReferrals(
     filters: VigilanciaReportDto,
   ): Promise<SectionVRow[]> {
     const conditions = this.buildVigilanciaConditions(filters);
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-    const data = await this.db
+    const rows = await this.db
       .select({
-        specialty: medicalSpecialties.name,
-        count: count(),
+        specialtyId: consultationReferrals.specialtyId,
+        specialtyIds: consultationReferrals.specialtyIds,
       })
       .from(consultationReferrals)
-      .leftJoin(
-        medicalSpecialties,
-        eq(consultationReferrals.specialtyId, medicalSpecialties.id),
-      )
       .innerJoin(
         consultations,
         eq(consultationReferrals.consultationId, consultations.id),
@@ -1167,18 +1166,55 @@ export class ReportsService {
         whereClause
           ? and(whereClause, eq(consultationReferrals.requiresReferral, true))
           : eq(consultationReferrals.requiresReferral, true),
-      )
-      .groupBy(medicalSpecialties.name)
-      .orderBy(medicalSpecialties.name);
+      );
 
-    const total = data.reduce((acc, r) => acc + Number(r.count), 0);
+    const countById = new Map<string, number>();
+    let unspecifiedCount = 0;
+    for (const r of rows) {
+      const ids = r.specialtyIds?.length
+        ? r.specialtyIds
+        : r.specialtyId
+          ? [r.specialtyId]
+          : [];
+      if (ids.length === 0) {
+        unspecifiedCount += 1;
+        continue;
+      }
+      for (const id of ids) {
+        countById.set(id, (countById.get(id) ?? 0) + 1);
+      }
+    }
 
-    return data.map((r) => ({
-      specialty: r.specialty ?? 'Sin especificar',
-      count: Number(r.count),
-      percentage:
-        total > 0 ? `${((Number(r.count) / total) * 100).toFixed(1)}%` : '0%',
-    }));
+    const ids = [...countById.keys()];
+    const specialtyRows = ids.length
+      ? await this.db
+          .select({ id: medicalSpecialties.id, name: medicalSpecialties.name })
+          .from(medicalSpecialties)
+          .where(inArray(medicalSpecialties.id, ids))
+      : [];
+    const nameById = new Map(specialtyRows.map((s) => [s.id, s.name]));
+
+    const countByName = new Map<string, number>();
+    for (const [id, c] of countById) {
+      const name = nameById.get(id) ?? 'Sin especificar';
+      countByName.set(name, (countByName.get(name) ?? 0) + c);
+    }
+    if (unspecifiedCount > 0) {
+      countByName.set(
+        'Sin especificar',
+        (countByName.get('Sin especificar') ?? 0) + unspecifiedCount,
+      );
+    }
+
+    const total = [...countByName.values()].reduce((acc, c) => acc + c, 0);
+
+    return [...countByName.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([specialty, c]) => ({
+        specialty,
+        count: c,
+        percentage: total > 0 ? `${((c / total) * 100).toFixed(1)}%` : '0%',
+      }));
   }
 
   // Sección VI: Trabajadores con discapacidad registrada en el período

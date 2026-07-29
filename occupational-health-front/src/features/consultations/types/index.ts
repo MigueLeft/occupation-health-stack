@@ -53,8 +53,11 @@ export interface ConsultationReferral {
   id: string;
   consultationId: string;
   requiresReferral: boolean;
-  specialtyId?: string | null;
-  specialtyName?: string | null;
+  // IDs efectivos ya resueltos por el backend: usa la columna nueva
+  // (multiples referidos) o, si esta vacia, hace fallback a la columna
+  // vieja (referido unico) para consultas registradas antes de esta funcionalidad.
+  effectiveSpecialtyIds: string[];
+  specialties: { id: string; name: string }[];
 }
 
 export interface ConsultationDisability {

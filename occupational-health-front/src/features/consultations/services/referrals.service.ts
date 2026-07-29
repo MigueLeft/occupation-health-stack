@@ -13,7 +13,7 @@ export const referralsService = {
   async upsert(payload: {
     consultationId: string;
     requiresReferral: boolean;
-    specialtyId?: string;
+    specialtyIds?: string[];
   }): Promise<ConsultationReferral> {
     const { data } = await apiClient.post<{ consultationReferral: ConsultationReferral }>(
       '/consultation-referrals',

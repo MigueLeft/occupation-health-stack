@@ -1,4 +1,4 @@
-import { IsUUID, IsNotEmpty, IsBoolean, IsOptional } from 'class-validator';
+import { IsUUID, IsNotEmpty, IsBoolean, IsOptional, IsArray } from 'class-validator';
 
 export class UpsertConsultationReferralDto {
   @IsUUID('4', { message: 'El ID de la consulta debe ser un UUID válido.' })
@@ -11,8 +11,10 @@ export class UpsertConsultationReferralDto {
   requiresReferral: boolean;
 
   @IsOptional()
+  @IsArray({ message: 'Las especialidades médicas deben ser un arreglo.' })
   @IsUUID('4', {
-    message: 'El ID de la especialidad médica debe ser un UUID válido.',
+    each: true,
+    message: 'Cada ID de especialidad médica debe ser un UUID válido.',
   })
-  specialtyId?: string;
+  specialtyIds?: string[];
 }

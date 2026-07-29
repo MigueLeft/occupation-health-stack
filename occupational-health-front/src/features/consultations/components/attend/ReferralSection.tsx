@@ -5,15 +5,15 @@ import type { MedicalSpecialty } from '@/features/catalogs/types';
 interface Props {
   requiresReferral: boolean;
   onRequiresReferralChange: (v: boolean) => void;
-  specialtyId: string;
-  onSpecialtyIdChange: (v: string) => void;
+  specialtyIds: string[];
+  onSpecialtyIdsChange: (v: string[]) => void;
   specialties: MedicalSpecialty[];
 }
 
 export function ReferralSection({
-  requiresReferral, onRequiresReferralChange, specialtyId, onSpecialtyIdChange, specialties,
+  requiresReferral, onRequiresReferralChange, specialtyIds, onSpecialtyIdsChange, specialties,
 }: Props) {
-  const selected = specialties.find((s) => s.id === specialtyId) ?? null;
+  const selected = specialties.filter((s) => specialtyIds.includes(s.id));
 
   return (
     <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
@@ -29,7 +29,7 @@ export function ReferralSection({
               checked={requiresReferral}
               onChange={(e) => {
                 onRequiresReferralChange(e.target.checked);
-                if (!e.target.checked) onSpecialtyIdChange('');
+                if (!e.target.checked) onSpecialtyIdsChange([]);
               }}
             />
           }
@@ -38,12 +38,13 @@ export function ReferralSection({
 
         {requiresReferral && (
           <Autocomplete
+            multiple
             options={specialties}
             getOptionLabel={(s) => s.name}
             value={selected}
-            onChange={(_, s) => onSpecialtyIdChange(s?.id ?? '')}
+            onChange={(_, s) => onSpecialtyIdsChange(s.map((item) => item.id))}
             size="small"
-            sx={{ maxWidth: 320 }}
+            sx={{ maxWidth: 480 }}
             renderInput={(params) => (
               <TextField {...params} label="Especialidad médica" placeholder="Buscar especialidad..." />
             )}
