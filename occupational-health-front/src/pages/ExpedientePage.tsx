@@ -1,17 +1,31 @@
-import { Box, Typography, Avatar, CircularProgress, Chip, Table, TableHead, TableBody, TableRow, TableCell, IconButton, Tooltip } from '@mui/material';
+import { useState } from 'react';
+import { Box, Typography, Avatar, CircularProgress, Chip, Table, TableHead, TableBody, TableRow, TableCell, IconButton, Tooltip, Button, TablePagination } from '@mui/material';
 import { usePageTitle } from '@/hooks/usePageTitle';
-import { VisibilityOutlined } from '@mui/icons-material';
+import { VisibilityOutlined, RestartAltOutlined } from '@mui/icons-material';
 import { useParams, useNavigate, Navigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { AppLayout } from '@/components/AppLayout';
 import { usePatient } from '@/features/patients/hooks/usePatient';
+import { useReactivatePatient } from '@/features/patients';
 import { useConsultations } from '@/features/consultations/hooks/useConsultations';
 import { consultationDisabilitiesService } from '@/features/consultations/services/disabilities.service';
 import { ConsultationTypeChip } from '@/features/consultations/components/ConsultationTypeChip';
 import { ConsultationResultChip } from '@/features/consultations/components/ConsultationResultChip';
+import { ConsultationFilters } from '@/features/consultations';
+import type { ConsultationFiltersState, ConsultationWithDetails } from '@/features/consultations';
 import { RequestStatusChip } from '@/features/requests/components/RequestStatusChip';
 import { EVALUATION_REASON_LABELS } from '@/features/requests/types';
 import { usePermissions } from '@/features/auth';
+
+const ROWS_PER_PAGE_OPTIONS = [10, 25, 50];
+const DEFAULT_FILTERS: ConsultationFiltersState = { search: '', tipo: 'all', resultado: 'all', status: 'all' };
+
+function sortByDate(list: ConsultationWithDetails[]): ConsultationWithDetails[] {
+  // Orden cronológico por fecha de la solicitud (no por orden de finalización).
+  return [...list].sort(
+    (a, b) => b.requestDate.localeCompare(a.requestDate) || b.createdAt.localeCompare(a.createdAt),
+  );
+}
 
 function calcAge(birthDate: string): number {
   const [y, m, d] = birthDate.split('-').map(Number);
@@ -68,12 +82,36 @@ export function ExpedientePage() {
     queryKey: ['patient-disabilities', cedula],
     queryFn: () => consultationDisabilitiesService.getByPatient(cedula),
   });
+  const { mutate: reactivatePatient, isPending: isReactivating } = useReactivatePatient();
 
-  // La consulta creada más recientemente se muestra primero.
-  const patientConsultations = consultations
-    .filter((c) => c.patientId === cedula)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const [filters, setFilters] = useState<ConsultationFiltersState>(DEFAULT_FILTERS);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(ROWS_PER_PAGE_OPTIONS[0]);
+
+  const patientConsultations = sortByDate(consultations.filter((c) => c.patientId === cedula));
+  const filteredConsultations = patientConsultations.filter((c) => {
+    if (filters.search) {
+      const motivo = (EVALUATION_REASON_LABELS[c.evaluationReason] ?? c.evaluationReason).toLowerCase();
+      if (!motivo.includes(filters.search.toLowerCase())) return false;
+    }
+    if (filters.tipo !== 'all' && c.type !== filters.tipo) return false;
+    if (filters.status === 'active' && c.status === 'Finalizada') return false;
+    if (filters.status !== 'active' && filters.status !== 'all' && c.status !== filters.status) return false;
+    if (filters.resultado !== 'all') {
+      const result = c.type === 'Medica' ? c.consultationResult : c.psychologicalResult;
+      if (result !== filters.resultado) return false;
+    }
+    return true;
+  });
+  const paginatedConsultations = filteredConsultations.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+
+  const handleFiltersChange = (next: ConsultationFiltersState) => {
+    setFilters(next);
+    setPage(0);
+  };
+
   const isLoading = patientLoading || consultLoading || isPermLoading;
+  const canEditPatients = can('patients', 'edit');
 
   const hasMedicoRole = can('es-medico', 'view');
   const hasPsicologoRole = can('es-psicologo', 'view');
@@ -123,10 +161,38 @@ export function ExpedientePage() {
               {patient.firstName} {patient.lastName}
             </Typography>
             <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>{patient.cedula}</Typography>
+            {patient.terminatedAt && (
+              <Chip label="Ex-empleado" size="small" sx={{ mt: 1, bgcolor: 'rgba(255,255,255,0.2)', color: 'white', fontWeight: 600 }} />
+            )}
           </Box>
 
           {/* Info fields */}
           <Box sx={{ bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', borderTop: 'none', borderRadius: '0 0 12px 12px', overflow: 'hidden' }}>
+            <InfoField
+              label="Estatus"
+              value={
+                patient.terminatedAt ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mt: 0.25 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                      Ex-empleado desde {formatDate(patient.terminatedAt)}
+                    </Typography>
+                    {canEditPatients && (
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<RestartAltOutlined fontSize="small" />}
+                        disabled={isReactivating}
+                        onClick={() => reactivatePatient(cedula)}
+                      >
+                        Reactivar
+                      </Button>
+                    )}
+                  </Box>
+                ) : (
+                  <Chip label="Activo" size="small" color="success" variant="outlined" sx={{ mt: 0.25 }} />
+                )
+              }
+            />
             <InfoField label="Empresa" value={patient.company?.name ?? '—'} />
             <InfoField label="Cargo" value={patient.position?.name ?? '—'} />
             <InfoField label="Fecha de Nacimiento" value={patient.birthDate ? `${formatBirthDate(patient.birthDate)}${age !== null ? `  (${age} años)` : ''}` : '—'} />
@@ -172,9 +238,12 @@ export function ExpedientePage() {
 
         {/* Right panel */}
         <Box sx={{ flex: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-            <Typography variant="h2" sx={{ fontSize: '1.15rem' }}>Historial de Consultas</Typography>
-            <Chip label={`${patientConsultations.length} consulta${patientConsultations.length !== 1 ? 's' : ''}`} size="small" sx={{ bgcolor: 'primary.50', color: 'primary.main', fontWeight: 600 }} />
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, flexWrap: 'wrap', gap: 1.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Typography variant="h2" sx={{ fontSize: '1.15rem' }}>Historial de Consultas</Typography>
+              <Chip label={`${patientConsultations.length} consulta${patientConsultations.length !== 1 ? 's' : ''}`} size="small" sx={{ bgcolor: 'primary.50', color: 'primary.main', fontWeight: 600 }} />
+            </Box>
+            <ConsultationFilters filters={filters} onChange={handleFiltersChange} />
           </Box>
 
           <Box sx={{ bgcolor: 'background.paper', borderRadius: 3, border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
@@ -187,14 +256,14 @@ export function ExpedientePage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {patientConsultations.length === 0 ? (
+                {filteredConsultations.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} align="center" sx={{ py: 6, color: 'text.secondary' }}>
                       Sin consultas registradas
                     </TableCell>
                   </TableRow>
                 ) : (
-                  patientConsultations.map((c) => (
+                  paginatedConsultations.map((c) => (
                     <TableRow key={c.id} sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
                       <TableCell><Typography variant="body2" color="text.secondary">{formatDate(c.requestDate)}</Typography></TableCell>
                       <TableCell><Typography variant="body2" color="text.secondary">{EVALUATION_REASON_LABELS[c.evaluationReason] ?? c.evaluationReason}</Typography></TableCell>
@@ -231,6 +300,19 @@ export function ExpedientePage() {
                 )}
               </TableBody>
             </Table>
+            {filteredConsultations.length > ROWS_PER_PAGE_OPTIONS[0] && (
+              <TablePagination
+                component="div"
+                count={filteredConsultations.length}
+                page={page}
+                onPageChange={(_, p) => setPage(p)}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={(e) => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
+                rowsPerPageOptions={ROWS_PER_PAGE_OPTIONS}
+                labelRowsPerPage="Filas por página:"
+                labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count}`}
+              />
+            )}
           </Box>
         </Box>
       </Box>
