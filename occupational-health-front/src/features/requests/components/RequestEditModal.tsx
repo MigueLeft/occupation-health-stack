@@ -34,7 +34,11 @@ interface Props {
 }
 
 function EditForm({ request, isPending, onSubmit, onClose }: Omit<Props, 'open'>) {
-  const { data: patients = [] } = usePatients();
+  const { data: allPatients = [] } = usePatients();
+  // Los ex-empleados no se pueden asignar a nuevas solicitudes salvo que ya
+  // fueran el paciente original de esta solicitud (se conserva para no
+  // romper la edición de solicitudes históricas).
+  const patients = allPatients.filter((p) => !p.terminatedAt || p.cedula === request.patientId);
   const { control, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {

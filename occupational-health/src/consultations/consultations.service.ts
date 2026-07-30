@@ -5,7 +5,7 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
-import { eq, isNull, and } from 'drizzle-orm';
+import { eq, isNull, and, desc } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DRIZZLE } from '../database/database.module';
 import { consultations, Consultation } from './consultations.schema';
@@ -106,7 +106,11 @@ export class ConsultationsService {
           .select()
           .from(consultations)
           .where(eq(consultations.requestId, requestId))
-      : await this.db.select().from(consultations);
+          .orderBy(desc(consultations.createdAt))
+      : await this.db
+          .select()
+          .from(consultations)
+          .orderBy(desc(consultations.createdAt));
 
     return Promise.all(list.map((c) => this.buildConsultationResponse(c.id)));
   }
@@ -231,6 +235,19 @@ export class ConsultationsService {
               ),
             );
           updatePayload.positionRisksSnapshot = riskRows;
+        }
+
+        // Al finalizar la consulta de una solicitud de Egreso, el paciente
+        // pasa a ex-empleado a partir de la fecha de esa solicitud.
+        if (
+          request.evaluationReason === 'Egreso' &&
+          patient &&
+          !patient.terminatedAt
+        ) {
+          await this.db
+            .update(patients)
+            .set({ terminatedAt: request.requestDate })
+            .where(eq(patients.cedula, patient.cedula));
         }
       }
     }

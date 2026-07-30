@@ -5,8 +5,10 @@ import {
   text,
   boolean,
   jsonb,
+  timestamp,
   unique,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { requests } from '../requests/requests.schema';
 import { user } from '../auth/auth.schema';
 
@@ -56,6 +58,11 @@ export const consultations = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     status: varchar('status', { length: 20 }).notNull().default('Pendiente'),
+    // Usado para ordenar la lista de consultas de la más reciente a la
+    // más antigua (la fecha de la solicitud puede repetirse entre consultas).
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
     requestId: uuid('request_id')
       .notNull()
       .references(() => requests.id, { onDelete: 'cascade' }),

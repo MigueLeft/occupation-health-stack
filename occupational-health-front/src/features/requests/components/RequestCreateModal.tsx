@@ -32,7 +32,10 @@ interface Props {
 }
 
 export function RequestCreateModal({ open, onClose, isPending, onSubmit }: Props) {
-  const { data: patients = [] } = usePatients();
+  const { data: allPatients = [] } = usePatients();
+  // Un ex-empleado no puede recibir nuevas solicitudes salvo que se
+  // reactive primero desde la lista de ex-empleados de su empresa.
+  const patients = allPatients.filter((p) => !p.terminatedAt);
 
   const { control, handleSubmit, formState: { errors }, reset } = useForm<FormData>({
     resolver: zodResolver(schema),

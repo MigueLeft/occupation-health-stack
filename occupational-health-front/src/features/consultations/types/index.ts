@@ -76,6 +76,7 @@ export interface Consultation {
   id: string;
   requestId: string;
   status: ConsultationStatus;
+  createdAt: string;
   // Embedded from backend — populated regardless of requests/patients permissions
   requestDate?: string | null;
   evaluationReason?: EvaluationReason | null;

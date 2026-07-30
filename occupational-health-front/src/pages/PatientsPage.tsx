@@ -32,6 +32,7 @@ import {
   useDeletePatient,
 } from '@/features/patients';
 import type { Patient } from '@/features/patients';
+import type { PatientStatusFilter } from '@/features/patients/components/PatientTableFilters';
 import { formatCedula } from '@/utils/cedula';
 import { usePermissions } from '@/features/auth';
 
@@ -50,6 +51,7 @@ export function PatientsPage() {
   const [sortAZ, setSortAZ] = useState(false);
   const [companyFilter, setCompanyFilter] = useState('');
   const [positionFilter, setPositionFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState<PatientStatusFilter>('active');
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Patient | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -68,7 +70,10 @@ export function PatientsPage() {
       const matchesSearch = !q || fullName.includes(q) || cedula.includes(q) || p.cedula.toLowerCase().includes(q);
       const matchesCompany = !companyFilter || p.companyId === companyFilter;
       const matchesPosition = !positionFilter || p.positionId === positionFilter;
-      return matchesSearch && matchesCompany && matchesPosition;
+      const matchesStatus =
+        statusFilter === 'all'
+        || (statusFilter === 'terminated' ? !!p.terminatedAt : !p.terminatedAt);
+      return matchesSearch && matchesCompany && matchesPosition && matchesStatus;
     });
     if (sortAZ) {
       result = [...result].sort((a, b) =>
@@ -76,7 +81,7 @@ export function PatientsPage() {
       );
     }
     return result;
-  }, [patients, search, companyFilter, positionFilter, sortAZ]);
+  }, [patients, search, companyFilter, positionFilter, statusFilter, sortAZ]);
 
   if (isPermLoading) return null;
   if (!can('patients', 'view')) return <Navigate to="/" />;
@@ -187,6 +192,8 @@ export function PatientsPage() {
             onPositionFilter={(v) => { setPositionFilter(v); setPage(0); }}
             companies={companies}
             positions={allPositions}
+            statusFilter={statusFilter}
+            onStatusFilter={(v) => { setStatusFilter(v); setPage(0); }}
           />
         </Box>
 

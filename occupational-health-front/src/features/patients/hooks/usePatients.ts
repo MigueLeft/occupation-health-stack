@@ -66,3 +66,38 @@ export function useDeletePatient() {
     },
   });
 }
+
+export function useReactivatePatient() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (cedula: string) => patientsService.reactivate(cedula),
+    onSuccess: ({ patient }) => {
+      queryClient.invalidateQueries({ queryKey: PATIENTS_KEY });
+      queryClient.invalidateQueries({ queryKey: ['patient', patient.cedula] });
+      toast.success(`"${patient.firstName} ${patient.lastName}" fue reactivado como empleado activo.`);
+    },
+    onError: (error: { response?: { data?: { message?: string } } }) => {
+      toast.error(error.response?.data?.message ?? 'Error al reactivar el paciente');
+    },
+  });
+}
+
+export function useBackfillExEmployees() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => patientsService.backfillExEmployees(),
+    onSuccess: ({ updated }) => {
+      queryClient.invalidateQueries({ queryKey: PATIENTS_KEY });
+      toast.success(
+        updated > 0
+          ? `${updated} paciente(s) movido(s) a ex-empleados.`
+          : 'No se encontraron pacientes con egresos pendientes por migrar.',
+      );
+    },
+    onError: (error: { response?: { data?: { message?: string } } }) => {
+      toast.error(error.response?.data?.message ?? 'Error al generar ex-empleados');
+    },
+  });
+}

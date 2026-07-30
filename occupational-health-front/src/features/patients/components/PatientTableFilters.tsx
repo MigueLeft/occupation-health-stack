@@ -1,6 +1,8 @@
-import { Box, TextField, InputAdornment, Autocomplete } from '@mui/material';
+import { Box, TextField, InputAdornment, Autocomplete, MenuItem } from '@mui/material';
 import { SearchOutlined } from '@mui/icons-material';
 import type { Company, Position } from '../types';
+
+export type PatientStatusFilter = 'active' | 'terminated' | 'all';
 
 interface PatientTableFiltersProps {
   search: string;
@@ -11,13 +13,22 @@ interface PatientTableFiltersProps {
   onPositionFilter: (v: string) => void;
   companies: Company[];
   positions: Position[];
+  statusFilter: PatientStatusFilter;
+  onStatusFilter: (v: PatientStatusFilter) => void;
 }
 
 const LISTBOX_SLOT_PROPS = { listbox: { style: { maxHeight: 220 } } } as const;
 
+const STATUS_OPTIONS: { value: PatientStatusFilter; label: string }[] = [
+  { value: 'active', label: 'Activos' },
+  { value: 'terminated', label: 'Ex-empleados' },
+  { value: 'all', label: 'Todos' },
+];
+
 export function PatientTableFilters({
   search, onSearch, companyFilter, onCompanyFilter,
   positionFilter, onPositionFilter, companies, positions,
+  statusFilter, onStatusFilter,
 }: PatientTableFiltersProps) {
   const selectedCompany = companies.find((c) => c.id === companyFilter) ?? null;
   const selectedPosition = positions.find((p) => p.id === positionFilter) ?? null;
@@ -39,6 +50,18 @@ export function PatientTableFilters({
           },
         }}
       />
+
+      <TextField
+        select
+        label="Estatus"
+        value={statusFilter}
+        onChange={(e) => onStatusFilter(e.target.value as PatientStatusFilter)}
+        sx={{ width: 160 }}
+      >
+        {STATUS_OPTIONS.map((o) => (
+          <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
+        ))}
+      </TextField>
 
       <Autocomplete
         options={companies}

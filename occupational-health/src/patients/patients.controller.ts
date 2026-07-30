@@ -38,6 +38,20 @@ export class PatientsController {
     return { patient };
   }
 
+  // Migración retroactiva de ex-empleados (ver sección Respaldo)
+  @Post('backfill-ex-employees')
+  @RequirePermission('patients', 'edit')
+  async backfillExEmployees() {
+    return this.patientsService.backfillExEmployees();
+  }
+
+  @Patch(':cedula/reactivate')
+  @RequirePermission('patients', 'edit')
+  async reactivate(@Param('cedula') cedula: string) {
+    const patient = await this.patientsService.reactivate(cedula);
+    return { patient };
+  }
+
   @Patch(':cedula')
   @RequirePermission('patients', 'edit')
   async update(@Param('cedula') cedula: string, @Body() dto: UpdatePatientDto) {

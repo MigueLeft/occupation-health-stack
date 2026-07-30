@@ -26,4 +26,14 @@ export const patientsService = {
     const { data } = await apiClient.delete<{ patient: Patient }>(`/patients/${cedula}`);
     return data;
   },
+
+  async reactivate(cedula: string): Promise<{ patient: Patient }> {
+    const { data } = await apiClient.patch<{ patient: Patient }>(`/patients/${cedula}/reactivate`);
+    return data;
+  },
+
+  async backfillExEmployees(): Promise<{ updated: number }> {
+    const { data } = await apiClient.post<{ updated: number }>('/patients/backfill-ex-employees');
+    return data;
+  },
 };

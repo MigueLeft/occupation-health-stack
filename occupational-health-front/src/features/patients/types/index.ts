@@ -35,6 +35,8 @@ export interface Patient {
   position: Position | null;
   allergies: { id: string; name: string }[];
   diseases: { id: string; name: string }[];
+  // Fecha de egreso. Si no es null, el paciente es un ex-empleado.
+  terminatedAt: string | null;
 }
 
 export interface CreatePatientPayload {

@@ -2,7 +2,7 @@ import { Box, Divider, Stack, Typography } from '@mui/material';
 import { Navigate } from '@tanstack/react-router';
 import { AppLayout } from '@/components/AppLayout';
 import { usePermissions } from '@/features/auth';
-import { BackupExportCard, BackupRestoreCard } from '@/features/backup';
+import { BackupExportCard, BackupRestoreCard, GenerateExEmployeesCard } from '@/features/backup';
 import { usePageTitle } from '@/hooks/usePageTitle';
 
 export function BackupPage() {
@@ -12,6 +12,8 @@ export function BackupPage() {
 
   if (isLoading) return null;
   if (!can('backup', 'view')) return <Navigate to="/" />;
+
+  const canEditPatients = can('patients', 'edit');
 
   return (
     <AppLayout>
@@ -27,6 +29,12 @@ export function BackupPage() {
           <BackupExportCard />
           <Divider />
           <BackupRestoreCard />
+          {canEditPatients && (
+            <>
+              <Divider />
+              <GenerateExEmployeesCard />
+            </>
+          )}
         </Stack>
       </Box>
     </AppLayout>

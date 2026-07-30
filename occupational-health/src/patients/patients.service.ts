@@ -5,7 +5,7 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
-import { eq, inArray, count } from 'drizzle-orm';
+import { eq, inArray, count, and, max, isNull } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DRIZZLE } from '../database/database.module';
 import {
@@ -19,6 +19,7 @@ import { diseases } from '../diseases/diseases.schema';
 import { companies } from '../companies/companies.schema';
 import { positions } from '../positions/positions.schema';
 import { requests } from '../requests/requests.schema';
+import { consultations } from '../consultations/consultations.schema';
 import { CreatePatientDto } from './dto/create-patient.dto';
 import { UpdatePatientDto } from './dto/update-patient.dto';
 
@@ -381,5 +382,62 @@ export class PatientsService {
       .returning();
 
     return deleted;
+  }
+
+  // Vuelve a marcar como activo a un ex-empleado, permitiendo crearle
+  // nuevas solicitudes/consultas otra vez.
+  async reactivate(cedula: string) {
+    const [existing] = await this.db
+      .select()
+      .from(patients)
+      .where(eq(patients.cedula, cedula));
+
+    if (!existing) {
+      throw new NotFoundException(
+        `No se encontró ningún paciente con la cédula "${cedula}".`,
+      );
+    }
+
+    await this.db
+      .update(patients)
+      .set({ terminatedAt: null })
+      .where(eq(patients.cedula, cedula));
+
+    return this.buildPatientResponse(cedula);
+  }
+
+  // Migración retroactiva: mueve a "ex-empleado" a todos los pacientes que
+  // ya tengan una consulta de Egreso finalizada pero que aún no estén
+  // marcados (por ejemplo, egresos registrados antes de esta funcionalidad).
+  async backfillExEmployees(): Promise<{ updated: number }> {
+    const egresados = await this.db
+      .select({
+        cedula: requests.patientId,
+        terminatedAt: max(requests.requestDate).as('terminated_at'),
+      })
+      .from(requests)
+      .innerJoin(consultations, eq(consultations.requestId, requests.id))
+      .where(
+        and(
+          eq(requests.evaluationReason, 'Egreso'),
+          eq(consultations.status, 'Finalizada'),
+        ),
+      )
+      .groupBy(requests.patientId);
+
+    let updated = 0;
+    for (const row of egresados) {
+      if (!row.terminatedAt) continue;
+      const result = await this.db
+        .update(patients)
+        .set({ terminatedAt: row.terminatedAt })
+        .where(
+          and(eq(patients.cedula, row.cedula), isNull(patients.terminatedAt)),
+        )
+        .returning({ cedula: patients.cedula });
+      updated += result.length;
+    }
+
+    return { updated };
   }
 }

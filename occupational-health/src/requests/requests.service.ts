@@ -56,6 +56,13 @@ export class RequestsService {
       );
     }
 
+    if (patient.terminatedAt) {
+      throw new BadRequestException(
+        `"${patient.firstName} ${patient.lastName}" es un ex-empleado (egresado el ${patient.terminatedAt}). ` +
+          `Reactívelo desde la lista de ex-empleados de su empresa antes de crear una nueva solicitud.`,
+      );
+    }
+
     const [created] = await this.db.insert(requests).values(dto).returning();
 
     // Crear automáticamente la consulta asociada
@@ -81,6 +88,13 @@ export class RequestsService {
       if (!patient) {
         throw new BadRequestException(
           `No existe ningún paciente con la cédula "${dto.patientId}".`,
+        );
+      }
+
+      if (patient.terminatedAt) {
+        throw new BadRequestException(
+          `"${patient.firstName} ${patient.lastName}" es un ex-empleado (egresado el ${patient.terminatedAt}). ` +
+            `Reactívelo desde la lista de ex-empleados de su empresa antes de asignarle esta solicitud.`,
         );
       }
     }

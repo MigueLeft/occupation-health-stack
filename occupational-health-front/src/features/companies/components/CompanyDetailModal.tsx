@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import {
   Dialog, DialogContent, Box, Typography,
-  Button, IconButton, Divider, Stack, Tooltip, Avatar,
+  Button, IconButton, Divider, Stack, Tooltip, Avatar, Tabs, Tab,
 } from '@mui/material';
 import { CloseOutlined, EditOutlined, AddOutlined, BusinessOutlined, DeleteOutlined } from '@mui/icons-material';
 import { formatRif } from '@/utils/rif';
 import { PositionsTable } from './PositionsTable';
 import { PositionFormModal } from './PositionFormModal';
 import { CompanyFormModal } from './CompanyFormModal';
+import { ExEmployeesTable } from './ExEmployeesTable';
+import { usePatients } from '@/features/patients';
+import { usePermissions } from '@/features/auth';
 import type { CompanyWithPositions } from '../types';
 
 interface CompanyDetailModalProps {
@@ -46,12 +49,17 @@ function InfoItem({ label, value }: { label: string; value: string }) {
 export function CompanyDetailModal({ open, onClose, company, onDelete, canEdit = true, canCreate = true, canDelete = true }: CompanyDetailModalProps) {
   const [createPositionOpen, setCreatePositionOpen] = useState(false);
   const [editCompanyOpen, setEditCompanyOpen] = useState(false);
+  const [tab, setTab] = useState<'positions' | 'exEmployees'>('positions');
+  const { can } = usePermissions();
+  const { data: allPatients = [] } = usePatients();
 
   if (!company) return null;
 
   const geoLine = [company.stateName, company.cityName, company.municipalityName, company.parishName]
     .filter(Boolean)
     .join(', ');
+
+  const exEmployees = allPatients.filter((p) => p.companyId === company.id && !!p.terminatedAt);
 
   return (
     <>
@@ -119,11 +127,14 @@ export function CompanyDetailModal({ open, onClose, company, onDelete, canEdit =
               </Stack>
             </Box>
 
-            {/* Right panel - positions */}
+            {/* Right panel - positions / ex-empleados */}
             <Box sx={{ flex: 1, p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography variant="h3">Cargos y Riesgos de Exposición</Typography>
-                {canCreate && (
+                <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ minHeight: 0 }}>
+                  <Tab value="positions" label="Cargos y Riesgos de Exposición" sx={{ minHeight: 0, py: 1 }} />
+                  <Tab value="exEmployees" label={`Ex-Empleados (${exEmployees.length})`} sx={{ minHeight: 0, py: 1 }} />
+                </Tabs>
+                {tab === 'positions' && canCreate && (
                   <Button
                     variant="contained"
                     size="small"
@@ -135,7 +146,11 @@ export function CompanyDetailModal({ open, onClose, company, onDelete, canEdit =
                 )}
               </Box>
               <Box sx={{ flex: 1 }}>
-                <PositionsTable positions={company.positions} companyId={company.id} />
+                {tab === 'positions' ? (
+                  <PositionsTable positions={company.positions} companyId={company.id} />
+                ) : (
+                  <ExEmployeesTable patients={exEmployees} canReactivate={can('patients', 'edit')} />
+                )}
               </Box>
             </Box>
           </Box>

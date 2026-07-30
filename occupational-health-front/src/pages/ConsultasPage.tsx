@@ -16,7 +16,8 @@ const DEFAULT_FILTERS: ConsultationFiltersState = { search: '', tipo: 'all', res
 const ROWS_PER_PAGE_OPTIONS = [10, 25, 50];
 
 function sortConsultations(list: ConsultationWithDetails[]): ConsultationWithDetails[] {
-  return [...list].sort((a, b) => b.requestDate.localeCompare(a.requestDate));
+  // La consulta creada más recientemente sale primero.
+  return [...list].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
 export function ConsultasPage() {

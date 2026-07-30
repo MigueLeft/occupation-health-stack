@@ -1,4 +1,4 @@
-import { TableRow, TableCell, Avatar, Typography, Box, IconButton, Tooltip, Checkbox } from '@mui/material';
+import { TableRow, TableCell, Avatar, Typography, Box, IconButton, Tooltip, Checkbox, Chip } from '@mui/material';
 import { ArticleOutlined, ManageAccountsOutlined, DeleteOutlined } from '@mui/icons-material';
 import { formatCedula, calculateAge } from '@/utils/cedula';
 import type { Patient } from '../types';
@@ -45,6 +45,9 @@ export function PatientRow({ patient, selected, onToggleSelect, onView, onEdit, 
           <Tooltip title={fullName} placement="top-start">
             <Typography sx={{ fontWeight: 500, fontSize: '0.9rem', ...TRUNCATE }}>{fullName}</Typography>
           </Tooltip>
+          {patient.terminatedAt && (
+            <Chip label="Ex-empleado" size="small" color="default" variant="outlined" sx={{ height: 20, fontSize: '0.68rem', flexShrink: 0 }} />
+          )}
         </Box>
       </TableCell>
 

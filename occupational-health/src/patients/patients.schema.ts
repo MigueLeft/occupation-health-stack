@@ -30,6 +30,10 @@ export const patients = pgTable('patients', {
   sex: varchar('sex', { length: 20 }),
   companyId: uuid('company_id').references(() => companies.id),
   positionId: uuid('position_id').references(() => positions.id),
+  // Fecha de egreso de la empresa. Si no es null, el paciente es un
+  // ex-empleado: no debe recibir nuevas solicitudes/consultas y queda
+  // excluido de los reportes a partir de esa fecha en adelante.
+  terminatedAt: date('terminated_at'),
 });
 
 export const patientAllergies = pgTable(

@@ -69,7 +69,10 @@ export function ExpedientePage() {
     queryFn: () => consultationDisabilitiesService.getByPatient(cedula),
   });
 
-  const patientConsultations = consultations.filter((c) => c.patientId === cedula);
+  // La consulta creada más recientemente se muestra primero.
+  const patientConsultations = consultations
+    .filter((c) => c.patientId === cedula)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const isLoading = patientLoading || consultLoading || isPermLoading;
 
   const hasMedicoRole = can('es-medico', 'view');
