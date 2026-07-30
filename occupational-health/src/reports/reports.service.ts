@@ -283,7 +283,7 @@ export class ReportsService {
           },
         );
       doc.fillColor('#000000').moveDown(0.3);
-      this.drawMorbidityTable(doc, sectionIAptitude, sectionITotal);
+      this.drawVigilanciaAptitudeTable(doc, sectionIAptitude, sectionITotal);
 
       // Sección II: Accidentes y enfermedades por sexo
       this.ensureSpace(doc, 80);
@@ -640,43 +640,228 @@ export class ReportsService {
       return;
     }
 
+    const CELL_PAD_X = 3;
+    const CELL_PAD_Y = 6;
+
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       const isAlt = i % 2 === 1;
 
+      // La altura de la fila crece según el texto más largo de sus celdas,
+      // para que el contenido nunca quede recortado ni superpuesto.
+      doc.font('Helvetica').fontSize(8);
+      const rowHeight = row.reduce((max, cell, c) => {
+        const cellHeight = doc.heightOfString(cell ?? '-', {
+          width: widths[c] - CELL_PAD_X * 2,
+        });
+        return Math.max(max, cellHeight + CELL_PAD_Y * 2);
+      }, ROW_HEIGHT);
+
       // Verificar si necesitamos nueva página
-      if (y + ROW_HEIGHT > doc.page.height - FOOTER_HEIGHT - 20) {
+      if (y + rowHeight > doc.page.height - FOOTER_HEIGHT - 20) {
         doc.addPage();
         y = HEADER_HEIGHT + 14;
       }
 
       if (isAlt) {
-        doc.rect(MARGIN, y, USABLE_WIDTH, ROW_HEIGHT).fill(ALT_ROW_COLOR);
+        doc.rect(MARGIN, y, USABLE_WIDTH, rowHeight).fill(ALT_ROW_COLOR);
       }
 
       x = MARGIN;
-      doc.fillColor('#1A1A1A');
+      doc.font('Helvetica').fontSize(8).fillColor('#1A1A1A');
       for (let c = 0; c < headers.length; c++) {
-        doc.text(row[c] ?? '-', x + 3, y + 6, {
-          width: widths[c] - 6,
-          lineBreak: false,
+        doc.text(row[c] ?? '-', x + CELL_PAD_X, y + CELL_PAD_Y, {
+          width: widths[c] - CELL_PAD_X * 2,
         });
         x += widths[c];
       }
 
       // Borde inferior de cada fila
       doc
-        .moveTo(MARGIN, y + ROW_HEIGHT)
-        .lineTo(MARGIN + USABLE_WIDTH, y + ROW_HEIGHT)
+        .moveTo(MARGIN, y + rowHeight)
+        .lineTo(MARGIN + USABLE_WIDTH, y + rowHeight)
         .strokeColor('#E0E0E0')
         .lineWidth(0.5)
         .stroke();
 
-      y += ROW_HEIGHT;
+      y += rowHeight;
     }
 
     doc.fillColor('#000000');
     // Reposicionar el cursor de texto al final de la tabla + margen
+    doc.y = y + 12;
+  }
+
+  // Tabla de aptitud (Sección I, continuación) con el mismo estilo visual
+  // (color, fuente y tamaño) que el resto de las tablas del reporte de
+  // vigilancia — a diferencia de drawMorbidityTable, que pertenece al
+  // Reporte de Morbilidad y tiene su propia identidad visual.
+  private drawVigilanciaAptitudeTable(
+    doc: PDFKit.PDFDocument,
+    rows: MorbidityRow[],
+    grandTotal: number,
+  ) {
+    // Anchos de columna que suman 515 (USABLE_WIDTH)
+    const widths = [115, 45, 40, 105, 105, 105];
+    const headers = [
+      'Tipo de Solicitud',
+      'Total',
+      '%',
+      'Aptos',
+      'No Aptos',
+      'Aptos Cond.',
+    ];
+    const CELL_PAD_X = 3;
+    const CELL_PAD_Y = 6;
+    const SUBHEADER_HEIGHT = 14;
+
+    let y = doc.y;
+
+    const drawHeaderRow = () => {
+      doc.rect(MARGIN, y, USABLE_WIDTH, HEADER_ROW_HEIGHT).fill('#E3EAF6');
+      doc.font('Helvetica-Bold').fontSize(8).fillColor('#1A1A1A');
+      let hx = MARGIN;
+      for (let i = 0; i < headers.length; i++) {
+        doc.text(headers[i], hx + CELL_PAD_X, y + 7, {
+          width: widths[i] - CELL_PAD_X * 2,
+          align: 'left',
+        });
+        hx += widths[i];
+      }
+      y += HEADER_ROW_HEIGHT;
+
+      // Sub-encabezado: "Méd. / Psic." bajo las columnas de aptitud
+      doc.rect(MARGIN + 200, y, 315, SUBHEADER_HEIGHT).fill(ALT_ROW_COLOR);
+      doc.font('Helvetica-Oblique').fontSize(7).fillColor('#555555');
+      hx = MARGIN + 200;
+      for (let i = 0; i < 3; i++) {
+        doc.text('Méd. / Psic.', hx + CELL_PAD_X, y + 3, {
+          width: widths[3 + i] - CELL_PAD_X * 2,
+          align: 'left',
+        });
+        hx += widths[3 + i];
+      }
+      y += SUBHEADER_HEIGHT;
+      doc.font('Helvetica').fontSize(8).fillColor('#000000');
+    };
+
+    drawHeaderRow();
+
+    if (rows.length === 0) {
+      doc
+        .font('Helvetica-Oblique')
+        .fontSize(8)
+        .fillColor('#888888')
+        .text('Sin datos para el período seleccionado.', MARGIN, y + 6, {
+          width: USABLE_WIDTH,
+          align: 'center',
+        });
+      doc.fillColor('#000000');
+      doc.moveDown(1);
+      return;
+    }
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const isAlt = i % 2 === 1;
+
+      const pct =
+        grandTotal > 0
+          ? `${((row.total / grandTotal) * 100).toFixed(1)}%`
+          : '0%';
+      const cells = [
+        row.reason,
+        String(row.total),
+        pct,
+        `${row.medicalApto} / ${row.psychApto}`,
+        `${row.medicalNoApto} / ${row.psychNoApto}`,
+        `${row.medicalAptoCondicionado} / ${row.psychAptoCondicionado}`,
+      ];
+
+      doc.font('Helvetica').fontSize(8);
+      const rowHeight = cells.reduce((max, cell, c) => {
+        const cellHeight = doc.heightOfString(cell, {
+          width: widths[c] - CELL_PAD_X * 2,
+        });
+        return Math.max(max, cellHeight + CELL_PAD_Y * 2);
+      }, ROW_HEIGHT);
+
+      if (y + rowHeight > doc.page.height - FOOTER_HEIGHT - 20) {
+        doc.addPage();
+        y = HEADER_HEIGHT + 14;
+        drawHeaderRow();
+      }
+
+      if (isAlt) {
+        doc.rect(MARGIN, y, USABLE_WIDTH, rowHeight).fill(ALT_ROW_COLOR);
+      }
+
+      let x = MARGIN;
+      doc.font('Helvetica').fontSize(8).fillColor('#1A1A1A');
+      for (let c = 0; c < headers.length; c++) {
+        doc.text(cells[c], x + CELL_PAD_X, y + CELL_PAD_Y, {
+          width: widths[c] - CELL_PAD_X * 2,
+        });
+        x += widths[c];
+      }
+
+      doc
+        .moveTo(MARGIN, y + rowHeight)
+        .lineTo(MARGIN + USABLE_WIDTH, y + rowHeight)
+        .strokeColor('#E0E0E0')
+        .lineWidth(0.5)
+        .stroke();
+
+      y += rowHeight;
+    }
+
+    // Fila de totales
+    if (y + ROW_HEIGHT > doc.page.height - FOOTER_HEIGHT - 20) {
+      doc.addPage();
+      y = HEADER_HEIGHT + 14;
+      drawHeaderRow();
+    }
+    doc.rect(MARGIN, y, USABLE_WIDTH, ROW_HEIGHT).fill('#C8D8F0');
+    const totals = rows.reduce(
+      (acc, r) => ({
+        total: acc.total + r.total,
+        medicalApto: acc.medicalApto + r.medicalApto,
+        medicalNoApto: acc.medicalNoApto + r.medicalNoApto,
+        medicalAptoCondicionado:
+          acc.medicalAptoCondicionado + r.medicalAptoCondicionado,
+        psychApto: acc.psychApto + r.psychApto,
+        psychNoApto: acc.psychNoApto + r.psychNoApto,
+        psychAptoCondicionado:
+          acc.psychAptoCondicionado + r.psychAptoCondicionado,
+      }),
+      {
+        total: 0,
+        medicalApto: 0,
+        medicalNoApto: 0,
+        medicalAptoCondicionado: 0,
+        psychApto: 0,
+        psychNoApto: 0,
+        psychAptoCondicionado: 0,
+      },
+    );
+    const totalCells = [
+      'TOTAL',
+      String(totals.total),
+      '100%',
+      `${totals.medicalApto} / ${totals.psychApto}`,
+      `${totals.medicalNoApto} / ${totals.psychNoApto}`,
+      `${totals.medicalAptoCondicionado} / ${totals.psychAptoCondicionado}`,
+    ];
+    doc.font('Helvetica-Bold').fontSize(8).fillColor('#1A1A1A');
+    let tx = MARGIN;
+    for (let c = 0; c < headers.length; c++) {
+      doc.text(totalCells[c], tx + CELL_PAD_X, y + CELL_PAD_Y, {
+        width: widths[c] - CELL_PAD_X * 2,
+      });
+      tx += widths[c];
+    }
+    doc.fillColor('#000000');
+    y += ROW_HEIGHT;
     doc.y = y + 12;
   }
 

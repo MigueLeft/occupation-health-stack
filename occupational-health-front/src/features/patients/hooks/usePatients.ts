@@ -34,9 +34,16 @@ export function useUpdatePatient() {
   return useMutation({
     mutationFn: ({ cedula, payload }: { cedula: string; payload: UpdatePatientPayload }) =>
       patientsService.update(cedula, payload),
-    onSuccess: ({ patient }) => {
+    onSuccess: ({ patient }, { cedula: previousCedula }) => {
       queryClient.invalidateQueries({ queryKey: PATIENTS_KEY });
+      queryClient.invalidateQueries({ queryKey: ['patient', previousCedula] });
       queryClient.invalidateQueries({ queryKey: ['patient', patient.cedula] });
+      queryClient.invalidateQueries({ queryKey: ['patient-disabilities', previousCedula] });
+      queryClient.invalidateQueries({ queryKey: ['patient-disabilities', patient.cedula] });
+      // La cédula es la FK usada por requests/consultas — si cambia, esos
+      // datos quedan apuntando a la cédula anterior hasta refrescarlos.
+      queryClient.invalidateQueries({ queryKey: ['requests'] });
+      queryClient.invalidateQueries({ queryKey: ['consultations'] });
       toast.success(`Paciente "${patient.firstName} ${patient.lastName}" actualizado exitosamente.`);
     },
     onError: (error: { response?: { data?: { message?: string } } }) => {
