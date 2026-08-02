@@ -11,14 +11,14 @@ import { useConsultations } from '@/features/consultations/hooks/useConsultation
 import { consultationDisabilitiesService } from '@/features/consultations/services/disabilities.service';
 import { ConsultationTypeChip } from '@/features/consultations/components/ConsultationTypeChip';
 import { ConsultationResultChip } from '@/features/consultations/components/ConsultationResultChip';
-import { ConsultationFilters } from '@/features/consultations';
-import type { ConsultationFiltersState, ConsultationWithDetails } from '@/features/consultations';
+import { ExpedienteFilters } from '@/features/consultations';
+import type { ExpedienteFiltersState, ConsultationWithDetails } from '@/features/consultations';
 import { RequestStatusChip } from '@/features/requests/components/RequestStatusChip';
 import { EVALUATION_REASON_LABELS } from '@/features/requests/types';
 import { usePermissions } from '@/features/auth';
 
 const ROWS_PER_PAGE_OPTIONS = [10, 25, 50];
-const DEFAULT_FILTERS: ConsultationFiltersState = { search: '', tipo: 'all', resultado: 'all', status: 'all' };
+const DEFAULT_FILTERS: ExpedienteFiltersState = { fecha: '', motivo: 'all', resultado: 'all' };
 
 function sortByDate(list: ConsultationWithDetails[]): ConsultationWithDetails[] {
   // Orden cronológico por fecha de la solicitud (no por orden de finalización).
@@ -84,19 +84,14 @@ export function ExpedientePage() {
   });
   const { mutate: reactivatePatient, isPending: isReactivating } = useReactivatePatient();
 
-  const [filters, setFilters] = useState<ConsultationFiltersState>(DEFAULT_FILTERS);
+  const [filters, setFilters] = useState<ExpedienteFiltersState>(DEFAULT_FILTERS);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(ROWS_PER_PAGE_OPTIONS[0]);
 
   const patientConsultations = sortByDate(consultations.filter((c) => c.patientId === cedula));
   const filteredConsultations = patientConsultations.filter((c) => {
-    if (filters.search) {
-      const motivo = (EVALUATION_REASON_LABELS[c.evaluationReason] ?? c.evaluationReason).toLowerCase();
-      if (!motivo.includes(filters.search.toLowerCase())) return false;
-    }
-    if (filters.tipo !== 'all' && c.type !== filters.tipo) return false;
-    if (filters.status === 'active' && c.status === 'Finalizada') return false;
-    if (filters.status !== 'active' && filters.status !== 'all' && c.status !== filters.status) return false;
+    if (filters.fecha && c.requestDate !== filters.fecha) return false;
+    if (filters.motivo !== 'all' && c.evaluationReason !== filters.motivo) return false;
     if (filters.resultado !== 'all') {
       const result = c.type === 'Medica' ? c.consultationResult : c.psychologicalResult;
       if (result !== filters.resultado) return false;
@@ -105,7 +100,7 @@ export function ExpedientePage() {
   });
   const paginatedConsultations = filteredConsultations.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
-  const handleFiltersChange = (next: ConsultationFiltersState) => {
+  const handleFiltersChange = (next: ExpedienteFiltersState) => {
     setFilters(next);
     setPage(0);
   };
@@ -243,7 +238,7 @@ export function ExpedientePage() {
               <Typography variant="h2" sx={{ fontSize: '1.15rem' }}>Historial de Consultas</Typography>
               <Chip label={`${patientConsultations.length} consulta${patientConsultations.length !== 1 ? 's' : ''}`} size="small" sx={{ bgcolor: 'primary.50', color: 'primary.main', fontWeight: 600 }} />
             </Box>
-            <ConsultationFilters filters={filters} onChange={handleFiltersChange} />
+            <ExpedienteFilters filters={filters} onChange={handleFiltersChange} />
           </Box>
 
           <Box sx={{ bgcolor: 'background.paper', borderRadius: 3, border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
