@@ -25,6 +25,7 @@ import { PhysicalExamSection } from '@/features/consultations/components/attend/
 import { DiagnosticSection } from '@/features/consultations/components/attend/DiagnosticSection';
 import { ExamResultsSection } from '@/features/consultations/components/attend/ExamResultsSection';
 import { PsicologicaSection } from '@/features/consultations/components/attend/PsicologicaSection';
+import { LastVitalsCard } from '@/features/consultations/components/attend/LastVitalsCard';
 import { ChronicDiseasesSection } from '@/features/consultations/components/attend/ChronicDiseasesSection';
 import { PatientInitialDataSection } from '@/features/consultations/components/attend/PatientInitialDataSection';
 import { AttendedBySection } from '@/features/consultations/components/attend/AttendedBySection';
@@ -575,6 +576,9 @@ export function AttendConsultationPage({ editMode = false }: Props) {
                 )}
               </Grid>
               <Grid size={4}>
+                <Box sx={{ mb: 3 }}>
+                  <LastVitalsCard patientId={data.patientId} />
+                </Box>
                 <AttendedBySection tab="psicologica"medicalAttendedById={medicalAttendedById} medicalAttendedByFreeText={medicalAttendedByFreeText} psychologicalAttendedById={psychologicalAttendedById} psychologicalAttendedByFreeText={psychologicalAttendedByFreeText} onMedicalChange={setMedicalAttendedById} onMedicalFreeTextChange={setMedicalAttendedByFreeText} onPsychologicalChange={setPsychologicalAttendedById} onPsychologicalFreeTextChange={setPsychologicalAttendedByFreeText} users={users} />
               </Grid>
             </Grid>

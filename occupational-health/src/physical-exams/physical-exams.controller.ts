@@ -27,6 +27,15 @@ export class PhysicalExamsController {
     return { physicalExams };
   }
 
+  // Último registro de peso/talla/IMC de un paciente, sin importar la consulta.
+  @Get('latest/:patientId')
+  @RequirePermission('consultations', 'view')
+  async findLatestForPatient(@Param('patientId') patientId: string) {
+    const physicalExam =
+      await this.physicalExamsService.findLatestForPatient(patientId);
+    return { physicalExam };
+  }
+
   @Get(':id')
   @RequirePermission('consultations', 'view')
   async findOne(@Param('id', ParseUUIDPipe) id: string) {

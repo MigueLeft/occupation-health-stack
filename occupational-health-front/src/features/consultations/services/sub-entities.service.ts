@@ -9,9 +9,14 @@ export interface PhysicalExam {
 }
 export type PhysicalExamPayload = Omit<PhysicalExam, 'id' | 'consultationId'>;
 
+export interface LatestPhysicalExam {
+  weight: number | null; height: number | null; recordedAt: string;
+}
+
 export const physicalExamService = {
   create: (p: PhysicalExamPayload & { consultationId: string }) => apiClient.post<{ physicalExam: PhysicalExam }>('/physical-exams', p).then((r) => r.data),
   update: (id: string, p: PhysicalExamPayload) => apiClient.patch<{ physicalExam: PhysicalExam }>(`/physical-exams/${id}`, p).then((r) => r.data),
+  getLatestForPatient: (patientId: string) => apiClient.get<{ physicalExam: LatestPhysicalExam | null }>(`/physical-exams/latest/${patientId}`).then((r) => r.data.physicalExam),
 };
 
 // ─── Consultation Diagnostics ─────────────────────────────────────────────────

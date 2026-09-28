@@ -5,13 +5,20 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { and, desc, eq, isNotNull, or } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DRIZZLE } from '../database/database.module';
 import { physicalExams, PhysicalExam } from './physical-exams.schema';
 import { consultations } from '../consultations/consultations.schema';
+import { requests } from '../requests/requests.schema';
 import { CreatePhysicalExamDto } from './dto/create-physical-exam.dto';
 import { UpdatePhysicalExamDto } from './dto/update-physical-exam.dto';
+
+export interface LatestPhysicalExam {
+  weight: number | null;
+  height: number | null;
+  recordedAt: string;
+}
 
 @Injectable()
 export class PhysicalExamsService {
@@ -25,6 +32,35 @@ export class PhysicalExamsService {
         .where(eq(physicalExams.consultationId, consultationId));
     }
     return this.db.select().from(physicalExams);
+  }
+
+  // Último examen físico con peso o talla registrados para un paciente,
+  // sin importar en qué consulta haya sido tomado.
+  async findLatestForPatient(
+    patientId: string,
+  ): Promise<LatestPhysicalExam | null> {
+    const [row] = await this.db
+      .select({
+        weight: physicalExams.weight,
+        height: physicalExams.height,
+        recordedAt: requests.requestDate,
+      })
+      .from(physicalExams)
+      .innerJoin(
+        consultations,
+        eq(physicalExams.consultationId, consultations.id),
+      )
+      .innerJoin(requests, eq(consultations.requestId, requests.id))
+      .where(
+        and(
+          eq(requests.patientId, patientId),
+          or(isNotNull(physicalExams.weight), isNotNull(physicalExams.height)),
+        ),
+      )
+      .orderBy(desc(requests.requestDate), desc(consultations.createdAt))
+      .limit(1);
+
+    return row ?? null;
   }
 
   async findOne(id: string): Promise<PhysicalExam> {

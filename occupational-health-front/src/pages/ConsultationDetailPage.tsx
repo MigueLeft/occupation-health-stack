@@ -18,6 +18,7 @@ import { ConsultationResultChip } from '@/features/consultations/components/Cons
 import { AccessibilityNewOutlined } from '@mui/icons-material';
 import { usePsychologicalIndicators } from '@/features/psychological-indicators';
 import { usePermissions } from '@/features/auth';
+import { LastVitalsCard } from '@/features/consultations/components/attend/LastVitalsCard';
 
 const RISK_TYPE_COLOR: Record<string, 'error' | 'warning' | 'info' | 'success' | 'secondary' | 'default'> = {
   Fisico: 'error', Quimico: 'warning', Biologico: 'success',
@@ -432,12 +433,15 @@ export function ConsultationDetailPage() {
                 </Stack>
               </Grid>
               <Grid size={4}>
-                <SectionCard title="Atendido por">
-                  <Stack spacing={1.5} divider={<Divider />}>
-                    <ReadField label="Atendido presencialmente (Médica)" value={getUserName(data.medicalAttendedById, data.medicalAttendedByFreeText)} />
-                    <ReadField label="Atendido presencialmente (Psicológica)" value={getUserName(data.psychologicalAttendedById, data.psychologicalAttendedByFreeText)} />
-                  </Stack>
-                </SectionCard>
+                <Stack spacing={3}>
+                  <LastVitalsCard patientId={data.patientId} />
+                  <SectionCard title="Atendido por">
+                    <Stack spacing={1.5} divider={<Divider />}>
+                      <ReadField label="Atendido presencialmente (Médica)" value={getUserName(data.medicalAttendedById, data.medicalAttendedByFreeText)} />
+                      <ReadField label="Atendido presencialmente (Psicológica)" value={getUserName(data.psychologicalAttendedById, data.psychologicalAttendedByFreeText)} />
+                    </Stack>
+                  </SectionCard>
+                </Stack>
               </Grid>
             </Grid>
           )}
